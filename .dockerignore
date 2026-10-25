@@ -1,0 +1,12 @@
+.venv
+.env
+.git
+__pycache__
+.pytest_cache
+.ruff_cache
+*.db
+*.egg-info
+.local-runtime
+node_modules
+web/dist
+*.tsbuildinfo
