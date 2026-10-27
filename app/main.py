@@ -108,7 +108,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if (web_dist / "assets").exists():
         app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="web-assets")
 
-    @app.get("/", include_in_schema=False)
     def web_index():
         if (web_dist / "index.html").exists():
             return FileResponse(web_dist / "index.html", headers={"Cache-Control": "no-cache"})
@@ -116,5 +115,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "message": "Build web with npm run build in web/, then restart API.",
             "api_docs": "/docs",
         }
+
+    # Only known SPA paths fall back to index.html. Unknown API and asset URLs keep their 404s.
+    for route_path in (
+        "/",
+        "/sign-in",
+        "/sign-up",
+        "/portfolio",
+        "/risk",
+        "/signals",
+        "/backtest",
+        "/factors",
+        "/subscription",
+        "/account",
+    ):
+        app.add_api_route(route_path, web_index, methods=["GET"], include_in_schema=False)
 
     return app

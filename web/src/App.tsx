@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { matchRoutes, Navigate, NavLink, useLocation, useNavigate } from 'react-router';
 import {
   Archive,
   ArrowRight,
@@ -44,6 +45,10 @@ import type { BacktestForm } from './pages';
 import { HistoryDialog, Modal, PortfolioDialog, RenameDialog } from './PortfolioDialog';
 import Studio from './Studio';
 import Subscription from './Subscription';
+import Landing from './Landing';
+import Account from './Account';
+import { defaultPreferences, readPreferences } from './preferences';
+import type { Preferences } from './preferences';
 import type {
   Analysis,
   Backtest,
@@ -55,46 +60,52 @@ import type {
   Version,
 } from './types';
 
-type Route = Page | 'subscription';
+type Route = Page | 'subscription' | 'account';
 const NAV = [
-  { id: 'portfolio', label: 'Danh mục', icon: LayoutDashboard },
-  { id: 'risk', label: 'Rủi ro', icon: ShieldCheck },
-  { id: 'signals', label: 'Tín hiệu', icon: TrendingUp },
-  { id: 'backtest', label: 'Kiểm thử', icon: FlaskConical },
-  { id: 'factors', label: 'Yếu tố', icon: Layers3 },
-  { id: 'subscription', label: 'Gói dịch vụ', icon: CreditCard },
+  { id: 'portfolio', label: 'Portfolio', icon: LayoutDashboard },
+  { id: 'risk', label: 'Risk', icon: ShieldCheck },
+  { id: 'signals', label: 'Signals', icon: TrendingUp },
+  { id: 'backtest', label: 'Backtest', icon: FlaskConical },
+  { id: 'factors', label: 'Factors', icon: Layers3 },
+  { id: 'subscription', label: 'Plans', icon: CreditCard },
 ] as const;
 const INTRO: Record<Page, { eyebrow: string; title: string; description: string }> = {
   portfolio: {
-    eyebrow: 'DANH MỤC CỦA BẠN',
-    title: 'Hiểu danh mục của bạn,\nbắt đầu từ tổng thể.',
-    description: 'Một góc nhìn rõ ràng về hiệu suất, phân bổ và hành trình tích lũy.',
+    eyebrow: 'ANALYSIS',
+    title: 'Know your portfolio,\nsee the full picture.',
+    description: 'A clear view of your performance, allocation, and cumulative growth.',
   },
   risk: {
-    eyebrow: 'PHÂN TÍCH RỦI RO',
-    title: 'Rủi ro, nhìn từ nhiều góc.',
-    description: 'Đặt biến động, mức giảm từ đỉnh và tương quan vào cùng một bức tranh.',
+    eyebrow: 'PORTFOLIO ANALYTICS',
+    title: 'Risk, from every angle.',
+    description: 'Explore volatility, drawdown, and the relationships between your assets.',
   },
   signals: {
-    eyebrow: 'BỐI CẢNH THỊ TRƯỜNG',
-    title: 'Tín hiệu là bối cảnh,\nkhông phải chỉ dẫn.',
-    description: 'Theo dõi xu hướng với những quy tắc đơn giản và minh bạch.',
+    eyebrow: 'PORTFOLIO ANALYTICS',
+    title: 'Signals give context, not instructions.',
+    description:
+      'Compare short-term moving averages with long-term trends to describe historical states.',
   },
   backtest: {
-    eyebrow: 'KIỂM THỬ CHIẾN LƯỢC',
-    title: 'Kiểm thử một quy tắc,\ntrước khi đặt niềm tin.',
-    description: 'Mô phỏng quá khứ để nhìn rõ hiệu suất, chi phí và những đánh đổi.',
+    eyebrow: 'PORTFOLIO ANALYTICS',
+    title: 'Backtest a simple rule.',
+    description: 'See how a strategy responds to historical trends, costs, and volatility.',
   },
   factors: {
-    eyebrow: 'PHÂN TÍCH YẾU TỐ',
-    title: 'Hiểu động lực\nphía sau lợi nhuận.',
-    description: 'Nhìn sâu hơn vào độ nhạy thị trường và động lượng của từng tài sản.',
+    eyebrow: 'PORTFOLIO ANALYTICS',
+    title: 'Understand what drives returns.',
+    description: 'Explore market sensitivity and momentum across your assets.',
   },
 };
-const readRoute = (): Route =>
-  NAV.some((n) => n.id === location.hash.slice(1))
-    ? (location.hash.slice(1) as Route)
-    : 'portfolio';
+const ROUTES = [
+  { path: '/', id: 'landing' },
+  { path: '/sign-in', id: 'login' },
+  { path: '/sign-up', id: 'register' },
+  ...NAV.map(({ id }) => ({ path: '/' + id, id })),
+  { path: '/account', id: 'account' },
+];
+const PRIVATE_ROUTES = new Set<Route>([...NAV.map(({ id }) => id), 'account']);
+const LEGACY_HASH_ROUTES = new Set(['sign-in', 'sign-up', ...PRIVATE_ROUTES]);
 const localDate = (date: Date) =>
   date.getFullYear() +
   '-' +
@@ -103,9 +114,15 @@ const localDate = (date: Date) =>
   String(date.getDate()).padStart(2, '0');
 
 export default function App() {
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const routeId = matchRoutes(ROUTES, location)?.at(-1)?.route.id;
+  const page: Route = PRIVATE_ROUTES.has(routeId as Route) ? (routeId as Route) : 'portfolio';
+  const publicView =
+    routeId === 'login' || routeId === 'register' || routeId === 'landing' ? routeId : null;
   const [booting, setBooting] = useState(true);
   const [user, setUser] = useState<User | null>(null);
-  const [page, setPage] = useState<Route>(readRoute);
+  const [afterLogout, setAfterLogout] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [portfolioMenu, setPortfolioMenu] = useState(false);
@@ -126,6 +143,25 @@ export default function App() {
   const [btKey, setBtKey] = useState('');
   const [layouts, setLayouts] = useState<Partial<Record<Page, Layout>>>({});
   const [studio, setStudio] = useState(false);
+  function openStudio() {
+    setMobileMenu(false);
+    setUserMenu(false);
+    setStudio(true);
+  }
+  const [preferences, setPreferences] = useState(defaultPreferences);
+  useEffect(() => {
+    setPreferences(user ? readPreferences(user.id) : defaultPreferences());
+  }, [user?.id]);
+  function savePreferences(value: Preferences) {
+    setPreferences(value);
+    if (user) {
+      try {
+        localStorage.setItem('dofiin:presentation:' + user.id, JSON.stringify(value));
+      } catch {
+        notify('Layout saved. Browser preferences could not be stored.');
+      }
+    }
+  }
   const [dialog, setDialog] = useState<
     'create' | 'config' | 'rename' | 'history' | 'archive' | 'help' | 'optimize' | null
   >(null);
@@ -148,23 +184,28 @@ export default function App() {
     return () => clearTimeout(id);
   }, [toast]);
   useEffect(() => {
-    const handler = () => setPage(readRoute());
-    window.addEventListener('hashchange', handler);
-    return () => window.removeEventListener('hashchange', handler);
-  }, []);
+    const legacyRoute = window.location.hash.slice(1);
+    if (location.pathname === '/' && LEGACY_HASH_ROUTES.has(legacyRoute)) {
+      routerNavigate('/' + legacyRoute, { replace: true });
+    }
+  }, [location.pathname, routerNavigate]);
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [location.pathname]);
+  useEffect(() => {
+    if (!user && location.pathname === '/' && afterLogout) setAfterLogout(false);
+  }, [user, location.pathname, afterLogout]);
   function navigate(route: Route) {
-    setPage(route);
-    location.hash = route;
+    routerNavigate('/' + route);
     setMobileMenu(false);
     setPortfolioMenu(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function report(error: unknown) {
     if (error instanceof ApiError && error.status === 401) {
       setUser(null);
       setToken('');
     }
-    notify(error instanceof Error ? error.message : 'Có lỗi xảy ra. Vui lòng thử lại.');
+    notify(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
   }
 
   async function loadPortfolio(id: string) {
@@ -198,8 +239,8 @@ export default function App() {
         weight,
       }));
       const created = await post<Portfolio>('/portfolios', {
-        name: 'Danh mục dài hạn',
-        description: 'Không gian trải nghiệm demo 1',
+        name: 'Long-term portfolio',
+        description: 'Demo workspace',
         allocations,
       });
       list = [created];
@@ -262,7 +303,7 @@ export default function App() {
       })
       .catch((error) => {
         if (active) {
-          setAnalysisError(error instanceof Error ? error.message : 'Không thể phân tích.');
+          setAnalysisError(error instanceof Error ? error.message : 'Unable to run analysis.');
           if (error instanceof ApiError && error.status === 401) setUser(null);
         }
       })
@@ -275,7 +316,7 @@ export default function App() {
   }, [user?.id, versionId, period, source, refresh]);
 
   useEffect(() => {
-    if (!user || page === 'subscription') return;
+    if (!user || page === 'subscription' || page === 'account') return;
     let active = true;
     api<Layout>('/layouts/' + page)
       .then((result) => {
@@ -312,7 +353,7 @@ export default function App() {
     setPortfolio(result);
     setViewVersion(null);
     localStorage.setItem('dofiin-portfolio', result.id);
-    notify('Đã lưu danh mục · Phiên bản ' + result.current_version);
+    notify('Portfolio saved · Version' + result.current_version);
   }
   async function archive() {
     if (!portfolio) return;
@@ -325,7 +366,7 @@ export default function App() {
       setAnalysis(null);
       setDialog(null);
       if (list.length) await loadPortfolio(list[0].id);
-      notify('Đã lưu trữ danh mục. Lịch sử vẫn được giữ trong CSDL.');
+      notify('Portfolio archived. Its history has been preserved.');
     } catch (error) {
       report(error);
     } finally {
@@ -339,6 +380,8 @@ export default function App() {
       report(error);
       return;
     }
+    setAfterLogout(true);
+    routerNavigate('/', { replace: true });
     setToken('');
     setUser(null);
     setPortfolio(null);
@@ -361,7 +404,7 @@ export default function App() {
         }),
       );
     } catch (error) {
-      setOptError(error instanceof Error ? error.message : 'Không thể tối ưu.');
+      setOptError(error instanceof Error ? error.message : 'Unable to optimize.');
     } finally {
       setOptBusy(false);
     }
@@ -384,7 +427,7 @@ export default function App() {
       await savedPortfolio(result);
       setDialog(null);
     } catch (error) {
-      setOptError(error instanceof Error ? error.message : 'Không thể lưu tỷ trọng.');
+      setOptError(error instanceof Error ? error.message : 'Unable to save weights.');
     } finally {
       setOptBusy(false);
     }
@@ -425,7 +468,7 @@ export default function App() {
     link.download = 'dofiin-' + page + '-' + analysis.result.metadata.last_date + '.csv';
     link.click();
     URL.revokeObjectURL(url);
-    notify('Đã xuất CSV kèm nhãn nguồn dữ liệu.');
+    notify('CSV exported with its data source.');
   }
 
   if (booting)
@@ -433,19 +476,181 @@ export default function App() {
       <div className="boot-screen">
         <Brand />
         <LoaderCircle className="spin" size={25} />
-        <p>Đang mở không gian của bạn…</p>
+        <p>Opening your workspace…</p>
       </div>
     );
-  if (!user) return <Auth onSigned={signedIn} />;
-  const activePage = page === 'subscription' ? 'portfolio' : page;
+  if (!routeId) return <Navigate to={user ? '/portfolio' : '/'} replace />;
+  if (user && publicView && !afterLogout) return <Navigate to="/portfolio" replace />;
+  if (!user && !publicView)
+    return afterLogout ? (
+      <Navigate to="/" replace />
+    ) : (
+      <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
+    );
+  if (!user)
+    return publicView === 'landing' ? (
+      <Landing
+        onSignIn={() => routerNavigate('/sign-in')}
+        onStart={() => routerNavigate('/sign-up')}
+        onExplore={() => routerNavigate('/sign-in')}
+      />
+    ) : (
+      <Auth
+        key={publicView}
+        initialMode={publicView === 'register' ? 'register' : 'login'}
+        onHome={() => routerNavigate('/')}
+        onModeChange={(mode) => routerNavigate(mode === 'register' ? '/sign-up' : '/sign-in')}
+        onSigned={async (demo) => {
+          await signedIn(demo);
+          const from = (location.state as { from?: unknown } | null)?.from;
+          const match = typeof from === 'string' ? matchRoutes(ROUTES, from) : null;
+          const destination = match?.at(-1)?.route.id;
+          routerNavigate(
+            destination && PRIVATE_ROUTES.has(destination as Route)
+              ? (from as string)
+              : '/portfolio',
+            { replace: true },
+          );
+        }}
+      />
+    );
+  const activePage = page === 'subscription' || page === 'account' ? 'portfolio' : page;
   const layout = layouts[activePage] || { revision: 0, config: defaultLayout(activePage) };
   const intro = INTRO[activePage];
+  const visibleNav = [
+    ...preferences.menu.map((id) => NAV.find((item) => item.id === id)!),
+    NAV[NAV.length - 1],
+  ];
+  const analysisControls = (
+    <div className="filter-bar">
+      <div className="portfolio-selector">
+        <span className="filter-caption">PORTFOLIO</span>
+        <select
+          aria-label="Select portfolio"
+          value={portfolio?.id || ''}
+          onChange={(event) => void loadPortfolio(event.target.value)}
+        >
+          <option value="" disabled>
+            Select portfolio
+          </option>
+          {portfolios.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <div className="portfolio-menu-wrap">
+          <button
+            className="icon-button"
+            aria-label="Manage portfolios"
+            onClick={() => setPortfolioMenu(!portfolioMenu)}
+          >
+            <MoreHorizontal size={18} />
+          </button>
+          {portfolioMenu && (
+            <div className="dropdown portfolio-dropdown">
+              <button
+                onClick={() => {
+                  setDialog('create');
+                  setPortfolioMenu(false);
+                }}
+              >
+                <Plus size={15} />
+                Create portfolio
+              </button>
+              {portfolio && (
+                <>
+                  <button
+                    onClick={() => {
+                      setDialog('rename');
+                      setPortfolioMenu(false);
+                    }}
+                  >
+                    <Pencil size={15} />
+                    Rename
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDialog('history');
+                      setPortfolioMenu(false);
+                    }}
+                  >
+                    <Clock3 size={15} />
+                    Version history
+                  </button>
+                  <button
+                    className="danger-text"
+                    onClick={() => {
+                      setDialog('archive');
+                      setPortfolioMenu(false);
+                    }}
+                  >
+                    <Archive size={15} />
+                    Archive portfolio
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="period-selector">
+        {[
+          ['1M', '1M'],
+          ['3M', '3M'],
+          ['6M', '6M'],
+          ['1Y', '1Y'],
+          ['3Y', '3Y'],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            className={period === value ? 'active' : ''}
+            aria-label={
+              value.endsWith('M') ? value.slice(0, -1) + ' months' : value.slice(0, -1) + ' years'
+            }
+            onClick={() => setPeriod(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="filter-end">
+        <div className="source-selector">
+          <i className={source === 'demo' ? 'demo-dot' : 'live-dot'} />
+          <select
+            aria-label="Data source"
+            value={source}
+            onChange={(event) => setSource(event.target.value as 'demo' | 'yahoo')}
+          >
+            <option value="demo">Simulated data</option>
+            <option value="yahoo">Yahoo Finance</option>
+          </select>
+        </div>
+        <button
+          className="icon-button"
+          disabled={loading || !portfolio}
+          aria-label="Refresh analysis"
+          onClick={() => setRefresh(refresh + 1)}
+        >
+          <RefreshCw size={16} className={loading ? 'spin' : ''} />
+        </button>
+        <button
+          className="icon-button"
+          disabled={!analysis || loading}
+          aria-label="Export CSV"
+          onClick={exportCsv}
+        >
+          <Download size={16} />
+        </button>
+      </div>
+    </div>
+  );
   return (
-    <div className="app-shell">
+    <div className={'app-shell route-' + page}>
       {mobileMenu && (
         <button
           className="sidebar-scrim"
-          aria-label="Đóng menu"
+          aria-label="Close menu"
           onClick={() => setMobileMenu(false)}
         />
       )}
@@ -454,33 +659,36 @@ export default function App() {
           <Brand light />
           <button
             className="mobile-only icon-button"
-            aria-label="Đóng menu"
+            aria-label="Close menu"
             onClick={() => setMobileMenu(false)}
           >
             <X size={20} />
           </button>
         </div>
-        <span className="sidebar-eyebrow">KHÔNG GIAN ĐẦU TƯ</span>
-        <nav aria-label="Điều hướng chính">
-          {NAV.map((item) => (
-            <button
+        <span className="sidebar-eyebrow">WORKSPACE</span>
+        <nav aria-label="Main navigation">
+          {visibleNav.map((item) => (
+            <NavLink
               key={item.id}
+              to={'/' + item.id}
               className={'nav-item ' + (page === item.id ? 'active' : '')}
-              aria-current={page === item.id ? 'page' : undefined}
-              onClick={() => navigate(item.id)}
+              onClick={() => {
+                setMobileMenu(false);
+                setPortfolioMenu(false);
+              }}
             >
               <item.icon size={18} />
               <span>{item.label}</span>
               {page === item.id && <i />}
-            </button>
+            </NavLink>
           ))}
         </nav>
         <div className="sidebar-bottom">
           <button
             className="studio-teaser"
             onClick={() => {
-              if (analysis) setStudio(true);
-              else notify('Chọn danh mục và hoàn tất phân tích để mở Studio.');
+              if (analysis) openStudio();
+              else notify('Select a portfolio and complete an analysis to open Studio.');
             }}
           >
             <span>
@@ -488,30 +696,38 @@ export default function App() {
               doFiin Studio
               <ArrowUpRight size={14} />
             </span>
-            <p>Một góc nhìn mang dấu ấn của bạn.</p>
+            <p>Your workspace, your way.</p>
             <span className="studio-teaser-link">
-              Tinh chỉnh bố cục
+              Customize layout
               <ArrowRight size={13} />
             </span>
           </button>
           <div className="sidebar-status">
             <i />
-            Không gian demo 01
+            Simulated data
           </div>
           <button className="sidebar-user" onClick={() => setUserMenu(!userMenu)}>
             <span className="avatar">{user.display_name.charAt(0).toUpperCase()}</span>
             <span>
               <strong>{user.display_name}</strong>
-              <small>Nhà đầu tư cá nhân</small>
+              <small>Personal account</small>
             </span>
             <ChevronDown size={14} />
           </button>
           {userMenu && (
             <div className="user-menu">
               <span>{user.email}</span>
+              <button
+                onClick={() => {
+                  navigate('account');
+                  setUserMenu(false);
+                }}
+              >
+                Account
+              </button>
               <button onClick={() => void logout()}>
                 <LogOut size={15} />
-                Đăng xuất
+                Sign out
               </button>
             </div>
           )}
@@ -519,41 +735,86 @@ export default function App() {
       </aside>
       <div className="app-main" inert={!!dialog || studio}>
         <header className="topbar">
+          <div className="topbar-brand">
+            <Brand />
+          </div>
           <div className="topbar-breadcrumb">
             <button
               className="icon-button mobile-only"
-              aria-label="Mở menu"
+              aria-label="Open menu"
               onClick={() => setMobileMenu(true)}
             >
               <Menu size={21} />
             </button>
-            <span className="breadcrumb-home">Tài chính</span>
+            <span className="breadcrumb-home">Portfolio analytics</span>
             <span>/</span>
-            <strong>{NAV.find((item) => item.id === page)?.label}</strong>
+            <strong>
+              {page === 'portfolio'
+                ? 'Portfolio overview'
+                : page === 'account'
+                  ? 'Account'
+                  : NAV.find((item) => item.id === page)?.label}
+            </strong>
           </div>
           <div className="topbar-right">
+            <select
+              className="topbar-period"
+              aria-label="Analysis period"
+              value={period}
+              onChange={(event) => setPeriod(event.target.value)}
+            >
+              {['1M', '3M', '6M', '1Y', '3Y'].map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
             <span className="topbar-demo">
               <i />
               Demo 01
             </span>
-            <button
-              className="icon-button"
-              aria-label="Hướng dẫn sử dụng"
-              onClick={() => setDialog('help')}
-            >
+            <button className="icon-button" aria-label="Help" onClick={() => setDialog('help')}>
               <CircleHelp size={18} />
             </button>
-            <span className="topbar-avatar">{user.display_name.charAt(0).toUpperCase()}</span>
+            <button
+              className="icon-button"
+              aria-label="Open Studio"
+              disabled={!analysis || page === 'subscription' || page === 'account'}
+              onClick={() => openStudio()}
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+            <button
+              className="button primary topbar-settings"
+              onClick={() => setDialog(portfolio ? 'config' : 'create')}
+            >
+              Portfolio settings
+            </button>
+            <button
+              className="topbar-avatar"
+              aria-label="Open account"
+              onClick={() => navigate('account')}
+            >
+              {user.display_name.charAt(0).toUpperCase()}
+            </button>
           </div>
         </header>
         <main className="main-content">
           {page === 'subscription' ? (
             <Subscription notify={notify} />
+          ) : page === 'account' ? (
+            <Account
+              user={user}
+              portfolioCount={portfolios.length}
+              onPlans={() => navigate('subscription')}
+              onSignOut={() => void logout()}
+            />
           ) : (
             <>
               <div className="page-intro">
                 <div>
-                  <span className="eyebrow">{intro.eyebrow}</span>
+                  <span className="eyebrow">
+                    {intro.eyebrow}
+                    {page === 'portfolio' ? ' · ' + period : ''}
+                  </span>
                   <h1>
                     {intro.title.split('\n').map((line, i) => (
                       <span key={line}>
@@ -562,13 +823,17 @@ export default function App() {
                       </span>
                     ))}
                   </h1>
-                  <p>{intro.description}</p>
+                  <p>
+                    {page === 'portfolio' && analysis
+                      ? `Your portfolio ${(analysis.result.metrics.excess_return ?? 0) >= 0 ? 'beat' : 'trailed'} SPY by ${number(Math.abs(analysis.result.metrics.excess_return ?? 0) * 100, 1)} pp. ${[...analysis.result.factors].sort((a, b) => b.weight - a.weight)[0]?.symbol ?? '—'} has the largest weight (${percent(Math.max(...analysis.result.factors.map((f) => f.weight)), 0)}).`
+                      : intro.description}
+                  </p>
                 </div>
                 <div className="intro-actions">
                   <button
                     className="button outline"
                     disabled={!analysis || loading}
-                    onClick={() => setStudio(true)}
+                    onClick={() => openStudio()}
                   >
                     <SlidersHorizontal size={15} />
                     Studio
@@ -578,141 +843,18 @@ export default function App() {
                     onClick={() => setDialog(portfolio ? 'config' : 'create')}
                   >
                     <Settings2 size={15} />
-                    {portfolio ? 'Cấu hình danh mục' : 'Tạo danh mục'}
+                    {portfolio ? 'Portfolio settings' : 'Create portfolio'}
                   </button>
                 </div>
               </div>
-              <div className="filter-bar">
-                <div className="portfolio-selector">
-                  <span className="filter-caption">DANH MỤC</span>
-                  <select
-                    aria-label="Chọn danh mục"
-                    value={portfolio?.id || ''}
-                    onChange={(event) => void loadPortfolio(event.target.value)}
-                  >
-                    <option value="" disabled>
-                      Chọn danh mục
-                    </option>
-                    {portfolios.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="portfolio-menu-wrap">
-                    <button
-                      className="icon-button"
-                      aria-label="Quản lý danh mục"
-                      onClick={() => setPortfolioMenu(!portfolioMenu)}
-                    >
-                      <MoreHorizontal size={18} />
-                    </button>
-                    {portfolioMenu && (
-                      <div className="dropdown portfolio-dropdown">
-                        <button
-                          onClick={() => {
-                            setDialog('create');
-                            setPortfolioMenu(false);
-                          }}
-                        >
-                          <Plus size={15} />
-                          Tạo danh mục mới
-                        </button>
-                        {portfolio && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setDialog('rename');
-                                setPortfolioMenu(false);
-                              }}
-                            >
-                              <Pencil size={15} />
-                              Đổi tên
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDialog('history');
-                                setPortfolioMenu(false);
-                              }}
-                            >
-                              <Clock3 size={15} />
-                              Lịch sử cấu hình
-                            </button>
-                            <button
-                              className="danger-text"
-                              onClick={() => {
-                                setDialog('archive');
-                                setPortfolioMenu(false);
-                              }}
-                            >
-                              <Archive size={15} />
-                              Lưu trữ danh mục
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="period-selector">
-                  {[
-                    ['1M', '1T'],
-                    ['3M', '3T'],
-                    ['6M', '6T'],
-                    ['1Y', '1N'],
-                    ['3Y', '3N'],
-                  ].map(([value, label]) => (
-                    <button
-                      key={value}
-                      className={period === value ? 'active' : ''}
-                      aria-label={
-                        value.endsWith('M')
-                          ? value.slice(0, -1) + ' tháng'
-                          : value.slice(0, -1) + ' năm'
-                      }
-                      onClick={() => setPeriod(value)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div className="filter-end">
-                  <div className="source-selector">
-                    <i className={source === 'demo' ? 'demo-dot' : 'live-dot'} />
-                    <select
-                      aria-label="Nguồn dữ liệu"
-                      value={source}
-                      onChange={(event) => setSource(event.target.value as 'demo' | 'yahoo')}
-                    >
-                      <option value="demo">Dữ liệu mô phỏng</option>
-                      <option value="yahoo">Yahoo Finance</option>
-                    </select>
-                  </div>
-                  <button
-                    className="icon-button"
-                    disabled={loading || !portfolio}
-                    aria-label="Tính lại phân tích"
-                    onClick={() => setRefresh(refresh + 1)}
-                  >
-                    <RefreshCw size={16} className={loading ? 'spin' : ''} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    disabled={!analysis || loading}
-                    aria-label="Xuất CSV"
-                    onClick={exportCsv}
-                  >
-                    <Download size={16} />
-                  </button>
-                </div>
-              </div>
+              {(!analysis || loading || analysisError) && analysisControls}
               {viewVersion && (
                 <div className="version-notice">
                   <Clock3 size={15} />
-                  Đang xem phiên bản {viewVersion.version_number}. Cấu hình hiện tại là phiên bản{' '}
+                  Viewing version {viewVersion.version_number}. Current configuration is version{' '}
                   {portfolio?.current_version}.
                   <button className="text-button" onClick={() => setViewVersion(null)}>
-                    Về hiện tại →
+                    Back to current →
                   </button>
                 </div>
               )}
@@ -720,18 +862,18 @@ export default function App() {
                 <div className="data-error" role="alert">
                   <CircleHelp size={22} />
                   <div>
-                    <strong>Chưa thể hoàn tất phân tích.</strong>
+                    <strong>Analysis could not be completed.</strong>
                     <p>{analysisError}</p>
                     <div>
                       <button
                         className="button outline small"
                         onClick={() => setRefresh(refresh + 1)}
                       >
-                        Thử lại
+                        Try again
                       </button>
                       {source === 'yahoo' && (
                         <button className="button primary small" onClick={() => setSource('demo')}>
-                          Chọn dữ liệu mô phỏng
+                          Use simulated data
                         </button>
                       )}
                     </div>
@@ -743,12 +885,12 @@ export default function App() {
                   <span className="empty-icon">
                     <ChartNoAxesCombined size={34} />
                   </span>
-                  <span className="eyebrow">BẮT ĐẦU TỪ ĐÂY</span>
-                  <h2>Một danh mục, nhiều góc nhìn.</h2>
-                  <p>Chọn tài sản, chia tỷ trọng và để dữ liệu kể phần còn lại.</p>
+                  <span className="eyebrow">START HERE</span>
+                  <h2>One portfolio. More perspective.</h2>
+                  <p>Choose your assets, set your weights, and explore the results.</p>
                   <button className="button primary" onClick={() => setDialog('create')}>
                     <Plus size={16} />
-                    Tạo danh mục đầu tiên
+                    Create your first portfolio
                   </button>
                 </div>
               ) : loading ? (
@@ -756,8 +898,8 @@ export default function App() {
                   <div className="loading-copy">
                     <LoaderCircle className="spin" size={17} />
                     {source === 'yahoo'
-                      ? 'Đang lấy giá lịch sử từ Yahoo Finance…'
-                      : 'Đang tính toán góc nhìn của bạn…'}
+                      ? 'Fetching historical prices from Yahoo Finance…'
+                      : 'Analyzing your portfolio…'}
                   </div>
                   <div className="skeleton-metrics">
                     {[0, 1, 2, 3].map((i) => (
@@ -771,6 +913,8 @@ export default function App() {
                 </div>
               ) : analysis ? (
                 <Dashboard
+                  presentation={preferences.presentation}
+                  controls={analysisControls}
                   page={activePage}
                   analysis={analysis}
                   layout={layout.config}
@@ -793,14 +937,14 @@ export default function App() {
                     />
                     <span>
                       {analysis.result.metadata.is_demo
-                        ? 'Dữ liệu mô phỏng'
-                        : 'Nguồn: Yahoo Finance'}{' '}
+                        ? 'Simulated data'
+                        : 'Source: Yahoo Finance'}{' '}
                       · {dateLabel(analysis.result.metadata.last_date)} ·{' '}
-                      {analysis.result.metadata.observations} phiên
+                      {analysis.result.metadata.observations} sessions
                     </span>
                   </div>
                   <span>
-                    Phiên bản {analysis.result.metadata.version_number} · USD · 252 phiên / năm
+                    Version {analysis.result.metadata.version_number} · USD · 252 sessions / year
                   </span>
                 </div>
               )}
@@ -808,29 +952,32 @@ export default function App() {
           )}
           <footer className="page-footer">
             <span>
-              doFiin<span> / </span>Góc nhìn rõ ràng, lựa chọn chủ động.
+              doFiin<span> / </span>Portfolio clarity, without the noise.
             </span>
-            <span>Demo 01 · Phân tích, không phải khuyến nghị đầu tư</span>
+            <span>Research and historical analysis · Illustrative data</span>
           </footer>
         </main>
-        <nav className="mobile-bottom-nav" aria-label="Điều hướng mobile">
-          {NAV.slice(0, 5).map((item) => (
-            <button
-              className={page === item.id ? 'active' : ''}
-              key={item.id}
-              onClick={() => navigate(item.id)}
-            >
-              <item.icon size={19} />
-              <span>{item.label}</span>
-            </button>
-          ))}
+        <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+          {visibleNav
+            .filter((item) => item.id !== 'subscription')
+            .map((item) => (
+              <NavLink
+                className={page === item.id ? 'active' : ''}
+                key={item.id}
+                to={'/' + item.id}
+                onClick={() => setMobileMenu(false)}
+              >
+                <item.icon size={19} />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
         </nav>
       </div>
       {toast && (
         <div className="toast" role="status">
           <Check size={16} />
           <span>{toast}</span>
-          <button aria-label="Đóng thông báo" onClick={() => setToast('')}>
+          <button aria-label="Dismiss notification" onClick={() => setToast('')}>
             <X size={14} />
           </button>
         </div>
@@ -855,59 +1002,59 @@ export default function App() {
           portfolio={portfolio}
           onView={(version) => {
             setViewVersion(version);
-            notify('Đang phân tích phiên bản ' + version.version_number);
+            notify('Analyzing version' + version.version_number);
           }}
           onClose={() => setDialog(null)}
         />
       )}
       {dialog === 'archive' && portfolio && (
-        <Modal title="Lưu trữ danh mục?" subtitle={portfolio.name} onClose={() => setDialog(null)}>
+        <Modal title="Archive portfolio?" subtitle={portfolio.name} onClose={() => setDialog(null)}>
           <p>
-            Danh mục sẽ được ẩn khỏi danh sách đang hoạt động. Lịch sử cấu hình và kết quả phân tích
-            vẫn được giữ trong cơ sở dữ liệu.
+            The portfolio will be hidden from your active list. Its configuration and analysis
+            history will be preserved.
           </p>
           <div className="modal-actions">
             <button className="button outline" onClick={() => setDialog(null)}>
-              Giữ lại
+              Keep portfolio
             </button>
             <button className="button danger" disabled={archiveBusy} onClick={() => void archive()}>
-              {archiveBusy ? <LoaderCircle className="spin" size={15} /> : <Archive size={15} />}Lưu
-              trữ
+              {archiveBusy ? <LoaderCircle className="spin" size={15} /> : <Archive size={15} />}
+              Archive
             </button>
           </div>
         </Modal>
       )}
       {dialog === 'help' && (
         <Modal
-          title="Đọc danh mục theo từng góc nhìn."
-          subtitle="Một vài khái niệm giúp bạn bắt đầu."
+          title="Understand your portfolio from every angle."
+          subtitle="A few concepts to get you started."
           onClose={() => setDialog(null)}
         >
           <div className="help-grid">
             {[
               [
-                'Lợi nhuận',
-                'Mức tăng hoặc giảm trong khoảng đã chọn. Chỉ số 100 đầu kỳ giúp so sánh hai đường tăng trưởng.',
+                'Return',
+                'Gain or loss over the selected period. An initial index of 100 makes growth comparable.',
               ],
               [
                 'Benchmark SPY',
-                'ETF tham chiếu cho thị trường cổ phiếu Mỹ; dùng cùng nguồn dữ liệu với danh mục.',
+                'A benchmark ETF for US equities, using the same data source as your portfolio.',
               ],
               [
                 'Drawdown',
-                'Mức giảm từ đỉnh đã đạt được. Không phải dự đoán khoản lỗ tối đa tương lai.',
+                'Decline from a previous peak. It does not predict maximum future losses.',
               ],
               [
                 'Sharpe ratio',
-                'Lợi nhuận vượt lãi suất tham chiếu so với biến động. Demo dùng risk-free 2%/năm.',
+                'Return above the risk-free rate divided by volatility. The current model uses a 2% annual risk-free rate.',
               ],
               [
                 'Backtest',
-                'Mô phỏng một chiến lược trên dữ liệu quá khứ, có giả định khớp lệnh, phí và slippage.',
+                'Historical strategy simulation with explicit execution, fee, and slippage assumptions.',
               ],
               [
-                'Nguồn dữ liệu',
-                'Dữ liệu mô phỏng để trình bày ổn định. Yahoo Finance cần kết nối mạng và có thể trả lỗi.',
+                'Data source',
+                'Simulated data for demonstration. Yahoo Finance requires an internet connection and can fail.',
               ],
             ].map(([title, text]) => (
               <div key={title}>
@@ -917,28 +1064,28 @@ export default function App() {
             ))}
           </div>
           <button className="button primary full" onClick={() => setDialog(null)}>
-            Đã hiểu
+            Got it
             <ArrowRight size={15} />
           </button>
         </Modal>
       )}
       {dialog === 'optimize' && (
         <Modal
-          title="Thử tối ưu Sharpe"
-          subtitle="Tìm phân bổ dựa trên lợi nhuận và hiệp phương sai trong quá khứ."
+          title="View simulation"
+          subtitle="Explore allocations using historical returns and covariance."
           onClose={() => setDialog(null)}
         >
           {optBusy ? (
             <div className="empty-chart">
               <LoaderCircle className="spin" size={26} />
-              <p>Đang tính toán…</p>
+              <p>Calculating…</p>
             </div>
           ) : optimization ? (
             <>
               <div className="optimization-summary">
                 <Sparkles size={21} />
                 <span>
-                  Sharpe ước lượng theo mô hình
+                  Estimated Sharpe ratio
                   <strong>{number(optimization.estimated_sharpe)}</strong>
                 </span>
               </div>
@@ -951,20 +1098,20 @@ export default function App() {
                 ))}
               </div>
               <p className="small-note">
-                {optimization.warning} Trần mỗi tài sản:{' '}
-                {optimization.weights.length === 1 ? '100%' : '80%'}. Lưu sẽ tạo phiên bản mới,
-                không thay đổi lịch sử.
+                {optimization.warning} Maximum per asset:{' '}
+                {optimization.weights.length === 1 ? '100%' : '80%'}. Saving creates a new version
+                and preserves your history.
               </p>
               <div className="modal-actions">
                 <button className="button outline" onClick={() => setDialog(null)}>
-                  Đóng
+                  Close
                 </button>
                 <button
                   className="button primary"
                   disabled={optBusy}
                   onClick={() => void applyOptimization()}
                 >
-                  Lưu thành phiên bản mới
+                  Save as new version
                   <ArrowRight size={15} />
                 </button>
               </div>
@@ -975,6 +1122,8 @@ export default function App() {
       )}
       {studio && analysis && (
         <Studio
+          preferences={preferences}
+          onPreferencesSaved={savePreferences}
           page={activePage}
           analysis={analysis}
           backtest={backtest}
@@ -983,7 +1132,7 @@ export default function App() {
           onClose={() => setStudio(false)}
           onSaved={(result) => {
             setLayouts((previous) => ({ ...previous, [activePage]: result }));
-            notify('Đã lưu bố cục Studio cho tài khoản của bạn.');
+            notify('Studio layout saved to your account.');
           }}
         />
       )}

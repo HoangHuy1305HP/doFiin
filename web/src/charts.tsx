@@ -18,7 +18,7 @@ import {
 import { number } from './api';
 import type { Point, Factor } from './types';
 
-export const COLORS = ['#245947', '#99B972', '#C8D9B3', '#789F9C', '#d9cba2', '#99a5c1'];
+export const COLORS = ['#163d32', '#94ae58', '#c49a3b', '#789f9c', '#d9cba2', '#99a5c1'];
 type ChartProps = {
   data: Point[];
   lines: { key: string; name: string; color: string }[];
@@ -48,7 +48,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
           <XAxis
             dataKey="date"
             tickFormatter={(value) =>
-              new Date(value + 'T12:00:00').toLocaleDateString('vi-VN', {
+              new Date(value + 'T12:00:00').toLocaleDateString('en-US', {
                 month: 'short',
                 year: '2-digit',
               })
@@ -74,13 +74,13 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
               border: 0,
               borderRadius: 8,
               color: '#fff',
-              fontFamily: 'Source Sans 3',
+              fontFamily: 'Geist',
               fontSize: 13,
             }}
             labelStyle={{ color: '#d4e2d7' }}
             itemStyle={{ color: '#fff' }}
             labelFormatter={(value) =>
-              new Date(String(value) + 'T12:00:00').toLocaleDateString('vi-VN')
+              new Date(String(value) + 'T12:00:00').toLocaleDateString('en-US')
             }
             formatter={(value) => formatter(Number(value))}
           />
@@ -141,8 +141,10 @@ export function AllocationChart({ factors }: { factors: Factor[] }) {
         </PieChart>
       </ResponsiveContainer>
       <div className="donut-center">
-        <strong>{factors.length}</strong>
-        <span>tài sản</span>
+        <strong>
+          {number(factors.reduce((total, asset) => total + asset.weight, 0) * 100, 0)}%
+        </strong>
+        <span>stocks</span>
       </div>
     </div>
   );
@@ -187,7 +189,7 @@ export function FactorChart({
           <ReferenceLine x={0} stroke="#b8c4b8" />
           <Bar
             dataKey="value"
-            name={metric === 'beta' ? 'Beta so với SPY' : 'Momentum 12–1'}
+            name={metric === 'beta' ? 'Beta vs SPY' : 'Momentum 12–1'}
             barSize={19}
             radius={[0, 3, 3, 0]}
             isAnimationActive={false}

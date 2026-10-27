@@ -1,0 +1,5229 @@
+{
+  "fileKey": "IxKrGVeRozzDYMJTYCe9SU",
+  "source": "English native SVG sources, Studio v2; checked against Chrome Figma on 2026-10-26",
+  "frames": [
+    {
+      "name": "01 · Portfolio · Desktop",
+      "width": 1440.0,
+      "height": 1878.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio overview"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "ANALYSIS · 1Y"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 47.52,
+          "weight": 700,
+          "example": "Know your portfolio,"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Your portfolio beat SPY by 1.7 pp. AAPL has the largest weight (40%)."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Portfolio return ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 52.0,
+          "weight": 700,
+          "example": "-0.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "+1.7% vs SPY"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.0,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Jul 11, 2024 —"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "100%"
+        },
+        {
+          "family": "Geist",
+          "size": 15.49,
+          "weight": 700,
+          "example": "40.0%"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "25.0%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "A smarter allocation to explore"
+        }
+      ]
+    },
+    {
+      "name": "01 · Portfolio · Tablet",
+      "width": 834.0,
+      "height": 1995.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio overview"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "ANALYSIS · 1Y"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.455,
+          "weight": 700,
+          "example": "Know your portfolio,"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Your portfolio beat SPY by 1.7 pp. The largest weight"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Portfolio return ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 41.989999999999995,
+          "weight": 700,
+          "example": "-0.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "+1.7% vs SPY"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 26.647499999999997,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Jul 11, 2024 —"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "100%"
+        },
+        {
+          "family": "Geist",
+          "size": 15.49,
+          "weight": 700,
+          "example": "40.0%"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "25.0%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "A smarter allocation"
+        }
+      ]
+    },
+    {
+      "name": "01 · Portfolio · Mobile",
+      "width": 390.0,
+      "height": 2351.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 11.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 19.0,
+          "weight": 700,
+          "example": "Portfolio overview"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "1Y ▾"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "ANALYSIS · 1Y"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "Know your portfolio,"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Portfolio return ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 43.0,
+          "weight": 700,
+          "example": "-0.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "+1.7% vs SPY"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 23.0,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Jul 11, 2024 —"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Geist",
+          "size": 9.82,
+          "weight": 400,
+          "example": "sessions"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "100%"
+        },
+        {
+          "family": "Geist",
+          "size": 13.07,
+          "weight": 700,
+          "example": "40.0%"
+        },
+        {
+          "family": "Geist",
+          "size": 13.12,
+          "weight": 700,
+          "example": "25.0%"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "AAPL"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "A smarter allocation"
+        },
+        {
+          "family": "Geist",
+          "size": 13.47,
+          "weight": 400,
+          "example": "Highest Sharpe in the simulated grid. Each asset is"
+        }
+      ]
+    },
+    {
+      "name": "01 · Portfolio · Studio Desktop",
+      "width": 1600.0,
+      "height": 1100.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Desktop"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Layout"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Add widget"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "OVERVIEW · FIXED"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "◉"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Current weights"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio overview"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 47.52,
+          "weight": 700,
+          "example": "Know your portfolio,"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Your portfolio beat SPY by 1.7 pp. AAPL has the largest weight (40%)."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 52.0,
+          "weight": 700,
+          "example": "-0.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "+1.7% vs SPY"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.0,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "100%"
+        },
+        {
+          "family": "Geist",
+          "size": 15.49,
+          "weight": 700,
+          "example": "40.0%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "A smarter allocation to explore"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "+ Add Menu"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "DISPLAY CONTENT"
+        }
+      ]
+    },
+    {
+      "name": "01 · Portfolio · Studio Tablet",
+      "width": 1194.0,
+      "height": 834.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Tablet"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "+"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TABLET · 834 px"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Portfolio page layout"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio overview"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "ANALYSIS · 1Y"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.455,
+          "weight": 700,
+          "example": "Know your portfolio,"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Your portfolio beat SPY by 1.7 pp. The largest weight"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Portfolio return ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 41.989999999999995,
+          "weight": 700,
+          "example": "-0.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "+1.7% vs SPY"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 26.647499999999997,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "100%"
+        },
+        {
+          "family": "Geist",
+          "size": 15.49,
+          "weight": 700,
+          "example": "40.0%"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "25.0%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "A smarter allocation"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WIDGET SETTINGS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Primary"
+        }
+      ]
+    },
+    {
+      "name": "01 · Portfolio · Studio Mobile",
+      "width": 390.0,
+      "height": 1020.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 30.0,
+          "weight": 700,
+          "example": "‹"
+        },
+        {
+          "family": "Geist",
+          "size": 19.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 400,
+          "example": "↶  ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Save"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Portfolio · Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Cumulative growth"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Function"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Title"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Legend"
+        }
+      ]
+    },
+    {
+      "name": "02 · Risk · Desktop",
+      "width": 1440.0,
+      "height": 1064.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Risk"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Risk, from every angle."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Portfolio volatility is moderate, but high asset correlation can reduce"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Annualized volatility ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.0,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Relationships between assets"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "AAPL"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Change since"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Drawdown"
+        }
+      ]
+    },
+    {
+      "name": "02 · Risk · Tablet",
+      "width": 834.0,
+      "height": 1194.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Risk"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Risk, from every angle."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Portfolio volatility is moderate, but high correlation between"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Annualized volatility ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 26.647499999999997,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.11,
+          "weight": 700,
+          "example": "Relationships between assets"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "AAPL"
+        },
+        {
+          "family": "Geist",
+          "size": 15.31,
+          "weight": 400,
+          "example": "0.84"
+        },
+        {
+          "family": "Geist",
+          "size": 15.39,
+          "weight": 400,
+          "example": "0.78"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Drawdown over time"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Change since"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Drawdown"
+        }
+      ]
+    },
+    {
+      "name": "02 · Risk · Mobile",
+      "width": 390.0,
+      "height": 1499.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 11.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 19.0,
+          "weight": 700,
+          "example": "Risk"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "1Y ▾"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "Risk, from every angle."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Annualized volatility ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 23.0,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Relationships between assets"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "AAPL"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Change since"
+        },
+        {
+          "family": "Geist",
+          "size": 9.82,
+          "weight": 400,
+          "example": "sessions"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Drawdown"
+        }
+      ]
+    },
+    {
+      "name": "02 · Risk · Studio Desktop",
+      "width": 1600.0,
+      "height": 1100.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Risk"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Desktop"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Layout"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Add widget"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "OVERVIEW · FIXED"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Risk metrics"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "◉"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Drawdown over time"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Risk"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Risk, from every angle."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Portfolio volatility is moderate, but high asset correlation can reduce"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.0,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Relationships between assets"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "AAPL"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Change since"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Drawdown over time"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "DISPLAY CONTENT"
+        }
+      ]
+    },
+    {
+      "name": "02 · Risk · Studio Tablet",
+      "width": 1194.0,
+      "height": 834.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Risk"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Tablet"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "+"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TABLET · 834 px"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Risk page layout"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Risk"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Risk, from every angle."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "Portfolio volatility is moderate, but high correlation between"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Annualized volatility ?"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 26.647499999999997,
+          "weight": 700,
+          "example": "12.9%"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.11,
+          "weight": 700,
+          "example": "Relationships between assets"
+        },
+        {
+          "family": "Geist",
+          "size": 15.31,
+          "weight": 400,
+          "example": "0.84"
+        },
+        {
+          "family": "Geist",
+          "size": 15.39,
+          "weight": 400,
+          "example": "0.78"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Drawdown over time"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Change since"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WIDGET SETTINGS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Drawdown over time"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Primary"
+        }
+      ]
+    },
+    {
+      "name": "02 · Risk · Studio Mobile",
+      "width": 390.0,
+      "height": 1020.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 30.0,
+          "weight": 700,
+          "example": "‹"
+        },
+        {
+          "family": "Geist",
+          "size": 19.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 400,
+          "example": "↶  ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Save"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Risk · Drawdown over time"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Drawdown over time"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Function"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Title"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Legend"
+        }
+      ]
+    },
+    {
+      "name": "03 · Signals · Desktop",
+      "width": 1440.0,
+      "height": 1189.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Signals"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Signals give context, not instructions."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "NVDA’s short-term moving average is compared with long-term trends to describe"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "MA20 /"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Simulated price index"
+        },
+        {
+          "family": "Geist",
+          "size": 7.94,
+          "weight": 700,
+          "example": "Bullish"
+        },
+        {
+          "family": "Geist",
+          "size": 14.46,
+          "weight": 400,
+          "example": "Rule: Bullish when MA20 exceeds MA60 by 0.5%; Bearish when below by"
+        }
+      ]
+    },
+    {
+      "name": "03 · Signals · Tablet",
+      "width": 834.0,
+      "height": 1259.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Signals"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Signals give context,"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "NVDA’s short-term moving average is compared with long-term"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "MA20 /"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Simulated price index"
+        },
+        {
+          "family": "Geist",
+          "size": 7.94,
+          "weight": 700,
+          "example": "Bullish"
+        },
+        {
+          "family": "Geist",
+          "size": 12.72,
+          "weight": 400,
+          "example": "above MA60 by 0.5%; Bearish when"
+        }
+      ]
+    },
+    {
+      "name": "03 · Signals · Mobile",
+      "width": 390.0,
+      "height": 1326.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 11.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 19.0,
+          "weight": 700,
+          "example": "Signals"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "1Y ▾"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "Signals give context,"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "MA20 /"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Simulated price index"
+        },
+        {
+          "family": "Geist",
+          "size": 9.82,
+          "weight": 400,
+          "example": "sessions"
+        },
+        {
+          "family": "Geist",
+          "size": 7.94,
+          "weight": 700,
+          "example": "Bullish"
+        }
+      ]
+    },
+    {
+      "name": "03 · Signals · Studio Desktop",
+      "width": 1600.0,
+      "height": 1100.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Signals"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Desktop"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Layout"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Add widget"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "OVERVIEW · FIXED"
+        },
+        {
+          "family": "Geist",
+          "size": 10.64,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "◉"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Signal history"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Signals"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Signals give context, not instructions."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "NVDA’s short-term moving average is compared with long-term trends to describe"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Simulated price index"
+        },
+        {
+          "family": "Geist",
+          "size": 7.94,
+          "weight": 700,
+          "example": "Bullish"
+        },
+        {
+          "family": "Geist",
+          "size": 14.46,
+          "weight": 400,
+          "example": "Rule: Bullish when MA20 exceeds MA60 by 0.5%; Bearish when below by"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "+ Add Menu"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "DISPLAY CONTENT"
+        }
+      ]
+    },
+    {
+      "name": "03 · Signals · Studio Tablet",
+      "width": 1194.0,
+      "height": 834.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Signals"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Tablet"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "+"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TABLET · 834 px"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Signals page layout"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Signals"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Signals give context,"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "NVDA’s short-term moving average is compared with long-term"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Simulated price index"
+        },
+        {
+          "family": "Geist",
+          "size": 7.94,
+          "weight": 700,
+          "example": "Bullish"
+        },
+        {
+          "family": "Geist",
+          "size": 12.72,
+          "weight": 400,
+          "example": "above MA60 by 0.5%; Bearish when"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WIDGET SETTINGS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Primary"
+        }
+      ]
+    },
+    {
+      "name": "03 · Signals · Studio Mobile",
+      "width": 390.0,
+      "height": 1020.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 30.0,
+          "weight": 700,
+          "example": "‹"
+        },
+        {
+          "family": "Geist",
+          "size": 19.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 400,
+          "example": "↶  ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Save"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Signals · Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Moving average crossover"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Function"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Title"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Legend"
+        }
+      ]
+    },
+    {
+      "name": "04 · Backtest · Desktop",
+      "width": 1440.0,
+      "height": 1158.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Backtest"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Backtest a simple rule."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "See how the switching strategy responds to trends and"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "In-sample historical simulation"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Static"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "+27.4%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "Volatility 13.1%"
+        }
+      ]
+    },
+    {
+      "name": "04 · Backtest · Tablet",
+      "width": 834.0,
+      "height": 1254.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Backtest"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Backtest a"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "See how the switching strategy responds"
+        },
+        {
+          "family": "Geist",
+          "size": 14.2,
+          "weight": 700,
+          "example": "Historical simulation"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "in-sample"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Static"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "+27.4%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "Volatility 13.1%"
+        }
+      ]
+    },
+    {
+      "name": "04 · Backtest · Mobile",
+      "width": 390.0,
+      "height": 1536.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 11.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 19.0,
+          "weight": 700,
+          "example": "Backtest"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "1Y ▾"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "Backtest a simple"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "In-sample historical simulation"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Geist",
+          "size": 9.82,
+          "weight": 400,
+          "example": "sessions"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Static"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "+27.4%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "Volatility 13.1%"
+        },
+        {
+          "family": "Geist",
+          "size": 13.45,
+          "weight": 400,
+          "example": "The rule uses a 40-session trend and volatility over"
+        }
+      ]
+    },
+    {
+      "name": "04 · Backtest · Studio Desktop",
+      "width": 1600.0,
+      "height": 1100.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Backtest"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Desktop"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Layout"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Add widget"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "OVERVIEW · FIXED"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "◉"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Return distribution"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Backtest"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Backtest a simple rule."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "See how the switching strategy responds to trends and"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "+27.4%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "Volatility 13.1%"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "+ Add Menu"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "DISPLAY CONTENT"
+        }
+      ]
+    },
+    {
+      "name": "04 · Backtest · Studio Tablet",
+      "width": 1194.0,
+      "height": 834.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Backtest"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Tablet"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "+"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TABLET · 834 px"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Backtest page layout"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Backtest"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Backtest a"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "See how the switching strategy responds"
+        },
+        {
+          "family": "Geist",
+          "size": 14.2,
+          "weight": 700,
+          "example": "Historical simulation"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "in-sample"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Cumulative"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "+27.4%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.8,
+          "weight": 400,
+          "example": "Volatility 13.1%"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WIDGET SETTINGS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Primary"
+        }
+      ]
+    },
+    {
+      "name": "04 · Backtest · Studio Mobile",
+      "width": 390.0,
+      "height": 1020.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 30.0,
+          "weight": 700,
+          "example": "‹"
+        },
+        {
+          "family": "Geist",
+          "size": 19.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 400,
+          "example": "↶  ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Save"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Backtest · Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Growth comparison"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Function"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Title"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Legend"
+        }
+      ]
+    },
+    {
+      "name": "05 · Factors · Desktop",
+      "width": 1440.0,
+      "height": 1000.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Factors"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Understand what drives returns."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "ETFs and VIX serve as simple proxies for sensitivity, without proving"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "1.08"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 52.0,
+          "weight": 700,
+          "example": "+9.9%"
+        }
+      ]
+    },
+    {
+      "name": "05 · Factors · Tablet",
+      "width": 834.0,
+      "height": 1194.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Factors"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Understand what"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "ETFs and VIX serve as simple proxies for sensitivity,"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "1.08"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 41.989999999999995,
+          "weight": 700,
+          "example": "+9.9%"
+        },
+        {
+          "family": "Geist",
+          "size": 14.76,
+          "weight": 400,
+          "example": "Annualized alpha, assuming"
+        }
+      ]
+    },
+    {
+      "name": "05 · Factors · Mobile",
+      "width": 390.0,
+      "height": 1279.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 11.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 19.0,
+          "weight": 700,
+          "example": "Factors"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "1Y ▾"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "Understand what"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Market · SPY"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "1.08"
+        },
+        {
+          "family": "Geist",
+          "size": 15.32,
+          "weight": 700,
+          "example": "0.84"
+        },
+        {
+          "family": "Geist",
+          "size": 13.05,
+          "weight": 700,
+          "example": "-0.22"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "+9.9%"
+        },
+        {
+          "family": "Geist",
+          "size": 15.07,
+          "weight": 400,
+          "example": "Annualized alpha, assuming a risk-free rate"
+        },
+        {
+          "family": "Geist",
+          "size": 15.32,
+          "weight": 400,
+          "example": "SPY represents the market, QQQ represents"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Portfolio"
+        }
+      ]
+    },
+    {
+      "name": "05 · Factors · Studio Desktop",
+      "width": 1600.0,
+      "height": 1100.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Factors"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Desktop"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Layout"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Add widget"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "OVERVIEW · FIXED"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "◉"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "CAPM and momentum"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Factors"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Understand what drives returns."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "ETFs and VIX serve as simple proxies for sensitivity, without proving"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 52.0,
+          "weight": 700,
+          "example": "+9.9%"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "+ Add Menu"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "DISPLAY CONTENT"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Title"
+        }
+      ]
+    },
+    {
+      "name": "05 · Factors · Studio Tablet",
+      "width": 1194.0,
+      "height": 834.0,
+      "typography": [
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Factors"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Tablet"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "↶   ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 23.0,
+          "weight": 400,
+          "example": "+"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TABLET · 834 px"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Factors page layout"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 14.0,
+          "weight": 700,
+          "example": "df"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 16.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "● Simulated data"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Factors"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "PORTFOLIO ANALYTICS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 33.915,
+          "weight": 700,
+          "example": "Understand what"
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 400,
+          "example": "ETFs and VIX serve as simple proxies for sensitivity,"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "1.08"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 41.989999999999995,
+          "weight": 700,
+          "example": "+9.9%"
+        },
+        {
+          "family": "Geist",
+          "size": 14.76,
+          "weight": 400,
+          "example": "Annualized alpha, assuming"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WIDGET SETTINGS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Title"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "Primary"
+        }
+      ]
+    },
+    {
+      "name": "05 · Factors · Studio Mobile",
+      "width": 390.0,
+      "height": 1020.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 30.0,
+          "weight": 700,
+          "example": "‹"
+        },
+        {
+          "family": "Geist",
+          "size": 19.0,
+          "weight": 700,
+          "example": "doFiin / Studio"
+        },
+        {
+          "family": "Geist",
+          "size": 20.0,
+          "weight": 400,
+          "example": "↶  ↷"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Save"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Factors · Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "NAVIGATION MENU"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "Drag to reorder · × to remove"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Proxy sensitivity"
+        },
+        {
+          "family": "Geist",
+          "size": 22.0,
+          "weight": 400,
+          "example": "×"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Function"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "Title"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Legend"
+        }
+      ]
+    },
+    {
+      "name": "06 · Subscription · Desktop",
+      "width": 1440.0,
+      "height": 1480.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "WORKSPACE"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Plans"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Personal account"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 40.0,
+          "weight": 700,
+          "example": "More perspective. More control."
+        },
+        {
+          "family": "Geist",
+          "size": 17.0,
+          "weight": 400,
+          "example": "Find a plan for the way you invest. Start free, upgrade when needed."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "YOUR PLAN"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "Free · No cost"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "No upcoming payments."
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Portfolios used"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "1 / 1"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 23.0,
+          "weight": 700,
+          "example": "Free"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 34.0,
+          "weight": 700,
+          "example": "₫0"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 25.0,
+          "weight": 700,
+          "example": "Choose the support you need."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Familiar tools. More room for analysis."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 22.0,
+          "weight": 700,
+          "example": "A few things to know."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Can I change plans at any time?"
+        }
+      ]
+    },
+    {
+      "name": "06 · Subscription · Tablet",
+      "width": 834.0,
+      "height": 1560.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TT"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "SUBSCRIPTION"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "More perspective. More control."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Find a plan for the way you invest. Start free, upgrade when needed."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "YOUR PLAN"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "Free · No cost"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "No upcoming payments."
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Portfolios used"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "1 / 1"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Monthly"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Yearly"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 23.0,
+          "weight": 700,
+          "example": "Free"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 31.0,
+          "weight": 700,
+          "example": "₫0"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "/ month · billed monthly"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 22.0,
+          "weight": 700,
+          "example": "A few things to know."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Can I change plans at any time?"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Need help choosing? Contact doFiin ↗"
+        }
+      ]
+    },
+    {
+      "name": "06 · Subscription · Mobile",
+      "width": 390.0,
+      "height": 2248.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TT"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "SUBSCRIPTION"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 28.0,
+          "weight": 700,
+          "example": "More perspective."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Find a plan for the way you invest."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "YOUR PLAN"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "Free · No cost"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "1 / 1 portfolios used"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "No upcoming payments."
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Monthly"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Yearly"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 23.0,
+          "weight": 700,
+          "example": "Free"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 34.0,
+          "weight": 700,
+          "example": "₫0"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "/ month · billed monthly"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 20.0,
+          "weight": 700,
+          "example": "Every plan includes"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 22.0,
+          "weight": 700,
+          "example": "A few things to know."
+        }
+      ]
+    },
+    {
+      "name": "07 · Sign in · Desktop",
+      "width": 1440.0,
+      "height": 1024.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "KNOW YOUR PORTFOLIO. INVEST WITH INTENT."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "A clearer perspective."
+        },
+        {
+          "family": "Geist",
+          "size": 17.0,
+          "weight": 400,
+          "example": "Track performance, understand risk"
+        },
+        {
+          "family": "Geist",
+          "size": 9.78,
+          "weight": 700,
+          "example": "The full picture"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 25.0,
+          "weight": 700,
+          "example": "Performance and risk,"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Insight for every investment decision."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WELCOME BACK"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 31.0,
+          "weight": 700,
+          "example": "Sign in to doFiin."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Continue exploring your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Continue with Google"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "or"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Email"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Forgot password?"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Sign up free →"
+        }
+      ]
+    },
+    {
+      "name": "07 · Sign in · Tablet",
+      "width": 834.0,
+      "height": 1194.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "KNOW YOUR PORTFOLIO. INVEST WITH INTENT."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WELCOME BACK"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 31.0,
+          "weight": 700,
+          "example": "Sign in to doFiin."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Continue exploring your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Continue with Google"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "or"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Email"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "you@example.com"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Forgot password?"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Sign up free →"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Your data stays private."
+        }
+      ]
+    },
+    {
+      "name": "07 · Sign in · Mobile",
+      "width": 390.0,
+      "height": 844.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "WELCOME BACK"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "Sign in to doFiin."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Continue exploring your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Continue with Google"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "or"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Email"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "you@example.com"
+        },
+        {
+          "family": "Geist",
+          "size": 11.94,
+          "weight": 700,
+          "example": "Forgot password?"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "© 2026 doFiin"
+        }
+      ]
+    },
+    {
+      "name": "08 · Sign up · Desktop",
+      "width": 1440.0,
+      "height": 1024.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "KNOW YOUR PORTFOLIO. INVEST WITH INTENT."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "A clearer perspective."
+        },
+        {
+          "family": "Geist",
+          "size": 17.0,
+          "weight": 400,
+          "example": "Track performance, understand risk"
+        },
+        {
+          "family": "Geist",
+          "size": 9.78,
+          "weight": 700,
+          "example": "The full picture"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 25.0,
+          "weight": 700,
+          "example": "Performance and risk,"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Insight for every investment decision."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "CREATE ACCOUNT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 31.0,
+          "weight": 700,
+          "example": "Get started with doFiin."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Create an account to track your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Continue with Google"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "or"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Full name"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "and Privacy Policy."
+        },
+        {
+          "family": "Geist",
+          "size": 9.98,
+          "weight": 400,
+          "example": "Already have an account?"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Sign in →"
+        }
+      ]
+    },
+    {
+      "name": "08 · Sign up · Tablet",
+      "width": 834.0,
+      "height": 1194.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "KNOW YOUR PORTFOLIO. INVEST WITH INTENT."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "CREATE ACCOUNT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 31.0,
+          "weight": 700,
+          "example": "Get started with doFiin."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Create an account to track your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Continue with Google"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "or"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Full name"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Your name"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "At least 8 characters, with letters and numbers."
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "and Privacy Policy."
+        },
+        {
+          "family": "Geist",
+          "size": 9.98,
+          "weight": 400,
+          "example": "Already have an account?"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Sign in →"
+        }
+      ]
+    },
+    {
+      "name": "08 · Sign up · Mobile",
+      "width": 390.0,
+      "height": 980.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "CREATE ACCOUNT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "Get started with doFiin."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Create an account to track your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Continue with Google"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "or"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Full name"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Your name"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "and Privacy Policy."
+        },
+        {
+          "family": "Geist",
+          "size": 9.14,
+          "weight": 400,
+          "example": "Already have an account?"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "© 2026 doFiin"
+        }
+      ]
+    },
+    {
+      "name": "09 · Account · Desktop",
+      "width": 1440.0,
+      "height": 1460.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "WORKSPACE"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Plans"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Personal account"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Help ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "MA"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 38.0,
+          "weight": 700,
+          "example": "Your own space."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Manage your profile, sign-in and data display preferences."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 20.0,
+          "weight": 700,
+          "example": "Personal profile"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Details shown in your account."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 700,
+          "example": "MA"
+        },
+        {
+          "family": "Geist",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Nguyễn Minh An"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Change avatar ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Save changes"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "CURRENT PLAN"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 28.0,
+          "weight": 700,
+          "example": "Free"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Need help?"
+        }
+      ]
+    },
+    {
+      "name": "09 · Account · Tablet",
+      "width": 834.0,
+      "height": 1660.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TT"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "ACCOUNT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 34.0,
+          "weight": 700,
+          "example": "Your own space."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Manage your profile and preferences."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 20.0,
+          "weight": 700,
+          "example": "Personal profile"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Details shown in your account."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 700,
+          "example": "MA"
+        },
+        {
+          "family": "Geist",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Nguyễn Minh An"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Change avatar ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Full name"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Nguyễn Minh An"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Email managed by your linked Google account."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Save changes"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "Connected"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Password"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 28.0,
+          "weight": 700,
+          "example": "Free"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Need help?"
+        }
+      ]
+    },
+    {
+      "name": "09 · Account · Mobile",
+      "width": 390.0,
+      "height": 2040.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 24.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "TT"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "ACCOUNT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "Your own space."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Manage your profile and preferences."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 20.0,
+          "weight": 700,
+          "example": "Personal profile"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Details shown in your account."
+        },
+        {
+          "family": "Geist",
+          "size": 18.0,
+          "weight": 700,
+          "example": "MA"
+        },
+        {
+          "family": "Geist",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Nguyễn Minh An"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Change avatar ↗"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Full name"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Nguyễn Minh An"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Email managed by Google"
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 700,
+          "example": "Save changes"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "Connected"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 700,
+          "example": "Password"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 28.0,
+          "weight": 700,
+          "example": "Free"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "© 2026 doFiin · Privacy · Terms"
+        }
+      ]
+    },
+    {
+      "name": "00 · Landing · Desktop",
+      "width": 1440.0,
+      "height": 2933.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 22.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Product"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Start free →"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "CLARITY FOR EVERY INVESTMENT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 76.0,
+          "weight": 700,
+          "example": "Know your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 19.0,
+          "weight": 400,
+          "example": "Understand performance, explore risk, and test strategies."
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Free to start. No card required."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "doFiin / Portfolio overview"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 400,
+          "example": "TOTAL RETURN"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "+12.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio growth"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 44.0,
+          "weight": 700,
+          "example": "The whole picture."
+        },
+        {
+          "family": "Geist",
+          "size": 17.0,
+          "weight": 400,
+          "example": "Five connected views. Built around your portfolio."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "Performance & risk"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 36.0,
+          "weight": 700,
+          "example": "From holdings to insight."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Build your portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Choose assets and set your weights."
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "YOUR WORKSPACE, YOUR WAY"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 40.0,
+          "weight": 700,
+          "example": "A clearer view."
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Reorder widgets and adjust the layout."
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "SECTIONS"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 38.0,
+          "weight": 700,
+          "example": "Start simple. Grow your perspective."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Choose the space you need for your analysis."
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Get started"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 700,
+          "example": "MOST POPULAR"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 42.0,
+          "weight": 700,
+          "example": "Your portfolio. A fresh perspective."
+        }
+      ]
+    },
+    {
+      "name": "00 · Landing · Tablet",
+      "width": 834.0,
+      "height": 3279.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 22.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Product"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Start free →"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "CLARITY FOR EVERY INVESTMENT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 52.0,
+          "weight": 700,
+          "example": "Know your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 16.0,
+          "weight": 400,
+          "example": "Understand performance, explore risk, and test strategies."
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Free to start. No card required."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "doFiin / Portfolio overview"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 400,
+          "example": "TOTAL RETURN"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "+12.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio growth"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 36.0,
+          "weight": 700,
+          "example": "The whole picture."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 19.0,
+          "weight": 700,
+          "example": "Performance & risk"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Growth, allocation, volatility,"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 21.0,
+          "weight": 700,
+          "example": "Factors & optimization"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 32.0,
+          "weight": 700,
+          "example": "From holdings to insight."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Build"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "YOUR WORKSPACE, YOUR WAY"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "SECTIONS"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "Portfolio growth"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 38.0,
+          "weight": 700,
+          "example": "Start simple. Grow your perspective."
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Get started"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 700,
+          "example": "MOST POPULAR"
+        },
+        {
+          "family": "Geist",
+          "size": 15.0,
+          "weight": 400,
+          "example": "Start building a clearer picture today."
+        }
+      ]
+    },
+    {
+      "name": "00 · Landing · Mobile",
+      "width": 390.0,
+      "height": 4630.0,
+      "typography": [
+        {
+          "family": "Space Grotesk",
+          "size": 22.0,
+          "weight": 700,
+          "example": "doFiin"
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 400,
+          "example": "CLARITY FOR EVERY INVESTMENT"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 35.0,
+          "weight": 700,
+          "example": "Know your portfolio."
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 400,
+          "example": "Understand performance, explore risk,"
+        },
+        {
+          "family": "Geist",
+          "size": 14.0,
+          "weight": 700,
+          "example": "Start your free portfolio →"
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 400,
+          "example": "doFiin / Portfolio overview"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 18.0,
+          "weight": 700,
+          "example": "Your portfolio, at a glance."
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 400,
+          "example": "Sample portfolio · AAPL / MSFT / NVDA"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 400,
+          "example": "TOTAL RETURN"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 20.0,
+          "weight": 700,
+          "example": "+12.8%"
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 700,
+          "example": "Portfolio growth"
+        },
+        {
+          "family": "Geist",
+          "size": 9.0,
+          "weight": 700,
+          "example": "Portfolio"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 29.0,
+          "weight": 700,
+          "example": "The whole picture."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 19.0,
+          "weight": 700,
+          "example": "Performance & risk"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 27.0,
+          "weight": 700,
+          "example": "From holdings to insight."
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 17.0,
+          "weight": 700,
+          "example": "Build your portfolio"
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 400,
+          "example": "Choose assets and set your weights."
+        },
+        {
+          "family": "Geist",
+          "size": 10.0,
+          "weight": 700,
+          "example": "YOUR WORKSPACE, YOUR WAY"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 30.0,
+          "weight": 700,
+          "example": "A clearer view."
+        },
+        {
+          "family": "Geist",
+          "size": 11.0,
+          "weight": 700,
+          "example": "Portfolio growth"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 28.0,
+          "weight": 700,
+          "example": "Room to grow."
+        },
+        {
+          "family": "Geist",
+          "size": 12.0,
+          "weight": 400,
+          "example": "Start with the essentials."
+        },
+        {
+          "family": "Geist",
+          "size": 13.0,
+          "weight": 700,
+          "example": "Get started"
+        },
+        {
+          "family": "Geist",
+          "size": 8.0,
+          "weight": 700,
+          "example": "MOST POPULAR"
+        },
+        {
+          "family": "Space Grotesk",
+          "size": 26.0,
+          "weight": 700,
+          "example": "A few things to know."
+        }
+      ]
+    }
+  ]
+}

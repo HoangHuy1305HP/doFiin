@@ -51,6 +51,8 @@ Dockerfile build web bằng Node rồi đóng gói cùng Python API. PostgreSQL 
 
 Backend: START_BACKEND.cmd. Terminal khác, trong thư mục web: `npm ci` rồi `npm run dev`. Mở http://localhost:5173. Vite proxy /api tới backend. Sau khi sửa source, chạy **REBUILD_WEB.cmd** để cập nhật bản web được API phục vụ.
 
+Frontend dùng React Router với URL trực tiếp như `/portfolio`, `/risk` và `/sign-in`. Backend phục vụ `index.html` cho các đường dẫn frontend này nên có thể tải lại hoặc chia sẻ link. Link cũ dạng `/#portfolio` tự chuyển sang URL mới. Chạy `npm --prefix web run verify:routing` để kiểm tra điều hướng trên Vite.
+
 ## Kiểm thử
 
 - **TEST_BACKEND.cmd**: kiểm thử đầy đủ bằng PostgreSQL test riêng.

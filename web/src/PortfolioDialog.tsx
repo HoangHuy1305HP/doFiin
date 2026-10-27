@@ -27,11 +27,11 @@ export function Modal({
       <section ref={modalRef} role="dialog" aria-modal="true" aria-label={title} className="modal">
         <header>
           <div>
-            <span className="eyebrow">KHÔNG GIAN CỦA BẠN</span>
+            <span className="eyebrow">YOUR WORKSPACE</span>
             <h2>{title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
-          <button className="icon-button" aria-label="Đóng" onClick={onClose}>
+          <button className="icon-button" aria-label="Close" onClick={onClose}>
             <X size={20} />
           </button>
         </header>
@@ -74,11 +74,11 @@ export function PortfolioDialog({
       ) ||
       Math.abs(total - 100) > 1e-8
     ) {
-      setError('Mỗi tỷ trọng phải lớn hơn 0 và tổng phải bằng 100%.');
+      setError('Each weight must be greater than 0 and the total must equal 100%.');
       return;
     }
     if (new Set(rows.map((row) => row.id)).size !== rows.length) {
-      setError('Không chọn trùng tài sản.');
+      setError('Choose each asset only once.');
       return;
     }
     setBusy(true);
@@ -98,18 +98,18 @@ export function PortfolioDialog({
       await onSaved(result);
       onClose();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Không thể lưu danh mục.');
+      setError(error instanceof Error ? error.message : 'Unable to save portfolio.');
     } finally {
       setBusy(false);
     }
   }
   return (
     <Modal
-      title={portfolio ? 'Cấu hình danh mục' : 'Tạo danh mục mới'}
+      title={portfolio ? 'Portfolio settings' : 'Create portfolio'}
       subtitle={
         portfolio
-          ? 'Lưu thay đổi sẽ tạo phiên bản mới, giữ nguyên lịch sử cũ.'
-          : 'Chọn tài sản và chia tỷ trọng để bắt đầu.'
+          ? 'Saving creates a new version and preserves your history.'
+          : 'Choose assets and set your weights to get started.'
       }
       onClose={onClose}
     >
@@ -120,7 +120,7 @@ export function PortfolioDialog({
         }}
       >
         <label>
-          Tên danh mục
+          Portfolio name
           <input
             autoFocus
             required
@@ -128,18 +128,18 @@ export function PortfolioDialog({
             value={name}
             disabled={!!portfolio}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ví dụ: Danh mục dài hạn"
+            placeholder="e.g. Long-term portfolio"
           />
         </label>
         <div className="allocation-editor-heading">
-          <span>Tài sản</span>
-          <span>Tỷ trọng (%)</span>
+          <span>Asset</span>
+          <span>Weight (%)</span>
         </div>
         <div className="allocation-editor">
           {rows.map((row, index) => (
             <div className="allocation-editor-row" key={index}>
               <select
-                aria-label={'Tài sản ' + (index + 1)}
+                aria-label={'Asset' + (index + 1)}
                 value={row.id}
                 onChange={(e) =>
                   setRows(
@@ -155,7 +155,7 @@ export function PortfolioDialog({
               </select>
               <div className="percent-input">
                 <input
-                  aria-label={'Tỷ trọng ' + (index + 1)}
+                  aria-label={'Weight' + (index + 1)}
                   type="number"
                   step="any"
                   min="0.000001"
@@ -174,7 +174,7 @@ export function PortfolioDialog({
               <button
                 type="button"
                 className="icon-button"
-                aria-label={'Xóa tài sản ' + (index + 1)}
+                aria-label={'Remove asset' + (index + 1)}
                 onClick={() => setRows(rows.filter((_, i) => i !== index))}
               >
                 <Trash2 size={15} />
@@ -199,10 +199,10 @@ export function PortfolioDialog({
             }
           >
             <Plus size={15} />
-            Thêm tài sản
+            Add asset
           </button>
           <span className={'allocation-total ' + (Math.abs(total - 100) < 1e-8 ? 'valid' : '')}>
-            {Math.abs(total - 100) < 1e-8 && <Check size={14} />}Tổng{' '}
+            {Math.abs(total - 100) < 1e-8 && <Check size={14} />}Total{' '}
             {Number.isFinite(total)
               ? total.toLocaleString('vi-VN', { maximumFractionDigits: 6 })
               : '—'}
@@ -210,7 +210,7 @@ export function PortfolioDialog({
           </span>
         </div>
         <p className="small-note">
-          Danh mục mô phỏng · USD · Không bán khống · Không tự chuẩn hóa tỷ trọng.
+          Simulated portfolio · USD · Long only · Weights are not automatically normalized.
         </p>
         {error && (
           <div className="inline-error" role="alert">
@@ -219,10 +219,10 @@ export function PortfolioDialog({
         )}
         <div className="modal-actions">
           <button type="button" className="button outline" onClick={onClose}>
-            Hủy
+            Cancel
           </button>
           <button className="button primary" disabled={busy}>
-            {busy ? <LoaderCircle className="spin" size={15} /> : <Check size={15} />}Lưu danh mục
+            {busy ? <LoaderCircle className="spin" size={15} /> : <Check size={15} />}Save portfolio
           </button>
         </div>
       </form>
@@ -251,13 +251,13 @@ export function HistoryDialog({
       onView(version);
       onClose();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Không thể đọc phiên bản.');
+      setError(error instanceof Error ? error.message : 'Unable to load version.');
     }
   }
   return (
     <Modal
-      title="Lịch sử cấu hình"
-      subtitle={portfolio.name + ' · Mỗi phiên bản giữ nguyên tỷ trọng đã lưu.'}
+      title="Version history"
+      subtitle={portfolio.name + '· Each version preserves its saved weights.'}
       onClose={onClose}
     >
       <div className="history-list">
@@ -268,8 +268,8 @@ export function HistoryDialog({
             </span>
             <span>
               <strong>
-                Phiên bản {version.version_number}
-                {version.version_number === portfolio.current_version ? ' · Hiện tại' : ''}
+                Version {version.version_number}
+                {version.version_number === portfolio.current_version ? '· Current' : ''}
               </strong>
               <small>
                 {dateLabel(version.created_at.slice(0, 10))} ·{' '}
@@ -279,14 +279,12 @@ export function HistoryDialog({
                 })}
               </small>
             </span>
-            <span className="text-button">Xem phân tích →</span>
+            <span className="text-button">View analysis →</span>
           </button>
         ))}
       </div>
       {error && <div className="inline-error">{error}</div>}
-      <p className="small-note">
-        Đổi phiên bản chỉ thay góc nhìn phân tích, không sửa cấu hình hiện tại.
-      </p>
+      <p className="small-note">Viewing a version does not change your current configuration.</p>
     </Modal>
   );
 }
@@ -316,13 +314,13 @@ export function RenameDialog({
       await onSaved(result);
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không thể đổi tên.');
+      setError(e instanceof Error ? e.message : 'Unable to rename.');
     } finally {
       setBusy(false);
     }
   }
   return (
-    <Modal title="Đổi tên danh mục" onClose={onClose}>
+    <Modal title="Rename portfolio" onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -330,7 +328,7 @@ export function RenameDialog({
         }}
       >
         <label>
-          Tên danh mục
+          Portfolio name
           <input
             autoFocus
             required
@@ -340,15 +338,15 @@ export function RenameDialog({
           />
         </label>
         <p className="small-note">
-          Tạo một phiên bản mới với cùng tỷ trọng để tránh ghi đè thay đổi từ thiết bị khác.
+          Create a new version with the same weights to preserve changes from other devices.
         </p>
         {error && <div className="inline-error">{error}</div>}
         <div className="modal-actions">
           <button type="button" className="button outline" onClick={onClose}>
-            Hủy
+            Cancel
           </button>
           <button className="button primary" disabled={busy}>
-            Lưu tên
+            Save name
           </button>
         </div>
       </form>

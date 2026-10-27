@@ -1,15 +1,15 @@
 :root {
-  font-family: 'Source Sans 3', sans-serif;
+  font-family: var(--font-body);
   color: #1b332b;
-  background: #f6f7f3;
+  background: var(--color-canvas);
   font-synthesis: none;
   font-weight: 400;
   font-size: 15px;
-  --forest: #163d32;
-  --lime: #cfe89b;
-  --muted: #768176;
-  --border: #e0e5dc;
-  --heading: 'Be Vietnam Pro', sans-serif;
+  --forest: var(--color-forest);
+  --lime: var(--color-lime);
+  --muted: var(--color-text-muted);
+  --border: var(--color-border);
+  --heading: var(--font-heading);
 }
 * {
   box-sizing: border-box;
@@ -293,7 +293,7 @@ input:disabled {
 }
 .auth-story {
   position: relative;
-  background: #163d32;
+  background: var(--color-forest);
   color: #fff;
   padding: 40px 52px;
   display: flex;
@@ -326,7 +326,7 @@ input:disabled {
 }
 .auth-story h1 em {
   font-style: normal;
-  color: #cfe89b;
+  color: var(--color-lime);
 }
 .auth-story-copy > p {
   font-size: 15px;
@@ -487,7 +487,7 @@ input:disabled {
   position: fixed;
   inset: 0 auto 0 0;
   width: 220px;
-  background: #163d32;
+  background: var(--color-forest);
   color: #d4e1d2;
   padding: 30px 17px 13px;
   display: flex;
@@ -530,6 +530,7 @@ input:disabled {
   padding: 12px 14px;
   font-size: 12px;
   border-radius: 5px;
+  text-decoration: none;
 }
 .nav-item svg {
   opacity: 0.8;
@@ -546,7 +547,7 @@ input:disabled {
 .nav-item.active i {
   width: 5px;
   height: 5px;
-  background: #cfe89b;
+  background: var(--color-lime);
   border-radius: 100%;
   margin-left: auto;
 }
@@ -1009,7 +1010,7 @@ input:disabled {
 .chart-topline strong > span {
   font-size: 10px;
   color: #93a087;
-  font-family: 'Source Sans 3';
+  font-family: 'Geist';
   letter-spacing: 0;
   font-weight: 400;
   margin-left: 5px;
@@ -1185,8 +1186,8 @@ td strong {
   font-size: 10px;
 }
 .dark-widget {
-  background: #163d32;
-  border-color: #163d32;
+  background: var(--color-forest);
+  border-color: var(--color-forest);
   color: #fff;
   padding: 26px 30px;
 }
@@ -1927,7 +1928,7 @@ td strong {
 }
 .plan-price > span {
   font-size: 10px;
-  font-family: 'Source Sans 3';
+  font-family: 'Geist';
   font-weight: 400;
   letter-spacing: 0;
   margin-left: 4px;
@@ -1964,8 +1965,8 @@ td strong {
   margin-left: auto;
 }
 .plan-card.featured {
-  background: #163d32;
-  border-color: #163d32;
+  background: var(--color-forest);
+  border-color: var(--color-forest);
   color: #f3f6e9;
   box-shadow: 0 5px 15px #183a2120;
 }
@@ -2237,7 +2238,7 @@ td strong {
 }
 .studio-preview {
   margin: 0 auto;
-  background: #f6f7f3;
+  background: var(--color-canvas);
   padding: 25px;
   min-height: 100%;
   border: 1px solid #dfe7d3;
@@ -3023,7 +3024,7 @@ td strong {
     border-top: 1px solid #dbe4d0;
     padding: 10px 8px max(10px, env(safe-area-inset-bottom));
   }
-  .mobile-bottom-nav > button {
+  .mobile-bottom-nav > a {
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -3033,11 +3034,12 @@ td strong {
     font-size: 8px;
     color: #91a17c;
     padding: 1px 8px;
+    text-decoration: none;
   }
-  .mobile-bottom-nav > button.active {
+  .mobile-bottom-nav > a.active {
     color: #315a39;
   }
-  .mobile-bottom-nav > button.active svg {
+  .mobile-bottom-nav > a.active svg {
     stroke-width: 2;
   }
   .toast {

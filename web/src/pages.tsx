@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -6,36 +6,36 @@ import {
   FlaskConical,
   Lightbulb,
   Play,
-  Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import { AllocationChart, COLORS, FactorChart, TimeChart } from './charts';
 import { dateLabel, money, number, percent } from './api';
+import type { Presentation } from './preferences';
 import type { Analysis, Backtest, LayoutConfig, Page } from './types';
 
 export const TITLES: Record<string, string> = {
-  growth: 'Tăng trưởng tích lũy',
-  allocation: 'Phân bổ danh mục',
-  assets: 'Từng tài sản, một góc nhìn',
-  insight: 'Góc nhìn từ dữ liệu',
-  drawdown: 'Drawdown theo thời gian',
-  correlation: 'Tương quan giữa các mã',
-  volatility: 'Biến động theo thời gian',
-  risk_note: 'Đọc rủi ro trong bối cảnh',
-  moving_average: 'Giao cắt trung bình động',
-  signal_history: 'Các trạng thái gần đây',
-  signal_note: 'Tín hiệu được tạo như thế nào?',
-  backtest_growth: 'Chiến lược và thị trường',
-  backtest_trades: 'Lịch sử giao dịch giả lập',
-  backtest_note: 'Những giả định cần biết',
-  beta: 'Mức nhạy với thị trường',
-  momentum: 'Động lượng 12–1',
-  factor_table: 'Các yếu tố theo tài sản',
-  factor_note: 'Hiểu yếu tố phía sau lợi nhuận',
+  growth: 'Cumulative growth',
+  allocation: 'Current weights',
+  assets: 'Contribution by asset',
+  insight: 'A smarter allocation to explore',
+  drawdown: 'Drawdown over time',
+  correlation: 'Relationships between assets',
+  volatility: 'Volatility over time',
+  risk_note: 'Risk in context',
+  moving_average: 'Moving average crossover',
+  signal_history: 'Recent states',
+  signal_note: 'Rule explained',
+  backtest_growth: 'Growth comparison',
+  backtest_trades: 'Simulated trades',
+  backtest_note: 'Simulation assumptions',
+  beta: 'Market sensitivity',
+  momentum: '12–1 momentum',
+  factor_table: 'Factors by asset',
+  factor_note: 'Model explained',
 };
 export const ORDERS: Record<Page, string[]> = {
   portfolio: ['growth', 'allocation', 'assets', 'insight'],
-  risk: ['drawdown', 'correlation', 'volatility', 'risk_note'],
+  risk: ['correlation', 'drawdown', 'volatility', 'risk_note'],
   signals: ['moving_average', 'signal_history', 'signal_note'],
   backtest: ['backtest_growth', 'backtest_trades', 'backtest_note'],
   factors: ['beta', 'momentum', 'factor_table', 'factor_note'],
@@ -110,6 +110,8 @@ type Props = {
   onBacktest: () => void;
   onOptimize: () => void;
   preview?: boolean;
+  controls?: ReactNode;
+  presentation?: Presentation;
   btStale?: boolean;
 };
 export function Dashboard({
@@ -123,6 +125,8 @@ export function Dashboard({
   onBacktest,
   onOptimize,
   preview = false,
+  controls,
+  presentation,
   btStale = false,
 }: Props) {
   const { metrics: m, series, factors, signals, correlation, metadata } = analysis.result;
@@ -130,32 +134,32 @@ export function Dashboard({
   const widgets: Record<string, ReactNode> = {};
   widgets.growth = (
     <>
-      <div className="chart-topline">
-        <div>
-          <span className="micro-label">GIÁ TRỊ CHUẨN HÓA</span>
-          <strong>
-            100 <span>tại đầu kỳ</span>
-          </strong>
-        </div>
-        <Legend
-          items={[
-            { name: 'Danh mục', color: '#245947' },
-            { name: 'SPY', color: '#adbd8d' },
-          ]}
-        />
+      <div className="growth-meta">
+        <span>
+          Cumulative
+          <br />
+          100 at the start
+        </span>
+        <span>
+          {metadata.observations}
+          <br />
+          sessions
+        </span>
       </div>
       <TimeChart
         data={series}
         lines={[
-          { key: 'portfolio', name: 'Danh mục', color: '#245947' },
-          { key: 'benchmark', name: 'SPY', color: '#adbd8d' },
+          { key: 'portfolio', name: 'Portfolio', color: 'var(--chart-accent, #163d32)' },
+          { key: 'benchmark', name: 'SPY', color: '#94ae58' },
         ]}
         area={primary}
       />
-      <div className="chart-foot">
-        <span>{dateLabel(metadata.first_date)}</span>
-        <span>{dateLabel(metadata.last_date)}</span>
-      </div>
+      <Legend
+        items={[
+          { name: 'Portfolio', color: 'var(--chart-accent, #163d32)' },
+          { name: 'SPY', color: '#94ae58' },
+        ]}
+      />
     </>
   );
   widgets.allocation = (
@@ -172,7 +176,7 @@ export function Dashboard({
           </div>
         ))}
       </div>
-      <div className="small-note">Tỷ trọng mục tiêu tại đầu kỳ</div>
+      <div className="small-note">Target weights at the start of the period</div>
     </>
   );
   widgets.assets = (
@@ -181,52 +185,33 @@ export function Dashboard({
         <table>
           <thead>
             <tr>
-              <th>Tài sản</th>
-              <th>Tỷ trọng đầu kỳ</th>
-              <th>Lợi nhuận trong kỳ</th>
-              <th>Biến động năm hóa</th>
-              <th>Beta / SPY</th>
+              <th>SYMBOL</th>
+              <th>WEIGHT</th>
+              <th>RETURN</th>
+              <th>CONTRIB.</th>
             </tr>
           </thead>
           <tbody>
-            {factors.map((asset, i) => (
+            {factors.map((asset) => (
               <tr key={asset.symbol}>
                 <td>
-                  <span className="asset-symbol">
-                    <span className={'asset-icon asset-' + i}>{asset.symbol.slice(0, 1)}</span>
-                    <span>
-                      <strong>{asset.symbol}</strong>
-                      <small>
-                        {asset.symbol === 'AAPL'
-                          ? 'Apple Inc.'
-                          : asset.symbol === 'MSFT'
-                            ? 'Microsoft'
-                            : asset.symbol === 'NVDA'
-                              ? 'NVIDIA'
-                              : 'ETF · Thị trường Mỹ'}
-                      </small>
-                    </span>
-                  </span>
+                  <strong>{asset.symbol}</strong>
                 </td>
-                <td>{percent(asset.weight, 0)}</td>
+                <td>{percent(asset.weight)}</td>
                 <td className={(asset.period_return ?? 0) >= 0 ? 'positive' : 'negative'}>
-                  {(asset.period_return ?? 0) > 0 ? '+' : ''}
                   {percent(asset.period_return)}
                 </td>
-                <td>{percent(asset.volatility)}</td>
-                <td>{number(asset.beta)}</td>
+                <td>
+                  <strong>
+                    {asset.period_return == null
+                      ? '—'
+                      : percent(asset.weight * asset.period_return)}
+                  </strong>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-      <div className="table-footer">
-        <span>{factors.length} tài sản · USD</span>
-        <button className="text-button" disabled={preview} onClick={onOptimize}>
-          <Sparkles size={14} />
-          Thử tối ưu Sharpe
-          <ArrowUpRight size={14} />
-        </button>
       </div>
     </>
   );
@@ -236,13 +221,17 @@ export function Dashboard({
         <Lightbulb size={23} />
       </div>
       <div>
-        <span className="eyebrow light">MỘT GÓC NHÌN THÊM</span>
-        <h3>Lợi nhuận chỉ là một phần câu chuyện.</h3>
+        <span className="eyebrow light">WEIGHT SEARCH SIMULATION</span>
+        <h3>A smarter allocation to explore</h3>
         <p>
-          Danh mục {m.excess_return != null && m.excess_return >= 0 ? 'vượt' : 'thấp hơn'} benchmark{' '}
-          {percent(Math.abs(m.excess_return ?? 0))} trong kỳ. Khám phá thêm mức giảm từ đỉnh và độ
-          biến động để hiểu hành trình phía sau con số.
+          Portfolio{' '}
+          {m.excess_return != null && m.excess_return >= 0 ? 'outperformed' : 'underperformed'}{' '}
+          benchmark {percent(Math.abs(m.excess_return ?? 0))} this period. Compare current weights
+          with an alternative allocation from the historical model.
         </p>
+        <button className="button lime" disabled={preview} onClick={onOptimize}>
+          View simulation →
+        </button>
       </div>
       <svg className="insight-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
         {[0, 12, 24, 36, 48].map((n) => (
@@ -260,10 +249,10 @@ export function Dashboard({
     <>
       <div className="chart-topline">
         <div>
-          <span className="micro-label">MỨC GIẢM SÂU NHẤT</span>
+          <span className="micro-label">MAX DRAWDOWN</span>
           <strong className="negative">{percent(m.max_drawdown)}</strong>
         </div>
-        <span className="subtle">Tính từ đỉnh gần nhất</span>
+        <span className="subtle">Change since the previous peak</span>
       </div>
       <TimeChart
         data={series}
@@ -275,7 +264,7 @@ export function Dashboard({
   );
   widgets.correlation = (
     <>
-      <p className="card-description">Mức độ các tài sản cùng chuyển động, từ −1 đến +1.</p>
+      <p className="card-description">Relationships between assets, from −1 to +1.</p>
       <div className="correlation-scroll">
         <div
           className="correlation-matrix"
@@ -315,18 +304,24 @@ export function Dashboard({
         </div>
       </div>
       <div className="matrix-scale">
-        <span>Ít tương quan</span>
+        <span>Less correlated</span>
         <i />
-        <span>Cùng chiều</span>
+        <span>Move together</span>
       </div>
     </>
   );
   widgets.volatility = (
     <>
-      <Legend items={[{ name: 'Volatility 20 phiên', color: '#245947' }]} />
+      <Legend items={[{ name: '20-session volatility', color: 'var(--chart-accent, #163d32)' }]} />
       <TimeChart
         data={series}
-        lines={[{ key: 'volatility', name: 'Biến động năm hóa', color: '#245947' }]}
+        lines={[
+          {
+            key: 'volatility',
+            name: 'Annualized volatility',
+            color: 'var(--chart-accent, #163d32)',
+          },
+        ]}
         kind="percent"
         height={225}
         area={primary}
@@ -339,14 +334,15 @@ export function Dashboard({
         <CircleHelp size={20} />
       </span>
       <div>
-        <h4>Rủi ro, nhìn từ nhiều góc.</h4>
+        <h4>Risk, from every angle.</h4>
         <p>
-          Volatility cho biết độ dao động; drawdown cho biết mức giảm từ đỉnh. Beta {number(m.beta)}{' '}
-          mô tả độ nhạy với SPY trong khoảng đã chọn. Các chỉ số này không dự báo được mức lỗ tối đa
-          trong tương lai.
+          Volatility measures variation; drawdown measures declines from a peak. Beta{' '}
+          {number(m.beta)} describes sensitivity to SPY during the selected period. These metrics do
+          not predict maximum future losses.
         </p>
         <small>
-          Risk-free rate: {percent(metadata.risk_free_rate)} / năm · Quy ước 252 phiên / năm.
+          Risk-free rate: {percent(metadata.risk_free_rate)} / year · Based on 252 sessions per
+          year.
         </small>
       </div>
     </div>
@@ -357,14 +353,14 @@ export function Dashboard({
         <span className={'signal-badge ' + signals.current.toLowerCase()}>
           <i />
           {signals.current === 'BULLISH'
-            ? 'Xu hướng tăng'
+            ? 'Bullish'
             : signals.current === 'BEARISH'
-              ? 'Xu hướng giảm'
-              : 'Trung tính'}
+              ? 'Bearish'
+              : 'Neutral'}
         </span>
         <Legend
           items={[
-            { name: 'MA' + signals.short_window, color: '#245947' },
+            { name: 'MA' + signals.short_window, color: 'var(--chart-accent, #163d32)' },
             { name: 'MA' + signals.long_window, color: '#b0bf8c' },
           ]}
         />
@@ -372,14 +368,18 @@ export function Dashboard({
       <TimeChart
         data={series}
         lines={[
-          { key: 'ma_short', name: 'MA' + signals.short_window, color: '#245947' },
+          {
+            key: 'ma_short',
+            name: 'MA' + signals.short_window,
+            color: 'var(--chart-accent, #163d32)',
+          },
           { key: 'ma_long', name: 'MA' + signals.long_window, color: '#b0bf8c' },
         ]}
         area={false}
         height={320}
       />
       <div className="small-note">
-        Chỉ số được chuẩn hóa cùng danh mục. Tín hiệu mô tả bối cảnh, không phải lệnh giao dịch.
+        Normalized to the portfolio. Signals describe historical context.
       </div>
     </>
   );
@@ -389,7 +389,11 @@ export function Dashboard({
         <div key={item.date}>
           <span>{dateLabel(item.date)}</span>
           <span className={'signal-badge ' + item.state.toLowerCase()}>
-            {item.state === 'BULLISH' ? 'Tăng' : item.state === 'BEARISH' ? 'Giảm' : 'Trung tính'}
+            {item.state === 'BULLISH'
+              ? 'Bullish'
+              : item.state === 'BEARISH'
+                ? 'Bearish'
+                : 'Neutral'}
           </span>
         </div>
       ))}
@@ -399,28 +403,30 @@ export function Dashboard({
     <div className="explanation">
       <TrendingUp size={22} />
       <div>
-        <h4>Quy tắc rõ ràng, diễn giải nhất quán.</h4>
+        <h4>Clear rules. Consistent interpretation.</h4>
         <p>
-          Trạng thái tăng khi MA{signals.short_window} cao hơn MA{signals.long_window} trên 0,5%;
-          giảm khi thấp hơn trên 0,5%; phần còn lại là trung tính. Kiểm thử MA crossover dùng giao
-          cắt trực tiếp và thực thi ở phiên sau.
+          Bullish when MA{signals.short_window} exceeds MA{signals.long_window} by more than 0.5%;
+          bearish when below by more than 0.5%; otherwise neutral. The crossover backtest executes
+          direct crossovers in the next session.
         </p>
       </div>
     </div>
   );
   widgets.beta = (
     <>
-      <p className="card-description">Beta theo từng tài sản so với SPY trong kỳ đã chọn.</p>
+      <p className="card-description">
+        Beta of each asset relative to SPY during the selected period.
+      </p>
       <FactorChart factors={factors} metric="beta" />
-      <div className="small-note">Beta &gt; 1: nhạy hơn benchmark · Beta &lt; 1: ít nhạy hơn</div>
+      <div className="small-note">Beta &gt; 1: more sensitive · Beta &lt; 1: less sensitive</div>
     </>
   );
   widgets.momentum = (
     <>
-      <p className="card-description">Biến động giá 12 tháng, bỏ qua tháng gần nhất.</p>
+      <p className="card-description">12-month price change, excluding the most recent month.</p>
       <FactorChart factors={factors} metric="momentum" />
       <div className="small-note">
-        Cần ít nhất 253 phiên lịch sử, bao gồm phần dữ liệu khởi tạo.
+        Requires at least 253 sessions of history, including the initialization period.
       </div>
     </>
   );
@@ -429,10 +435,10 @@ export function Dashboard({
       <table>
         <thead>
           <tr>
-            <th>Tài sản</th>
+            <th>Asset</th>
             <th>Beta / SPY</th>
             <th>Momentum 12–1</th>
-            <th>Vai trò trong danh mục</th>
+            <th>Role in portfolio</th>
           </tr>
         </thead>
         <tbody>
@@ -447,10 +453,10 @@ export function Dashboard({
               </td>
               <td>
                 {asset.beta == null
-                  ? 'Chưa đủ dữ liệu'
+                  ? 'Insufficient data'
                   : asset.beta > 1
-                    ? 'Nhạy với biến động thị trường'
-                    : 'Độ nhạy thấp hơn thị trường'}
+                    ? 'More sensitive to market moves'
+                    : 'Less sensitive to market moves'}
               </td>
             </tr>
           ))}
@@ -462,13 +468,13 @@ export function Dashboard({
     <div className="explanation">
       <Lightbulb size={22} />
       <div>
-        <h4>Yếu tố giúp đọc câu chuyện phía sau.</h4>
+        <h4>Understand what drives returns.</h4>
         <p>
-          Đây là phân tích mô tả beta thị trường và momentum, chưa phải mô hình hồi quy đa yếu tố.
-          CAPM alpha được tách riêng với lợi nhuận vượt benchmark để tránh diễn giải nhầm.
+          Market beta and momentum are descriptive metrics, rather than a full factor regression.
+          CAPM alpha is shown separately from excess benchmark return.
         </p>
         <small>
-          CAPM alpha năm hóa: {percent(m.capm_alpha)} · Lợi nhuận vượt SPY:{' '}
+          Annualized CAPM alpha: {percent(m.capm_alpha)} · Excess return vs SPY:{' '}
           {percent(m.excess_return)}
         </small>
       </div>
@@ -479,14 +485,14 @@ export function Dashboard({
     <>
       <Legend
         items={[
-          { name: 'Chiến lược sau chi phí', color: '#245947' },
-          { name: 'SPY chưa trừ phí', color: '#b0bf8c' },
+          { name: 'Strategy after costs', color: 'var(--chart-accent, #163d32)' },
+          { name: 'SPY before costs', color: '#b0bf8c' },
         ]}
       />
       <TimeChart
         data={b.series}
         lines={[
-          { key: 'strategy', name: 'Chiến lược', color: '#245947' },
+          { key: 'strategy', name: 'Strategy', color: 'var(--chart-accent, #163d32)' },
           { key: 'benchmark', name: 'SPY', color: '#b0bf8c' },
         ]}
         kind="money"
@@ -497,11 +503,11 @@ export function Dashboard({
   ) : (
     <div className="empty-chart">
       <FlaskConical size={32} />
-      <h4>Thử một quy tắc trong quá khứ.</h4>
-      <p>Chọn cấu hình và chạy kiểm thử để xem kết quả.</p>
+      <h4>Backtest a simple rule.</h4>
+      <p>Configure and run a backtest to explore the results.</p>
       <button className="button primary" onClick={onBacktest} disabled={btBusy}>
         <Play size={15} />
-        Chạy kiểm thử
+        Run backtest
       </button>
     </div>
   );
@@ -510,10 +516,10 @@ export function Dashboard({
       <table>
         <thead>
           <tr>
-            <th>Ngày thực hiện</th>
-            <th>Hành động</th>
-            <th>Giá trị giao dịch</th>
-            <th>Tổng chi phí</th>
+            <th>Execution date</th>
+            <th>Action</th>
+            <th>Turnover</th>
+            <th>Total costs</th>
           </tr>
         </thead>
         <tbody>
@@ -526,10 +532,10 @@ export function Dashboard({
                 <td>
                   <span className="tag">
                     {trade.action === 'INVEST'
-                      ? 'Phân bổ vốn'
+                      ? 'Invest'
                       : trade.action === 'CASH'
-                        ? 'Về tiền mặt'
-                        : 'Tái cân bằng'}
+                        ? 'Hold cash'
+                        : 'Rebalance'}
                   </span>
                 </td>
                 <td>{money(trade.turnover)}</td>
@@ -538,23 +544,23 @@ export function Dashboard({
             ))}
         </tbody>
       </table>
-      {!b.trades.length && <p className="small-note">Không có giao dịch trong khoảng đã chọn.</p>}
+      {!b.trades.length && <p className="small-note">No trades in the selected period.</p>}
       <div className="small-note">
-        Tối đa 15 giao dịch gần nhất trên giao diện · Đầy đủ trong bản xuất CSV.
+        Showing the latest 15 trades · Export CSV for the full history.
       </div>
     </div>
   ) : (
-    <p className="card-description">Lịch sử sẽ xuất hiện sau khi kiểm thử hoàn tất.</p>
+    <p className="card-description">Trade history appears after running the backtest.</p>
   );
   widgets.backtest_note = (
     <div className="explanation">
       <CircleHelp size={22} />
       <div>
-        <h4>Kiểm thử là một giả lập có điều kiện.</h4>
+        <h4>A backtest is a conditional simulation.</h4>
         <p>
-          Tín hiệu dùng thông tin cuối phiên trước, khớp tại giá đóng cửa phiên tiếp theo. Phí và
-          slippage áp dụng trên giá trị mua/bán; không short, không vay vốn. Kết quả quá khứ không
-          bảo đảm hiệu suất tương lai.
+          Signals use information from the previous close and execute at the next close. Fees and
+          slippage apply to turnover; no shorting or borrowing. Past results do not guarantee future
+          performance.
         </p>
       </div>
     </div>
@@ -564,42 +570,45 @@ export function Dashboard({
     metrics = (
       <>
         <Metric
-          label="Biến động năm hóa"
+          label="Annualized volatility"
           value={percent(m.annualized_volatility)}
-          detail="Độ lệch chuẩn lợi nhuận ngày"
+          detail="Standard deviation of daily returns"
         />
         <Metric
-          label="Drawdown lớn nhất"
+          label="Max drawdown"
           value={percent(m.max_drawdown)}
-          detail="Mức giảm từ đỉnh trong kỳ"
+          detail="Peak-to-trough decline in the period"
           positive={false}
         />
-        <Metric label="Beta so với SPY" value={number(m.beta)} detail="Độ nhạy với thị trường" />
         <Metric
-          label="Sharpe ratio"
-          value={number(m.sharpe_ratio)}
-          detail="Lợi nhuận vượt lãi suất / rủi ro"
+          label="Beta vs SPY"
+          value={number(m.beta)}
+          detail="Sensitivity to market movements"
         />
       </>
     );
   else if (page === 'factors')
     metrics = (
       <>
-        <Metric label="Beta danh mục" value={number(m.beta)} detail="So với SPY trong kỳ" />
+        <Metric
+          label="Portfolio beta"
+          value={number(m.beta)}
+          detail="Relative to SPY in this period"
+        />
         <Metric
           label="Momentum 12–1"
           value={percent(analysis.result.momentum_12_1)}
-          detail="Bỏ qua tháng gần nhất"
+          detail="Excluding the latest month"
         />
         <Metric
-          label="CAPM alpha năm hóa"
+          label="Annualized CAPM alpha"
           value={percent(m.capm_alpha)}
-          detail="Sau điều chỉnh beta thị trường"
+          detail="Adjusted for market beta"
         />
         <Metric
-          label="Tài sản phân tích"
+          label="Assets analyzed"
           value={String(factors.length)}
-          detail="Cùng nguồn và lịch dữ liệu"
+          detail="Same source and trading calendar"
         />
       </>
     );
@@ -607,31 +616,31 @@ export function Dashboard({
     metrics = (
       <>
         <Metric
-          label="Trạng thái hiện tại"
+          label="Current state"
           value={
             signals.current === 'BULLISH'
-              ? 'Tăng'
+              ? 'Bullish'
               : signals.current === 'BEARISH'
-                ? 'Giảm'
-                : 'Trung tính'
+                ? 'Bearish'
+                : 'Neutral'
           }
-          detail="Theo chênh lệch MA 0,5%"
+          detail="Based on a 0.5% MA difference"
           positive={signals.current === 'BULLISH' ? true : undefined}
         />
         <Metric
-          label="MA ngắn hạn"
+          label="Short-term MA"
           value={number(series.at(-1)?.ma_short as number)}
-          detail={signals.short_window + ' phiên · Chỉ số chuẩn hóa'}
+          detail={signals.short_window + ' sessions · Normalized index'}
         />
         <Metric
-          label="MA dài hạn"
+          label="Long-term MA"
           value={number(series.at(-1)?.ma_long as number)}
-          detail={signals.long_window + ' phiên · Chỉ số chuẩn hóa'}
+          detail={signals.long_window + ' sessions · Normalized index'}
         />
         <Metric
-          label="Ngày dữ liệu cuối"
+          label="Last observation"
           value={metadata.last_date.slice(8) + '/' + metadata.last_date.slice(5, 7)}
-          detail={metadata.last_date.slice(0, 4) + ' · Cùng bộ dữ liệu danh mục'}
+          detail={metadata.last_date.slice(0, 4) + '· Same portfolio dataset'}
         />
       </>
     );
@@ -639,26 +648,26 @@ export function Dashboard({
     metrics = (
       <>
         <Metric
-          label="Lợi nhuận chiến lược"
+          label="Strategy return"
           value={percent(b?.metrics.total_return)}
-          detail="Đã trừ phí và slippage"
+          detail="After fees and slippage"
           positive={(b?.metrics.total_return ?? 0) >= 0}
         />
         <Metric
-          label="Giá trị cuối kỳ"
+          label="Final value"
           value={money(b?.metrics.final_value)}
-          detail="Từ vốn mô phỏng đã chọn"
+          detail="Based on your simulated initial capital"
         />
         <Metric
-          label="Drawdown lớn nhất"
+          label="Max drawdown"
           value={percent(b?.metrics.max_drawdown)}
-          detail="Tính cả chi phí giao dịch"
+          detail="Including transaction costs"
           positive={false}
         />
         <Metric
-          label="Tổng chi phí"
+          label="Total costs"
           value={money(b?.metrics.total_cost)}
-          detail={String(b?.metrics.trade_count ?? 0) + ' lần giao dịch giả lập'}
+          detail={String(b?.metrics.trade_count ?? 0) + ' simulated trades'}
         />
       </>
     );
@@ -666,56 +675,61 @@ export function Dashboard({
     metrics = (
       <>
         <Metric
-          label="Lợi nhuận danh mục"
+          label="Portfolio return"
           value={percent(m.total_return)}
-          detail="Lũy kế trong khoảng đã chọn"
-          positive={(m.total_return ?? 0) >= 0}
+          detail={
+            (m.excess_return !== null
+              ? ((m.excess_return ?? 0) >= 0 ? '+' : '') + percent(m.excess_return)
+              : '—') + ' vs SPY'
+          }
         />
         <Metric
-          label="So với benchmark"
-          value={
-            (m.excess_return ?? 0) >= 0 ? '+' + percent(m.excess_return) : percent(m.excess_return)
-          }
-          detail="Chênh lệch với SPY"
-          positive={(m.excess_return ?? 0) >= 0}
+          label="Annualized volatility"
+          value={percent(m.annualized_volatility)}
+          detail="Annualized · 252 sessions"
         />
         <Metric
           label="Sharpe ratio"
           value={number(m.sharpe_ratio)}
-          detail="Lợi nhuận trên một đơn vị rủi ro"
-        />
-        <Metric
-          label="Drawdown lớn nhất"
-          value={percent(m.max_drawdown)}
-          detail="Mức giảm từ đỉnh trong kỳ"
-          positive={false}
+          detail={`rf = ${percent(metadata.risk_free_rate)}`}
         />
       </>
     );
   return (
-    <div className={'dashboard ' + (layout.density === 'compact' ? 'compact' : '')}>
+    <div
+      className={'dashboard ' + (layout.density === 'compact' ? 'compact' : '')}
+      data-legend={presentation?.legend ?? true}
+      style={
+        presentation
+          ? ({
+              '--chart-accent': presentation.color,
+              '--widget-corners': presentation.corners + 'px',
+            } as CSSProperties)
+          : undefined
+      }
+    >
       {page === 'backtest' && !preview && (
         <div className="backtest-config">
           <div className="config-intro">
             <FlaskConical size={18} />
             <div>
-              <strong>Cấu hình kiểm thử</strong>
-              <span>Cùng dữ liệu với lần phân tích hiện tại</span>
+              <strong>Backtest settings</strong>
+              <span>Uses the current analysis dataset</span>
             </div>
           </div>
           <div className="backtest-fields">
             <label>
-              Chiến lược
+              Strategy
               <select
                 value={btForm.strategy}
                 onChange={(e) => setBtForm({ ...btForm, strategy: e.target.value })}
               >
-                <option value="MA_CROSSOVER">Giao cắt MA 20 / 50</option>
-                <option value="BUY_AND_HOLD">Mua và nắm giữ</option>
+                <option value="MA_CROSSOVER">MA 20 / 50 crossover</option>
+                <option value="BUY_AND_HOLD">Buy and hold</option>
               </select>
             </label>
             <label>
-              Vốn ban đầu (USD)
+              Initial capital (USD)
               <input
                 type="number"
                 min={100}
@@ -725,7 +739,7 @@ export function Dashboard({
               />
             </label>
             <label>
-              Phí (bps)
+              Fees (bps)
               <input
                 type="number"
                 min={0}
@@ -745,28 +759,29 @@ export function Dashboard({
               />
             </label>
             <label>
-              Tái cân bằng
+              Rebalance
               <select
                 value={btForm.rebalance_frequency}
                 onChange={(e) => setBtForm({ ...btForm, rebalance_frequency: e.target.value })}
               >
-                <option value="MONTHLY">Hàng tháng</option>
-                <option value="NONE">Không định kỳ</option>
+                <option value="MONTHLY">Monthly</option>
+                <option value="NONE">None</option>
               </select>
             </label>
             <button className="button primary" disabled={btBusy} onClick={onBacktest}>
               <Play size={14} />
-              {btBusy ? 'Đang kiểm thử…' : 'Chạy kiểm thử'}
+              {btBusy ? 'Running backtest…' : 'Run backtest'}
             </button>
           </div>
           {btStale && (
             <p className="small-note warning-text">
-              Cấu hình đã thay đổi. Chạy lại để cập nhật kết quả. 100 bps = 1%.
+              Settings changed. Run again to update results. 100 bps = 1%.
             </p>
           )}
         </div>
       )}
       <div className="metrics-strip">{metrics}</div>
+      {controls}
       <div className="widgets-grid">
         {layout.order
           .filter((key) => !layout.hidden.includes(key))
@@ -781,18 +796,18 @@ export function Dashboard({
                   <div>
                     <span className="widget-eyebrow">
                       {key === 'allocation'
-                        ? 'CƠ CẤU'
+                        ? 'ALLOCATION'
                         : key === 'growth'
-                          ? 'HIỆU SUẤT'
+                          ? 'PERFORMANCE'
                           : page === 'portfolio'
-                            ? 'DANH MỤC'
+                            ? 'COMPONENTS'
                             : page === 'risk'
-                              ? 'PHÂN TÍCH RỦI RO'
+                              ? 'PORTFOLIO ANALYTICS'
                               : page === 'signals'
-                                ? 'TÍN HIỆU'
+                                ? 'SIGNALS'
                                 : page === 'factors'
-                                  ? 'YẾU TỐ'
-                                  : 'KIỂM THỬ'}
+                                  ? 'FACTORS'
+                                  : 'BACKTEST'}
                     </span>
                     <h3>{layout.titles[key] || TITLES[key]}</h3>
                   </div>
@@ -805,7 +820,7 @@ export function Dashboard({
       </div>
       {layout.order.every((key) => layout.hidden.includes(key)) && (
         <div className="empty-chart">
-          <p>Tất cả widget đang ẩn. Mở Studio để hiển thị lại.</p>
+          <p>All widgets are hidden. Open Studio to show them again.</p>
         </div>
       )}
     </div>

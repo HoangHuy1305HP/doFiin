@@ -1,32 +1,36 @@
 import { useState } from 'react';
-import {
-  ArrowRight,
-  ArrowUpRight,
-  ChartNoAxesCombined,
-  LoaderCircle,
-  LockKeyhole,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowUpRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Sparkles } from 'lucide-react';
 import { post, setToken } from './api';
 
 export function Brand({ light = false }: { light?: boolean }) {
   return (
     <span className={'brand ' + (light ? 'brand-light' : '')}>
-      <svg width="30" height="32" viewBox="0 0 30 32" fill="none" aria-hidden="true">
-        <path d="M4 27V5h19L4 27Zm7-11h14v11H11V16Z" stroke="currentColor" strokeWidth="1.5" />
-        <path d="m11 27 14-11" stroke="currentColor" strokeWidth="1.5" />
-      </svg>
+      <span className="brand-monogram" aria-hidden="true">
+        df
+      </span>
       <span>
         doFiin<span className="brand-dot">.</span>
       </span>
     </span>
   );
 }
-export default function Auth({ onSigned }: { onSigned: (demo?: boolean) => Promise<void> }) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+export default function Auth({
+  onSigned,
+  initialMode = 'login',
+  onHome,
+  onModeChange,
+}: {
+  onSigned: (demo?: boolean) => Promise<void>;
+  initialMode?: 'login' | 'register';
+  onHome?: () => void;
+  onModeChange?: (mode: 'login' | 'register') => void;
+}) {
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [visiblePassword, setVisiblePassword] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   async function submit(demo = false) {
@@ -42,91 +46,95 @@ export default function Auth({ onSigned }: { onSigned: (demo?: boolean) => Promi
       if (demo || mode === 'register')
         await post('/auth/register', {
           ...credentials,
-          display_name: demo ? 'Nhà đầu tư demo' : name,
+          display_name: demo ? 'Demo investor' : name,
         });
       const tokens = await post<{ access_token: string }>('/auth/login', {
         ...credentials,
         client_type: 'web',
       });
+      try {
+        localStorage.setItem('dofiin:remember', String(demo || remember));
+        sessionStorage.setItem('dofiin:active-session', 'true');
+      } catch {
+        /* Authentication still works without browser storage. */
+      }
       setToken(tokens.access_token);
       await onSigned(demo);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Không thể đăng nhập.');
+      setError(error instanceof Error ? error.message : 'Unable to sign in.');
     } finally {
       setBusy('');
     }
   }
   return (
-    <div className="auth-page">
-      <div className="auth-story">
-        <Brand light />
+    <div className={'auth-page auth-' + mode}>
+      <aside className="auth-story">
+        <button className="brand-home" onClick={onHome} aria-label="doFiin home">
+          <Brand light />
+        </button>
         <div className="auth-story-copy">
-          <span className="eyebrow light">GÓC NHÌN RÕ RÀNG HƠN</span>
+          <span className="eyebrow light">KNOW YOUR PORTFOLIO. INVEST WITH INTENT.</span>
           <h1>
-            Mỗi danh mục,
+            A clearer perspective.
             <br />
-            một câu chuyện.
-            <br />
-            <em>
-              {' '}
-              Hiểu câu chuyện
-              <br />
-              của bạn.
-            </em>
+            Make informed decisions.
           </h1>
           <p>
-            Từ tổng thể đến từng chuyển động.
+            Track performance, understand risk
             <br />
-            Một không gian để hiểu lợi nhuận, rủi ro
-            <br />
-            và những lựa chọn phía trước.
+            and explore what drives your portfolio.
           </p>
-          <div className="auth-mini-chart">
-            <div className="auth-chart-label">
-              <span>DANH MỤC MÔ PHỎNG</span>
-              <ArrowUpRight size={19} />
-            </div>
-            <svg viewBox="0 0 440 125" aria-hidden="true">
-              <defs>
-                <linearGradient id="authFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop stopColor="#cfe89b" stopOpacity=".2" />
-                  <stop offset="1" stopColor="#cfe89b" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0 105 18 97 30 102 45 78 61 88 75 69 90 80 105 59 125 76 140 68 155 80 172 48 185 55 203 35 218 48 236 40 251 61 265 43 278 52 292 20 305 32 320 14 337 24 350 9 367 23 386 16 404 25 420 10 440 1V125H0Z"
-                fill="url(#authFill)"
-              />
-              <path
-                d="m0 105 18-8 12 5 15-24 16 10 14-19 15 11 15-21 20 17 15-8 15 12 17-32 13 7 18-20 15 13 18-8 15 21 14-18 13 9 14-32 13 12 15-18 17 10 13-15 17 14 19-7 18 9 16-15 20-9"
-                stroke="#cfe89b"
-                strokeWidth="2"
-                fill="none"
-              />
-            </svg>
-            <span className="auth-chart-foot">Minh họa · Không phải dữ liệu thị trường</span>
-          </div>
+          <img
+            className="auth-product"
+            src="/assets/auth-portfolio.svg"
+            width="504"
+            height="314"
+            alt="Performance and risk, in one clear view."
+          />
+          <p className="auth-caption">Insight for every investment decision.</p>
         </div>
         <div className="auth-story-footer">
-          <span>Được xây dựng cho góc nhìn dài hạn.</span>
-          <span>DEMO 01</span>
+          <span>© 2026 doFiin</span>
         </div>
-      </div>
+      </aside>
       <div className="auth-form-wrap">
-        <span className="auth-topnote">
-          <span className="status-dot" /> Không gian phân tích cá nhân
-        </span>
+        <div className="auth-mobile-brand">
+          <button className="brand-home" onClick={onHome}>
+            <Brand />
+          </button>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() =>
+              setError(
+                'Sign in with your email and password, or use Explore demo to try a sample portfolio.',
+              )
+            }
+          >
+            Help ↗
+          </button>
+        </div>
         <div className="auth-form">
-          <div className="auth-icon">
-            <ChartNoAxesCombined size={24} />
-          </div>
-          <span className="eyebrow">CHÀO MỪNG ĐẾN VỚI DOFIIN</span>
-          <h2>{mode === 'login' ? 'Bắt đầu từ một góc nhìn.' : 'Tạo không gian của bạn.'}</h2>
+          <span className="eyebrow">{mode === 'login' ? 'WELCOME BACK' : 'CREATE ACCOUNT'}</span>
+          <h2>{mode === 'login' ? 'Sign in to doFiin.' : 'Get started with doFiin.'}</h2>
           <p>
             {mode === 'login'
-              ? 'Đăng nhập để tiếp tục với danh mục của bạn.'
-              : 'Lưu danh mục và khám phá dữ liệu theo cách của bạn.'}
+              ? 'Continue exploring your portfolio.'
+              : 'Create an account to track your portfolio.'}
           </p>
+          <button
+            className="button google-button"
+            type="button"
+            onClick={() =>
+              setError('Google sign-in is not available yet. Please continue with email.')
+            }
+          >
+            <img src="/assets/google.svg" width="22" height="22" alt="" />
+            Continue with Google
+          </button>
+          <div className="separator">
+            <span>or</span>
+          </div>
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -135,14 +143,14 @@ export default function Auth({ onSigned }: { onSigned: (demo?: boolean) => Promi
           >
             {mode === 'register' && (
               <label>
-                Họ và tên
+                Full name
                 <input
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
                   maxLength={100}
-                  placeholder="Tên của bạn"
+                  placeholder="Your name"
                 />
               </label>
             )}
@@ -154,66 +162,104 @@ export default function Auth({ onSigned }: { onSigned: (demo?: boolean) => Promi
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                placeholder="ban@example.com"
+                placeholder="you@example.com"
               />
             </label>
             <label>
-              Mật khẩu
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={mode === 'register' ? 10 : 1}
-                maxLength={128}
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                placeholder={mode === 'register' ? 'Tối thiểu 10 ký tự' : 'Nhập mật khẩu của bạn'}
-              />
+              Password
+              <span className="password-field">
+                <input
+                  type={visiblePassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={mode === 'register' ? 10 : 1}
+                  maxLength={128}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  placeholder={mode === 'register' ? 'Create password' : 'Enter password'}
+                />
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={visiblePassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setVisiblePassword(!visiblePassword)}
+                >
+                  {visiblePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </span>
             </label>
+            {mode === 'register' ? (
+              <>
+                <span className="small-note">At least 10 characters.</span>
+                <label className="auth-consent">
+                  <input type="checkbox" required />
+                  <span>I agree to the doFiin Terms of Use and Privacy Policy.</span>
+                </label>
+              </>
+            ) : (
+              <div className="auth-options">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  />
+                  Remember me
+                </label>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    setError(
+                      'Password reset is not available yet. Contact support for account access.',
+                    )
+                  }
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
             {error && (
               <div className="inline-error" role="alert">
                 {error}
               </div>
             )}
             <button className="button primary full" disabled={!!busy} type="submit">
-              {busy === 'auth' ? <LoaderCircle className="spin" size={17} /> : null}
-              {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-              <ArrowRight size={17} />
+              {busy === 'auth' && <LoaderCircle className="spin" size={17} />}{' '}
+              {mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
           </form>
           <p className="auth-switch">
-            {mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}{' '}
+            {mode === 'login' ? 'New to doFiin?' : 'Already have an account?'}{' '}
             <button
               onClick={() => {
-                setMode(mode === 'login' ? 'register' : 'login');
+                const nextMode = mode === 'login' ? 'register' : 'login';
+                setMode(nextMode);
+                onModeChange?.(nextMode);
                 setError('');
               }}
             >
-              {mode === 'login' ? 'Đăng ký miễn phí' : 'Đăng nhập'}
+              {mode === 'login' ? 'Sign up free →' : 'Sign in →'}
             </button>
           </p>
-          <div className="separator">
-            <span>hoặc khám phá trước</span>
-          </div>
+          <p className="auth-privacy">
+            <LockKeyhole size={14} />
+            Your data stays private.
+          </p>
           <button
-            className="button demo-button full"
+            className="text-button auth-demo-link"
             disabled={!!busy}
             onClick={() => void submit(true)}
           >
-            {busy === 'demo' ? <LoaderCircle className="spin" size={17} /> : <Sparkles size={17} />}
-            Trải nghiệm bản demo
-            <ArrowUpRight size={16} />
+            {busy === 'demo' ? <LoaderCircle className="spin" size={15} /> : <Sparkles size={15} />}
+            Explore demo
+            <ArrowUpRight size={15} />
           </button>
-          <p className="auth-demo-note">
-            Tạo không gian riêng với danh mục mẫu.
-            <br />
-            Dữ liệu mô phỏng, không cần thông tin thanh toán.
-          </p>
         </div>
-        <div className="auth-bottom">
-          <LockKeyhole size={13} />
-          Không gian riêng cho từng tài khoản
-        </div>
+        <footer className="auth-bottom">
+          <span>© 2026 doFiin</span>
+          <span>Privacy · Terms</span>
+        </footer>
       </div>
     </div>
   );

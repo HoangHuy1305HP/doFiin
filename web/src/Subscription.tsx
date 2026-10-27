@@ -11,7 +11,7 @@ import {
 import { api, put } from './api';
 import type { Subscription as SubscriptionData } from './types';
 
-const currency = (value: number) => new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+const currency = (value: number) => '₫' + new Intl.NumberFormat('en-US').format(value);
 export default function Subscription({ notify }: { notify: (message: string) => void }) {
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [cycle, setCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -34,9 +34,9 @@ export default function Subscription({ notify }: { notify: (message: string) => 
         billing_cycle: cycle,
       });
       setData(result);
-      notify('Đã đổi gói mô phỏng. Không phát sinh thanh toán.');
+      notify('Demo plan updated. No payment was made.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không thể đổi gói.');
+      setError(e instanceof Error ? e.message : 'Unable to change plan.');
     } finally {
       setBusy('');
     }
@@ -45,16 +45,16 @@ export default function Subscription({ notify }: { notify: (message: string) => 
     <>
       <div className="page-intro">
         <div>
-          <span className="eyebrow">GÓI DỊCH VỤ</span>
+          <span className="eyebrow">SUBSCRIPTION</span>
           <h1>
-            Thêm góc nhìn.
-            <br className="mobile-only" /> Thêm chủ động.
+            More perspective.
+            <br className="mobile-only" /> More control.
           </h1>
-          <p>Chọn một nhịp phù hợp cho hành trình đầu tư của bạn.</p>
+          <p>Find a plan for the way you invest. Start free, upgrade when needed.</p>
         </div>
         <span className="demo-outline">
           <CreditCard size={15} />
-          Bản minh họa
+          Illustrative pricing
         </span>
       </div>
       {error && <div className="inline-error">{error}</div>}
@@ -63,16 +63,14 @@ export default function Subscription({ notify }: { notify: (message: string) => 
           <CircleCheck size={24} />
         </span>
         <div>
-          <span className="micro-label">GÓI ĐANG SỬ DỤNG</span>
+          <span className="micro-label">YOUR PLAN</span>
           <strong>
             {data?.plans.find((p) => p.code === data.plan_code)?.name || '…'} ·{' '}
-            {data?.plan_code === 'free' ? 'Miễn phí' : 'Mô phỏng'}
+            {data?.plan_code === 'free' ? 'No cost' : 'Simulated'}
           </strong>
-          <span>
-            {data?.portfolio_count ?? 0} danh mục đang hoạt động trong không gian của bạn.
-          </span>
+          <span>{data?.portfolio_count ?? 0} active portfolios in your workspace.</span>
         </div>
-        <span className="tag">TẤT CẢ CÔNG CỤ ĐANG MỞ TRONG DEMO</span>
+        <span className="tag">ALL TOOLS AVAILABLE IN DEMO</span>
       </div>
       <div className="billing-switch">
         <div className="segmented">
@@ -80,13 +78,13 @@ export default function Subscription({ notify }: { notify: (message: string) => 
             className={cycle === 'monthly' ? 'active' : ''}
             onClick={() => setCycle('monthly')}
           >
-            Hàng tháng
+            Monthly
           </button>
           <button className={cycle === 'annual' ? 'active' : ''} onClick={() => setCycle('annual')}>
-            Hàng năm
+            Yearly
           </button>
         </div>
-        <span className="saving-tag">Tiết kiệm 20%</span>
+        <span className="saving-tag">Save 20%</span>
       </div>
       <div className="plans-grid">
         {data?.plans.map((plan) => (
@@ -99,16 +97,16 @@ export default function Subscription({ notify }: { notify: (message: string) => 
               {plan.code === 'plus' && (
                 <span className="saving-tag">
                   <Sparkles size={11} />
-                  Phổ biến
+                  POPULAR
                 </span>
               )}
             </div>
             <p>
               {plan.code === 'free'
-                ? 'Bắt đầu với sự rõ ràng.'
+                ? 'Start with insight.'
                 : plan.code === 'plus'
-                  ? 'Đủ sâu để hiểu mình hơn.'
-                  : 'Thêm chiều sâu cho mọi góc nhìn.'}
+                  ? 'Know your portfolio.'
+                  : 'See the full picture.'}
             </p>
             <div className="plan-price">
               {currency(
@@ -116,27 +114,27 @@ export default function Subscription({ notify }: { notify: (message: string) => 
                   ? plan.monthly_price
                   : Math.round(plan.monthly_price * 12 * 0.8),
               )}
-              <span>/{cycle === 'monthly' ? 'tháng' : 'năm'}</span>
+              <span>/{cycle === 'monthly' ? 'month' : 'year'}</span>
             </div>
             <span className="plan-price-note">
               {cycle === 'annual' && plan.monthly_price > 0
-                ? 'Tương đương ' + currency(Math.round(plan.monthly_price * 0.8)) + '/tháng'
-                : 'Giá minh họa · VNĐ'}
+                ? 'Equivalent to' + currency(Math.round(plan.monthly_price * 0.8)) + '/month'
+                : 'Illustrative pricing · VND'}
             </span>
             <div className="plan-features">
               {[
-                plan.portfolios + ' danh mục đầu tư',
+                plan.portfolios + ' portfolios',
                 plan.history_years
-                  ? plan.history_years + ' năm dữ liệu lịch sử'
-                  : 'Toàn bộ lịch sử khả dụng',
+                  ? plan.history_years + ' years of historical data'
+                  : 'All available history',
                 plan.code === 'free'
-                  ? 'Tổng quan và rủi ro cơ bản'
-                  : 'Tín hiệu, kiểm thử và yếu tố',
+                  ? 'Overview and basic risk'
+                  : 'Signals, backtests, and factors',
                 plan.layouts == null
-                  ? 'Studio: không giới hạn bố cục'
+                  ? 'Unlimited Studio layouts'
                   : plan.layouts === 0
-                    ? 'Bố cục tiêu chuẩn'
-                    : 'Studio: lưu ' + plan.layouts + ' bố cục',
+                    ? 'Standard layout'
+                    : 'Studio: save ' + plan.layouts + ' layouts',
               ].map((text) => (
                 <span key={text}>
                   <Check size={15} />
@@ -151,8 +149,8 @@ export default function Subscription({ notify }: { notify: (message: string) => 
             >
               {busy === plan.code ? <LoaderCircle size={15} className="spin" /> : null}
               {data.plan_code === plan.code && data.billing_cycle === cycle
-                ? 'Gói hiện tại'
-                : 'Chọn ' + plan.name}
+                ? 'Current plan'
+                : 'Choose' + plan.name}
               <ArrowRight size={15} />
             </button>
           </section>
@@ -160,16 +158,16 @@ export default function Subscription({ notify }: { notify: (message: string) => 
       </div>
       <div className="subscription-note">
         <Sparkles size={17} />
-        <p>{data?.notice || 'Giá và quyền lợi minh họa, không có thanh toán thật.'}</p>
+        <p>{data?.notice || 'Illustrative pricing and benefits. No actual payments.'}</p>
       </div>
       <section className="comparison-section">
-        <span className="eyebrow">SO SÁNH QUYỀN LỢI MINH HỌA</span>
-        <h2>Chọn mức hỗ trợ phù hợp.</h2>
+        <span className="eyebrow">COMPARE PLANS</span>
+        <h2>Choose the support you need.</h2>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Tính năng</th>
+                <th>Feature</th>
                 <th>Free</th>
                 <th>Plus</th>
                 <th>Pro</th>
@@ -177,60 +175,60 @@ export default function Subscription({ notify }: { notify: (message: string) => 
             </thead>
             <tbody>
               <tr>
-                <td>Danh mục đầu tư</td>
+                <td>Portfolios</td>
                 <td>1</td>
                 <td>5</td>
                 <td>20</td>
               </tr>
               <tr>
-                <td>Lịch sử dữ liệu</td>
-                <td>1 năm</td>
-                <td>5 năm</td>
-                <td>Khả dụng</td>
+                <td>Historical data</td>
+                <td>1 year</td>
+                <td>5 years</td>
+                <td>Available</td>
               </tr>
               <tr>
-                <td>Tín hiệu và kiểm thử</td>
+                <td>Signals and backtests</td>
                 <td>—</td>
                 <td>✓</td>
                 <td>✓</td>
               </tr>
               <tr>
-                <td>Phân tích yếu tố</td>
+                <td>Factor analysis</td>
                 <td>—</td>
                 <td>✓</td>
                 <td>✓</td>
               </tr>
               <tr>
-                <td>Bố cục Studio</td>
-                <td>Tiêu chuẩn</td>
+                <td>Studio layouts</td>
+                <td>Standard</td>
                 <td>3</td>
-                <td>Không giới hạn</td>
+                <td>Unlimited</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
       <div className="faq-section">
-        <h2>Một vài điều bạn muốn biết.</h2>
+        <h2>Frequently asked questions.</h2>
         <div className="faq-grid">
           <details>
             <summary>
-              Có thể đổi gói bất cứ lúc nào?
+              Can I change plans at any time?
               <ChevronDown size={15} />
             </summary>
             <p>
-              Trong demo, bạn có thể đổi gói để thử giao diện. Không phát sinh thanh toán và chưa áp
-              dụng hạn mức theo gói.
+              You can switch plans to explore the demo. No payment is made, and plan limits are not
+              enforced in the demo.
             </p>
           </details>
           <details>
             <summary>
-              Hủy gói có mất danh mục không?
+              Will I lose my portfolios if I cancel?
               <ChevronDown size={15} />
             </summary>
             <p>
-              Đổi về Free trong demo vẫn giữ danh mục. Chính sách thương mại chính thức sẽ được nhóm
-              thống nhất ở giai đoạn sau.
+              Your portfolios remain when switching to Free in the demo. Commercial policies will be
+              finalized before launch.
             </p>
           </details>
         </div>

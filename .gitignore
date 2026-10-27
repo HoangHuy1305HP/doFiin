@@ -13,3 +13,5 @@ node_modules/
 *.tsbuildinfo
 .env.*
 !.env.example
+
+web/.verify/

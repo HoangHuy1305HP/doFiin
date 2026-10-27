@@ -13,6 +13,15 @@ export function setToken(value: string) {
   accessToken = value;
 }
 export async function restoreSession(): Promise<boolean> {
+  try {
+    if (
+      localStorage.getItem('dofiin:remember') === 'false' &&
+      sessionStorage.getItem('dofiin:active-session') !== 'true'
+    )
+      return false;
+  } catch {
+    /* Fall back to the server session if storage is unavailable. */
+  }
   if (!refreshPromise)
     refreshPromise = (async () => {
       try {
@@ -56,17 +65,17 @@ export async function api<T>(path: string, options: RequestInit = {}, retry = tr
     }
     const detail = data.error;
     const messages: Record<string, string> = {
-      INVALID_CREDENTIALS: 'Email hoặc mật khẩu chưa đúng.',
-      EMAIL_EXISTS: 'Email này đã được đăng ký.',
-      UNAUTHORIZED: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
-      VERSION_CONFLICT: 'Danh mục đã được thay đổi ở nơi khác. Tải lại trước khi lưu.',
-      PORTFOLIO_ARCHIVED: 'Danh mục đã được lưu trữ, chỉ có thể xem lịch sử.',
+      INVALID_CREDENTIALS: 'Incorrect email or password.',
+      EMAIL_EXISTS: 'This email is already registered.',
+      UNAUTHORIZED: 'Your session expired. Please sign in again.',
+      VERSION_CONFLICT: 'This portfolio changed on another device. Reload before saving.',
+      PORTFOLIO_ARCHIVED: 'This portfolio is archived. You can still view its history.',
     };
     const issues = detail?.issues?.map((issue: { message: string }) => issue.message).join(' · ');
     throw new ApiError(
       response.status,
       detail?.code || 'REQUEST_FAILED',
-      messages[detail?.code] || issues || detail?.message || 'Không thể kết nối. Vui lòng thử lại.',
+      messages[detail?.code] || issues || detail?.message || 'Unable to connect. Please try again.',
     );
   }
   if (response.status === 204) return undefined as T;
@@ -79,13 +88,13 @@ export const put = <T>(path: string, body: unknown) =>
 export const percent = (value: number | null | undefined, digits = 1) =>
   value == null
     ? '—'
-    : new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: digits }).format(
+    : new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: digits }).format(
         value,
       );
 export const number = (value: number | null | undefined, digits = 2) =>
   value == null
     ? '—'
-    : new Intl.NumberFormat('vi-VN', { maximumFractionDigits: digits }).format(value);
+    : new Intl.NumberFormat('en-US', { maximumFractionDigits: digits }).format(value);
 export const money = (value: number | null | undefined) =>
   value == null
     ? '—'
@@ -95,7 +104,7 @@ export const money = (value: number | null | undefined) =>
         maximumFractionDigits: 0,
       }).format(value);
 export const dateLabel = (value: string) =>
-  new Date(value + 'T12:00:00').toLocaleDateString('vi-VN', {
+  new Date(value + 'T12:00:00').toLocaleDateString('en-US', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

@@ -15,14 +15,20 @@ import {
   Smartphone,
   Tablet,
   X,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { Brand } from './Auth';
 import { Dashboard, defaultLayout, TITLES } from './pages';
 import type { BacktestForm } from './pages';
 import type { Analysis, Backtest, Layout, Page } from './types';
 import { put } from './api';
+import { DEFAULT_MENU, PAGE_LABELS } from './preferences';
+import type { Preferences } from './preferences';
 
 type Props = {
+  preferences: Preferences;
+  onPreferencesSaved: (preferences: Preferences) => void;
   page: Page;
   analysis: Analysis;
   backtest: Backtest | null;
@@ -32,6 +38,8 @@ type Props = {
   onSaved: (layout: Layout) => void;
 };
 export default function Studio({
+  preferences,
+  onPreferencesSaved,
   page,
   analysis,
   backtest,
@@ -41,12 +49,17 @@ export default function Studio({
   onSaved,
 }: Props) {
   const [config, setConfig] = useState(structuredClone(layout.config));
+  const [settings, setSettings] = useState(() => structuredClone(preferences));
+  const [tab, setTab] = useState<'appearance' | 'function'>('appearance');
+  const [addingMenu, setAddingMenu] = useState(false);
   const [selected, setSelected] = useState(config.order[0]);
   const [viewport, setViewport] = useState('desktop');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
-  const changed = JSON.stringify(config) !== JSON.stringify(layout.config);
+  const changed =
+    JSON.stringify(config) !== JSON.stringify(layout.config) ||
+    JSON.stringify(settings) !== JSON.stringify(preferences);
   function move(key: string, offset: number) {
     const order = [...config.order];
     const index = order.indexOf(key);
@@ -71,16 +84,17 @@ export default function Studio({
         expected_revision: layout.revision,
         config,
       });
+      onPreferencesSaved(settings);
       onSaved(result);
       setSaved(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Không thể lưu bố cục.');
+      setError(error instanceof Error ? error.message : 'Unable to save layout.');
     } finally {
       setBusy(false);
     }
   }
   function close() {
-    if (changed && !window.confirm('Bố cục chưa được lưu. Thoát Studio?')) return;
+    if (changed && !window.confirm('You have unsaved changes. Exit Studio?')) return;
     onClose();
   }
   const studioRef = useRef<HTMLDivElement>(null);
@@ -94,14 +108,14 @@ export default function Studio({
       aria-label="doFiin Studio"
     >
       <header className="studio-header">
-        <button className="icon-button" aria-label="Thoát Studio" onClick={close}>
+        <button className="icon-button" aria-label="Exit Studio" onClick={close}>
           <ChevronLeft size={20} />
         </button>
         <Brand />
         <span className="studio-slash">/</span>
         <span className="studio-label">Studio</span>
         <span className="studio-divider" />
-        <span className="subtle">Tinh chỉnh góc nhìn của bạn</span>
+        <span className="subtle">Customize the presentation.</span>
         <div className="viewport-buttons">
           {[
             { key: 'desktop', icon: Monitor, label: 'Desktop' },
@@ -120,7 +134,7 @@ export default function Studio({
         </div>
         <span className="button outline studio-preview-button">
           <Eye size={15} />
-          Xem trước trực tiếp
+          Live preview
         </span>
         <button className="button primary" onClick={() => void save()} disabled={busy}>
           {busy ? (
@@ -130,17 +144,92 @@ export default function Studio({
           ) : (
             <Save size={15} />
           )}
-          <span>{saved && !changed ? 'Đã lưu' : 'Lưu bố cục'}</span>
+          <span>{saved && !changed ? 'Saved' : 'Save layout'}</span>
         </button>
-        <button className="icon-button" aria-label="Đóng Studio" onClick={close}>
+        <button className="icon-button" aria-label="Close Studio" onClick={close}>
           <X size={19} />
         </button>
       </header>
       <div className="studio-body">
         <aside className="studio-left">
-          <span className="eyebrow">BỐ CỤC TRANG</span>
-          <h3>Các thành phần</h3>
-          <p>Kéo để đổi thứ tự. Dùng mũi tên nếu bạn đang thao tác bằng bàn phím.</p>
+          <section className="studio-menu" aria-label="Navigation menu settings">
+            <h3>Navigation menu</h3>
+            {settings.menu.map((item, index) => (
+              <div
+                className={'studio-menu-row ' + (page === item ? 'active' : '')}
+                key={item}
+                draggable
+                onDragStart={(event) => event.dataTransfer.setData('application/dofiin-menu', item)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const source = event.dataTransfer.getData('application/dofiin-menu') as Page;
+                  if (!settings.menu.includes(source) || source === item) return;
+                  const menu = settings.menu.filter((key) => key !== source);
+                  menu.splice(menu.indexOf(item), 0, source);
+                  setSettings({ ...settings, menu });
+                }}
+              >
+                <GripVertical size={14} />
+                <span className="studio-menu-name">{PAGE_LABELS[item]}</span>
+                <button
+                  className="icon-button"
+                  aria-label={'Move ' + PAGE_LABELS[item] + ' up'}
+                  disabled={index === 0}
+                  onClick={() => {
+                    const menu = [...settings.menu];
+                    [menu[index - 1], menu[index]] = [menu[index], menu[index - 1]];
+                    setSettings({ ...settings, menu });
+                  }}
+                >
+                  <ArrowUp size={12} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={'Remove ' + PAGE_LABELS[item] + ' menu'}
+                  disabled={settings.menu.length === 1}
+                  onClick={() =>
+                    setSettings({ ...settings, menu: settings.menu.filter((key) => key !== item) })
+                  }
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+            <button
+              className="text-button"
+              disabled={settings.menu.length === DEFAULT_MENU.length}
+              onClick={() => setAddingMenu(!addingMenu)}
+            >
+              <Plus size={14} />
+              Add Menu
+            </button>
+            {addingMenu && (
+              <select
+                aria-label="Add navigation menu"
+                value=""
+                onChange={(event) => {
+                  setSettings({
+                    ...settings,
+                    menu: [...settings.menu, event.target.value as Page],
+                  });
+                  setAddingMenu(false);
+                }}
+              >
+                <option value="" disabled>
+                  Select a page
+                </option>
+                {DEFAULT_MENU.filter((key) => !settings.menu.includes(key)).map((key) => (
+                  <option key={key} value={key}>
+                    {PAGE_LABELS[key]}
+                  </option>
+                ))}
+              </select>
+            )}
+          </section>
+          <span className="eyebrow">PAGE LAYOUT</span>
+          <h3>Widgets</h3>
+          <p>Drag to reorder, or use the arrow buttons.</p>
           <div className="studio-widgets">
             {config.order.map((key, i) => (
               <div
@@ -160,21 +249,21 @@ export default function Studio({
                 </button>
                 <div className="widget-controls">
                   <button
-                    aria-label={'Đưa ' + TITLES[key] + ' lên'}
+                    aria-label={'Move' + TITLES[key] + 'up'}
                     disabled={i === 0}
                     onClick={() => move(key, -1)}
                   >
                     <ArrowUp size={12} />
                   </button>
                   <button
-                    aria-label={'Đưa ' + TITLES[key] + ' xuống'}
+                    aria-label={'Move' + TITLES[key] + 'down'}
                     disabled={i === config.order.length - 1}
                     onClick={() => move(key, 1)}
                   >
                     <ArrowDown size={12} />
                   </button>
                   <button
-                    aria-label={(config.hidden.includes(key) ? 'Hiện ' : 'Ẩn ') + TITLES[key]}
+                    aria-label={(config.hidden.includes(key) ? 'Show' : 'Hide') + TITLES[key]}
                     onClick={() =>
                       setConfig({
                         ...config,
@@ -198,16 +287,16 @@ export default function Studio({
             }}
           >
             <RotateCcw size={14} />
-            Bố cục mặc định
+            Reset layout
           </button>
           <div className="studio-tip">
             <span className="status-dot" />
-            <p>Studio thay đổi trình bày. Dữ liệu và công thức tài chính được giữ nguyên.</p>
+            <p>Customize the presentation. Data and formulas stay the same.</p>
           </div>
         </aside>
         <main className="studio-canvas">
           <div className="studio-canvas-label">
-            <span>TRANG XEM TRƯỚC</span>
+            <span>PAGE PREVIEW</span>
             <span>
               {viewport === 'desktop'
                 ? 'Desktop · Responsive'
@@ -219,14 +308,15 @@ export default function Studio({
           <div className={'studio-preview ' + viewport}>
             <div className="studio-preview-brand">
               <Brand />
-              <span className="tag">Xem trước</span>
+              <span className="tag">Preview</span>
             </div>
             <div className="studio-preview-heading">
-              <span className="eyebrow">PHÂN TÍCH DANH MỤC</span>
+              <span className="eyebrow">PORTFOLIO ANALYTICS</span>
               <h2>{analysis.result.metadata.portfolio_name}</h2>
-              <p>Bố cục riêng cho góc nhìn của bạn.</p>
+              <p>Your portfolio page layout.</p>
             </div>
             <Dashboard
+              presentation={settings.presentation}
               page={page}
               analysis={analysis}
               layout={config}
@@ -241,56 +331,171 @@ export default function Studio({
           </div>
         </main>
         <aside className="studio-right">
-          <span className="eyebrow">THUỘC TÍNH WIDGET</span>
-          <h3>{TITLES[selected]}</h3>
-          <label>
-            Tiêu đề
-            <input
-              maxLength={100}
-              value={config.titles[selected] ?? TITLES[selected]}
-              onChange={(e) =>
-                setConfig({ ...config, titles: { ...config.titles, [selected]: e.target.value } })
-              }
-            />
-          </label>
-          <label>
-            Hiển thị biểu đồ
-            <select
-              value={config.chart_style}
-              onChange={(e) =>
-                setConfig({ ...config, chart_style: e.target.value as 'area' | 'line' })
-              }
+          <div className="studio-tabs" role="tablist" aria-label="Widget settings">
+            <button
+              role="tab"
+              id="appearance-tab"
+              aria-controls="appearance-panel"
+              aria-selected={tab === 'appearance'}
+              onClick={() => setTab('appearance')}
             >
-              <option value="area">Đường và vùng</option>
-              <option value="line">Chỉ đường</option>
-            </select>
-          </label>
-          <label>
-            Mật độ bố cục
-            <select
-              value={config.density}
-              onChange={(e) =>
-                setConfig({ ...config, density: e.target.value as 'comfortable' | 'compact' })
-              }
+              Appearance
+            </button>
+            <button
+              role="tab"
+              id="function-tab"
+              aria-controls="function-panel"
+              aria-selected={tab === 'function'}
+              onClick={() => setTab('function')}
             >
-              <option value="comfortable">Thoáng</option>
-              <option value="compact">Gọn</option>
-            </select>
-          </label>
-          <div className="studio-property-note">
-            <strong>Nguồn dữ liệu</strong>
-            <span>{analysis.result.metadata.portfolio_name}</span>
-            <span>Phiên bản {analysis.result.metadata.version_number}</span>
-            <span>{analysis.result.metadata.is_demo ? 'Giá mô phỏng' : 'Yahoo Finance'}</span>
+              Function
+            </button>
           </div>
+          {tab === 'appearance' ? (
+            <div role="tabpanel" id="appearance-panel" aria-labelledby="appearance-tab">
+              <span className="eyebrow">WIDGET SETTINGS</span>
+              <h3>{TITLES[selected]}</h3>
+              <label>
+                Title
+                <input
+                  maxLength={100}
+                  value={config.titles[selected] ?? TITLES[selected]}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      titles: { ...config.titles, [selected]: e.target.value },
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Chart type
+                <select
+                  value={config.chart_style}
+                  onChange={(e) =>
+                    setConfig({ ...config, chart_style: e.target.value as 'area' | 'line' })
+                  }
+                >
+                  <option value="area">Area</option>
+                  <option value="line">Line</option>
+                </select>
+              </label>
+              <label>
+                Density
+                <select
+                  value={config.density}
+                  onChange={(e) =>
+                    setConfig({ ...config, density: e.target.value as 'comfortable' | 'compact' })
+                  }
+                >
+                  <option value="comfortable">Comfortable</option>
+                  <option value="compact">Compact</option>
+                </select>
+              </label>
+              <div className="studio-property-note">
+                <strong>Data source</strong>
+                <span>{analysis.result.metadata.portfolio_name}</span>
+                <span>Version {analysis.result.metadata.version_number}</span>
+                <span>
+                  {analysis.result.metadata.is_demo ? 'Simulated prices' : 'Yahoo Finance'}
+                </span>
+              </div>
+              <label>
+                Chart color
+                <input
+                  type="color"
+                  aria-label="Chart color"
+                  value={settings.presentation.color}
+                  onChange={(event) =>
+                    setSettings({
+                      ...settings,
+                      presentation: { ...settings.presentation, color: event.target.value },
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Legend
+                <select
+                  aria-label="Legend"
+                  value={String(settings.presentation.legend)}
+                  onChange={(event) =>
+                    setSettings({
+                      ...settings,
+                      presentation: {
+                        ...settings.presentation,
+                        legend: event.target.value === 'true',
+                      },
+                    })
+                  }
+                >
+                  <option value="true">Visible</option>
+                  <option value="false">Hidden</option>
+                </select>
+              </label>
+              <label>
+                Corner radius
+                <select
+                  aria-label="Corner radius"
+                  value={settings.presentation.corners}
+                  onChange={(event) =>
+                    setSettings({
+                      ...settings,
+                      presentation: {
+                        ...settings.presentation,
+                        corners: Number(event.target.value),
+                      },
+                    })
+                  }
+                >
+                  {[0, 4, 8, 12].map((radius) => (
+                    <option key={radius} value={radius}>
+                      {radius} px
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="small-note">Manage portfolio data, periods, and rules in Function.</p>
+            </div>
+          ) : (
+            <div
+              className="studio-function"
+              role="tabpanel"
+              id="function-panel"
+              aria-labelledby="function-tab"
+            >
+              <h3>Data &amp; rules</h3>
+              <p>
+                Appearance changes presentation. Portfolio data and analysis rules are managed from
+                your dashboard.
+              </p>
+              <dl>
+                <dt>Portfolio</dt>
+                <dd>{analysis.result.metadata.portfolio_name}</dd>
+                <dt>Source</dt>
+                <dd>{analysis.result.metadata.is_demo ? 'Simulated data' : 'Yahoo Finance'}</dd>
+                <dt>Period</dt>
+                <dd>
+                  {analysis.result.metadata.first_date} — {analysis.result.metadata.last_date}
+                </dd>
+                <dt>Benchmark</dt>
+                <dd>{analysis.result.metadata.benchmark}</dd>
+                <dt>Signal windows</dt>
+                <dd>
+                  MA{analysis.result.signals.short_window} / MA{analysis.result.signals.long_window}
+                </dd>
+              </dl>
+              <button className="button outline full" onClick={close}>
+                Open dashboard
+              </button>
+            </div>
+          )}
           {error && (
             <div className="inline-error" role="alert">
               {error}
             </div>
           )}
-          <div className="studio-save-state">
-            {changed ? 'Có thay đổi chưa lưu' : 'Bố cục đã đồng bộ'}
-          </div>
+          <div className="studio-save-state">{changed ? 'Unsaved changes' : 'Layout synced'}</div>
         </aside>
       </div>
     </div>

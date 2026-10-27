@@ -1,0 +1,49 @@
+/* doFiin / native Figma source measurements. See design/figma-reference.json. */
+:root {
+  --font-body: 'Geist', sans-serif;
+  --font-heading: 'Space Grotesk', sans-serif;
+  --color-forest: #163d32;
+  --color-lime: #cfe89b;
+  --color-canvas: #f6f7f3;
+  --color-surface: #ffffff;
+  --color-text: #202a27;
+  --color-text-heading: #17231f;
+  --color-text-muted: #69776e;
+  --color-border: #dde3da;
+  --color-positive: #27704f;
+  --color-negative: #a15a35;
+  --color-chart-1: #163d32;
+  --color-chart-2: #94ae58;
+  --color-chart-3: #c49a3b;
+  --text-caption: 0.6875rem; /* 11 */
+  --text-small: 0.75rem; /* 12 */
+  --text-label: 0.875rem; /* 14 */
+  --text-body: 1rem; /* 16 */
+  --text-lead: 1.125rem; /* 18 */
+  --text-card-title: 1.125rem; /* 18 */
+  --text-page-title: 2.625rem; /* 42 */
+  --text-portfolio-title: 2.97rem; /* 47.52 */
+  --text-metric: 2.0625rem; /* 33 */
+  --text-metric-primary: 3.25rem; /* 52 */
+  --text-auth-title: 1.9375rem; /* 31 */
+  --text-landing-title: 4.75rem; /* 76 */
+  --leading-heading: 1.12;
+  --leading-body: 1.5;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-control: 4px;
+  --radius-card: 0px; /* analytics frames have square cards */
+  --radius-panel: 8px;
+  --sidebar-width: 238px;
+  --topbar-height: 86px;
+  --page-gutter: 60px;
+  --widget-gap: 16px;
+}
