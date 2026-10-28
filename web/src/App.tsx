@@ -300,8 +300,10 @@ export default function App() {
     if (!user || !versionId) return;
     let active = true;
     setLoading(true);
-    setAnalysis(null);
-    setBacktest(null);
+    if (analysis?.portfolio_version_id !== versionId) {
+      setAnalysis(null);
+      setBacktest(null);
+    }
     setAnalysisError('');
     analysisRef.current = '';
     const end = new Date();
@@ -319,6 +321,7 @@ export default function App() {
         if (active) {
           analysisRef.current = result.id;
           setAnalysis(result);
+          setBacktest(null);
         }
       })
       .catch((error) => {
@@ -1092,7 +1095,6 @@ export default function App() {
       )}
       {studio && analysis && (
         <Studio
-          key={activePage}
           closing={studioClosing}
           preferences={preferences}
           onPreferencesSaved={savePreferences}
@@ -1104,7 +1106,6 @@ export default function App() {
           period={period}
           source={source}
           onAnalysisSettingsSaved={(nextPeriod, nextSource) => {
-            setStudio(false);
             setPeriod(nextPeriod);
             setSource(nextSource);
           }}

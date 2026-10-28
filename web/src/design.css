@@ -2935,6 +2935,7 @@ h4,
 .studio-editor .viewport-buttons button.active { color: white; background: var(--color-primary); }
 .studio-editor .studio-preview-live { display: inline-flex; align-items: center; justify-self: end; gap: 5px; white-space: nowrap; }
 .studio-editor .studio-preview-stage { flex: 1; min-height: 0; padding: 22px; overflow: auto; }
+.studio-editor .studio-preview-error { margin: 0 0 12px; padding: 10px 12px; border: 1px solid #e5b8b8; border-radius: var(--radius-control); background: #fff6f5; color: var(--color-negative); font-size: var(--text-small); }
 .studio-editor .studio-preview { min-height: 100%; max-width: 100%; padding: 26px; border: 1px solid var(--studio-line); box-shadow: 0 8px 28px #0f172a10; }
 .studio-editor .studio-preview .widget.studio-section-selected {
   outline: 2px solid #000;

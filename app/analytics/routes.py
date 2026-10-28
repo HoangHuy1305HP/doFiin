@@ -14,6 +14,8 @@ from app.analytics.schemas import (
     AnalysisOutput,
     BacktestInput,
     BacktestOutput,
+    StudioPreviewInput,
+    StudioPreviewOutput,
     LayoutInput,
     LayoutOutput,
     OptimizeInput,
@@ -51,8 +53,7 @@ def analysis_output(run, include_snapshot=False):
     }
 
 
-@router.post("/analysis-runs", status_code=201, response_model=AnalysisOutput)
-def analyze(data: AnalysisInput, identity: CurrentIdentity, db: DB):
+def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: DB):
     version = db.get(PortfolioVersion, data.portfolio_version_id)
     if version is None:
         fail(404, "VERSION_NOT_FOUND", "Không tìm thấy phiên bản.")
@@ -123,6 +124,32 @@ def analyze(data: AnalysisInput, identity: CurrentIdentity, db: DB):
         "methodology": "Buy-and-hold theo tỷ trọng đầu kỳ; giá đóng cửa điều chỉnh; 252 phiên/năm.",
         "risk_free_rate": data.risk_free_rate,
     }
+    return result, version, benchmark
+
+
+@router.post("/studio-preview", response_model=StudioPreviewOutput)
+def preview_studio(data: StudioPreviewInput, identity: CurrentIdentity, db: DB):
+    result, _, _ = build_analysis_preview(data.analysis, identity, db)
+    simulation = None
+    if data.backtest is not None:
+        rules = data.backtest
+        simulation = backtest(
+            result["snapshot"],
+            rules.strategy,
+            rules.initial_capital,
+            rules.fee_bps,
+            rules.slippage_bps,
+            rules.rebalance_frequency,
+            data.analysis.risk_free_rate,
+        )
+        simulation["metadata"] = result["metadata"]
+    result = {key: value for key, value in result.items() if key != "snapshot"}
+    return {"analysis": result, "backtest": simulation}
+
+
+@router.post("/analysis-runs", status_code=201, response_model=AnalysisOutput)
+def analyze(data: AnalysisInput, identity: CurrentIdentity, db: DB):
+    result, version, benchmark = build_analysis_preview(data, identity, db)
     run = AnalysisRun(
         user_id=identity.user.id,
         portfolio_version_id=version.id,

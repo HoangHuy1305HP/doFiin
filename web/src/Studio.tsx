@@ -26,7 +26,7 @@ import StudioSelect from './StudioSelect';
 import { Dashboard, TITLES } from './pages';
 import type { BacktestForm } from './pages';
 import type { Analysis, Backtest, Layout, Page } from './types';
-import { put } from './api';
+import { post, put } from './api';
 import { DEFAULT_MENU, DEFAULT_SECTION_APPEARANCE, PAGE_LABELS } from './preferences';
 import type { PageContent, Preferences, SectionAppearance } from './preferences';
 import { useDialogFocus } from './useDialogFocus';
@@ -61,6 +61,8 @@ function currentDeviceViewport(): Viewport {
   if (window.innerWidth < 1200) return 'tablet';
   return 'desktop';
 }
+const localDate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const FUNCTION_DESCRIPTIONS: Record<Page, string> = {
   portfolio: 'Choose the data behind this portfolio view and edit its holdings and weights.',
   risk: 'Choose the data period and source used by the risk charts.',
@@ -114,6 +116,11 @@ export default function Studio({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [previewAnalysis, setPreviewAnalysis] = useState<Analysis['result'] | null>(null);
+  const [previewBacktest, setPreviewBacktest] = useState<Backtest['result'] | null>(null);
+  const [previewPending, setPreviewPending] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+  const preservePreviewAfterSave = useRef(false);
   const studioRef = useRef<HTMLDivElement>(null);
   const rowPositions = useRef(new Map<string, number>());
   const activePointer = useRef<{
@@ -127,6 +134,32 @@ export default function Studio({
   } | null>(null);
   const incomingLayoutSignature = JSON.stringify(layout.config);
   const previousLayoutSignature = useRef(incomingLayoutSignature);
+  const previousPage = useRef(page);
+  useLayoutEffect(() => {
+    if (previousPage.current === page) return;
+    previousPage.current = page;
+    previousLayoutSignature.current = incomingLayoutSignature;
+    setConfig(structuredClone(layout.config));
+    setSettings(structuredClone(preferences));
+    setDraftPeriod(period);
+    setDraftSource(source);
+    setDraftBacktest({ ...btForm });
+    setSelected('page');
+    setHighlightedSection(null);
+    setSectionFocusRequest(null);
+    setInspectorTab('content');
+    setAddingMenu(false);
+    setAddingSections(false);
+    setSaved(false);
+    setError('');
+    setPreviewAnalysis(null);
+    setPreviewBacktest(null);
+    setPreviewPending(false);
+    setPreviewError('');
+    preservePreviewAfterSave.current = false;
+    studioRef.current?.querySelector<HTMLElement>('.studio-preview-stage')?.scrollTo({ top: 0 });
+    studioRef.current?.querySelector<HTMLElement>('.studio-right')?.scrollTo({ top: 0 });
+  }, [page, incomingLayoutSignature, layout.config, preferences, period, source, btForm]);
   useEffect(() => {
     const updateDeviceViewport = () => setDeviceViewport(currentDeviceViewport());
     window.addEventListener('resize', updateDeviceViewport);
@@ -186,6 +219,59 @@ export default function Studio({
   const preferencesChanged = JSON.stringify(settings) !== JSON.stringify(preferences);
   const analysisChanged = draftPeriod !== period || draftSource !== source;
   const backtestChanged = JSON.stringify(draftBacktest) !== JSON.stringify(btForm);
+  const previewRulesKey = JSON.stringify(draftBacktest);
+  const previewNeedsRun = analysisChanged || (page === 'backtest' && backtestChanged);
+  useEffect(() => {
+    if (!previewNeedsRun) {
+      setPreviewPending(false);
+      setPreviewError('');
+      if (!preservePreviewAfterSave.current) {
+        setPreviewAnalysis(null);
+        setPreviewBacktest(null);
+      }
+      return;
+    }
+    preservePreviewAfterSave.current = false;
+    let active = true;
+    setPreviewPending(true);
+    setPreviewError('');
+    const timer = window.setTimeout(async () => {
+      const end = new Date();
+      const start = new Date(end);
+      start.setDate(start.getDate() - ({ '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '3Y': 1095 }[draftPeriod] || 365));
+      try {
+        const result = await post<{
+          analysis: Analysis['result'];
+          backtest: Backtest['result'] | null;
+        }>('/studio-preview', {
+          analysis: {
+            portfolio_version_id: analysis.portfolio_version_id,
+            source: draftSource,
+            start_date: localDate(start),
+            end_date: localDate(end),
+          },
+          backtest: page === 'backtest' ? draftBacktest : null,
+        });
+        if (!active) return;
+        setPreviewAnalysis(result.analysis);
+        setPreviewBacktest(result.backtest);
+      } catch (reason) {
+        if (active) setPreviewError(reason instanceof Error ? reason.message : 'Preview could not be updated.');
+      } finally {
+        if (active) setPreviewPending(false);
+      }
+    }, 250);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [analysis.portfolio_version_id, page, draftPeriod, draftSource, previewRulesKey, previewNeedsRun]);
+  useEffect(() => {
+    if (previewNeedsRun) return;
+    preservePreviewAfterSave.current = false;
+    setPreviewAnalysis(null);
+    setPreviewBacktest(null);
+  }, [analysis.id]);
   const changed = layoutChanged || preferencesChanged || analysisChanged || backtestChanged;
   const currentContent = settings.content[page]?.[settings.locale];
   const content = currentContent || defaultContent;
@@ -368,6 +454,7 @@ export default function Studio({
       if (preferencesChanged) onPreferencesSaved(settings);
       if (backtestChanged) onBacktestSettingsSaved(draftBacktest);
       setSaved(true);
+      if (analysisChanged || backtestChanged) preservePreviewAfterSave.current = true;
       if (analysisChanged) onAnalysisSettingsSaved(draftPeriod, draftSource);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to save Studio changes.');
@@ -689,10 +776,11 @@ export default function Studio({
               </div>
             )}
             <span className="studio-preview-live">
-              <Eye size={14} /> Live preview
+              <Eye size={14} /> {previewPending ? 'Updating preview…' : previewError ? 'Preview unavailable' : 'Live preview'}
             </span>
           </div>
           <div className="studio-preview-stage">
+            {previewError && <div className="studio-preview-error" role="alert">{previewError}</div>}
             <div className={'studio-preview ' + previewViewport} data-preview-viewport={previewViewport}>
               <div className="studio-preview-brand">
                 <BrandHome onClick={leaveForLanding} />
@@ -709,11 +797,11 @@ export default function Studio({
                 presentation={settings.presentation}
                 sectionAppearance={settings.sectionAppearance[page]}
                 page={page}
-                analysis={analysis}
+                analysis={previewAnalysis ? { ...analysis, result: previewAnalysis } : analysis}
                 layout={config}
-                backtest={backtest}
+                backtest={previewBacktest ? { id: 'preview', parameters: { analysis_run_id: analysis.id }, result: previewBacktest } : backtest}
                 btBusy={false}
-                btForm={btForm}
+                btForm={draftBacktest}
                 setBtForm={() => {}}
                 onBacktest={() => {}}
                 onOptimize={() => {}}
@@ -997,7 +1085,7 @@ export default function Studio({
                   <p>Theme appearance is configured in the Design tab.</p>
                 ) : (
                   <>
-                    <p>{FUNCTION_DESCRIPTIONS[page]} Save changes to apply new analysis settings.</p>
+                    <p>{FUNCTION_DESCRIPTIONS[page]} Changes appear in the preview before you save them.</p>
                     <div className="studio-field">
                       <span>Analysis period</span>
                       <StudioSelect
@@ -1063,20 +1151,20 @@ export default function Studio({
                             onChange={(value) => setDraftBacktest({ ...draftBacktest, rebalance_frequency: value })}
                           />
                         </div>
-                        <p>Save these rules, then run the backtest from its dashboard.</p>
+                        <p>The simulation preview updates as you edit these rules.</p>
                       </div>
                     )}
                     <dl>
                       <dt>Active portfolio</dt>
-                      <dd>{analysis.result.metadata.portfolio_name}</dd>
+                      <dd>{(previewAnalysis || analysis.result).metadata.portfolio_name}</dd>
                       <dt>Current date range</dt>
-                      <dd>{analysis.result.metadata.first_date} — {analysis.result.metadata.last_date}</dd>
+                      <dd>{(previewAnalysis || analysis.result).metadata.first_date} — {(previewAnalysis || analysis.result).metadata.last_date}</dd>
                       <dt>Benchmark</dt>
-                      <dd>{analysis.result.metadata.benchmark}</dd>
+                      <dd>{(previewAnalysis || analysis.result).metadata.benchmark}</dd>
                       {page === 'signals' && (
                         <>
                           <dt>Signal windows</dt>
-                          <dd>MA{analysis.result.signals.short_window} / MA{analysis.result.signals.long_window}</dd>
+                          <dd>MA{(previewAnalysis || analysis.result).signals.short_window} / MA{(previewAnalysis || analysis.result).signals.long_window}</dd>
                         </>
                       )}
                     </dl>

@@ -49,6 +49,19 @@ class BacktestInput(InputModel):
     rebalance_frequency: Literal["NONE", "MONTHLY"] = "MONTHLY"
 
 
+class BacktestPreviewInput(InputModel):
+    strategy: Literal["BUY_AND_HOLD", "MA_CROSSOVER"] = "MA_CROSSOVER"
+    initial_capital: float = Field(default=10000, ge=100, le=1e9)
+    fee_bps: float = Field(default=10, ge=0, le=100)
+    slippage_bps: float = Field(default=5, ge=0, le=100)
+    rebalance_frequency: Literal["NONE", "MONTHLY"] = "MONTHLY"
+
+
+class StudioPreviewInput(InputModel):
+    analysis: AnalysisInput
+    backtest: BacktestPreviewInput | None = None
+
+
 class OptimizeInput(InputModel):
     max_weight: float = Field(default=0.8, gt=0, le=1)
 
@@ -178,6 +191,11 @@ class BacktestOutput(BaseModel):
     created_at: datetime
     parameters: BacktestInput
     result: BacktestResult
+
+
+class StudioPreviewOutput(BaseModel):
+    analysis: AnalysisResult
+    backtest: BacktestResult | None = None
 
 
 class LayoutOutput(BaseModel):

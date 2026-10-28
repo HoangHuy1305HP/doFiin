@@ -82,6 +82,39 @@ def create_analysis(client, auth, instrument_ids, **kwargs):
     return portfolio, response
 
 
+def test_studio_preview_updates_analysis_and_backtest_without_saving(client, auth, instrument_ids):
+    portfolio = client.post(
+        "/api/v1/portfolios", headers=auth, json=portfolio_payload(instrument_ids)
+    ).json()
+    response = client.post(
+        "/api/v1/studio-preview",
+        headers=auth,
+        json={
+            "analysis": {
+                "portfolio_version_id": portfolio["latest_version"]["id"],
+                "source": "demo",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+            },
+            "backtest": {
+                "strategy": "BUY_AND_HOLD",
+                "initial_capital": 15000,
+                "fee_bps": 0,
+                "slippage_bps": 0,
+            },
+        },
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["analysis"]["metadata"]["observations"] > 200
+    assert "snapshot" not in data["analysis"]
+    assert data["backtest"]["series"][0]["strategy"] == pytest.approx(15000)
+    history = client.get(
+        "/api/v1/portfolios/" + portfolio["id"] + "/analysis-history", headers=auth
+    )
+    assert history.status_code == 200 and history.json() == []
+
+
 def test_analysis_backtest_snapshot_and_history(client, auth, instrument_ids, application):
     portfolio, response = create_analysis(client, auth, instrument_ids)
     assert response.status_code == 201, response.text
