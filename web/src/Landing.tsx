@@ -122,8 +122,8 @@ export default function Landing({
                 <TimeChart
                   data={illustration}
                   lines={[
-                    { key: 'portfolio', name: 'Portfolio', color: '#163d32' },
-                    { key: 'benchmark', name: 'Benchmark', color: '#a2b28a' },
+                    { key: 'portfolio', name: 'Portfolio', color: '#0f172a' },
+                    { key: 'benchmark', name: 'Benchmark', color: '#94a3b8' },
                   ]}
                   area={false}
                   height={230}
@@ -216,7 +216,7 @@ export default function Landing({
                 <strong>Portfolio growth</strong>
                 <TimeChart
                   data={illustration}
-                  lines={[{ key: 'portfolio', name: 'Portfolio', color: '#163d32' }]}
+                  lines={[{ key: 'portfolio', name: 'Portfolio', color: '#0f172a' }]}
                   area={false}
                   height={180}
                 />

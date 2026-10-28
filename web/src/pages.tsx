@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { AllocationChart, COLORS, FactorChart, TimeChart } from './charts';
 import { dateLabel, money, number, percent } from './api';
-import type { Presentation } from './preferences';
+import type { Presentation, SectionAppearance } from './preferences';
 import type { Analysis, Backtest, LayoutConfig, Page } from './types';
 
 export const TITLES: Record<string, string> = {
@@ -110,8 +110,10 @@ type Props = {
   onBacktest: () => void;
   onOptimize: () => void;
   preview?: boolean;
+  selectedSection?: string;
   controls?: ReactNode;
   presentation?: Presentation;
+  sectionAppearance?: Record<string, SectionAppearance>;
   btStale?: boolean;
 };
 export function Dashboard({
@@ -125,8 +127,10 @@ export function Dashboard({
   onBacktest,
   onOptimize,
   preview = false,
+  selectedSection,
   controls,
   presentation,
+  sectionAppearance,
   btStale = false,
 }: Props) {
   const { metrics: m, series, factors, signals, correlation, metadata } = analysis.result;
@@ -149,15 +153,15 @@ export function Dashboard({
       <TimeChart
         data={series}
         lines={[
-          { key: 'portfolio', name: 'Portfolio', color: 'var(--chart-accent, #163d32)' },
-          { key: 'benchmark', name: 'SPY', color: '#94ae58' },
+          { key: 'portfolio', name: 'Portfolio', color: 'var(--chart-accent, #0f172a)' },
+          { key: 'benchmark', name: 'SPY', color: '#64748b' },
         ]}
         area={primary}
       />
       <Legend
         items={[
-          { name: 'Portfolio', color: 'var(--chart-accent, #163d32)' },
-          { name: 'SPY', color: '#94ae58' },
+          { name: 'Portfolio', color: 'var(--chart-accent, #0f172a)' },
+          { name: 'SPY', color: '#64748b' },
         ]}
       />
     </>
@@ -238,7 +242,7 @@ export function Dashboard({
           <path
             key={n}
             d={'M' + (10 + n / 2) + ' ' + (100 - n / 2) + ' L100 ' + (10 + n / 2) + ' L100 100 Z'}
-            stroke="#cfe89b"
+            stroke="#fef3c7"
             strokeWidth=".7"
           />
         ))}
@@ -256,7 +260,7 @@ export function Dashboard({
       </div>
       <TimeChart
         data={series}
-        lines={[{ key: 'drawdown', name: 'Drawdown', color: '#54755c' }]}
+        lines={[{ key: 'drawdown', name: 'Drawdown', color: '#475569' }]}
         kind="percent"
         area={primary}
       />
@@ -289,11 +293,11 @@ export function Dashboard({
                   style={{
                     background:
                       v == null
-                        ? '#f1f3ec'
+                        ? '#f8fafc'
                         : v < 0
                           ? '#e5d4c8'
                           : 'rgba(27,76,57,' + (0.14 + Math.abs(v) * 0.86) + ')',
-                    color: v != null && v > 0.55 ? '#fff' : '#244936',
+                    color: v != null && v > 0.55 ? '#fff' : '#334155',
                   }}
                 >
                   {number(v)}
@@ -312,14 +316,14 @@ export function Dashboard({
   );
   widgets.volatility = (
     <>
-      <Legend items={[{ name: '20-session volatility', color: 'var(--chart-accent, #163d32)' }]} />
+      <Legend items={[{ name: '20-session volatility', color: 'var(--chart-accent, #0f172a)' }]} />
       <TimeChart
         data={series}
         lines={[
           {
             key: 'volatility',
             name: 'Annualized volatility',
-            color: 'var(--chart-accent, #163d32)',
+            color: 'var(--chart-accent, #0f172a)',
           },
         ]}
         kind="percent"
@@ -360,8 +364,8 @@ export function Dashboard({
         </span>
         <Legend
           items={[
-            { name: 'MA' + signals.short_window, color: 'var(--chart-accent, #163d32)' },
-            { name: 'MA' + signals.long_window, color: '#b0bf8c' },
+            { name: 'MA' + signals.short_window, color: 'var(--chart-accent, #0f172a)' },
+            { name: 'MA' + signals.long_window, color: '#94a3b8' },
           ]}
         />
       </div>
@@ -371,9 +375,9 @@ export function Dashboard({
           {
             key: 'ma_short',
             name: 'MA' + signals.short_window,
-            color: 'var(--chart-accent, #163d32)',
+            color: 'var(--chart-accent, #0f172a)',
           },
-          { key: 'ma_long', name: 'MA' + signals.long_window, color: '#b0bf8c' },
+          { key: 'ma_long', name: 'MA' + signals.long_window, color: '#94a3b8' },
         ]}
         area={false}
         height={320}
@@ -485,15 +489,15 @@ export function Dashboard({
     <>
       <Legend
         items={[
-          { name: 'Strategy after costs', color: 'var(--chart-accent, #163d32)' },
-          { name: 'SPY before costs', color: '#b0bf8c' },
+          { name: 'Strategy after costs', color: 'var(--chart-accent, #0f172a)' },
+          { name: 'SPY before costs', color: '#94a3b8' },
         ]}
       />
       <TimeChart
         data={b.series}
         lines={[
-          { key: 'strategy', name: 'Strategy', color: 'var(--chart-accent, #163d32)' },
-          { key: 'benchmark', name: 'SPY', color: '#b0bf8c' },
+          { key: 'strategy', name: 'Strategy', color: 'var(--chart-accent, #0f172a)' },
+          { key: 'benchmark', name: 'SPY', color: '#94a3b8' },
         ]}
         kind="money"
         area={primary}
@@ -787,9 +791,15 @@ export function Dashboard({
           .filter((key) => !layout.hidden.includes(key))
           .map((key) => (
             <section
-              className={'widget widget-' + key + (key === 'insight' ? ' dark-widget' : '')}
+              className={'widget widget-' + key + (key === 'insight' ? ' dark-widget' : '') + (preview && selectedSection === key ? ' studio-section-selected' : '')}
               key={key}
               aria-label={layout.titles[key] || TITLES[key]}
+              data-studio-section={preview ? key : undefined}
+              data-section-width={sectionAppearance?.[key]?.width || 'stretch'}
+              data-section-height={sectionAppearance?.[key]?.height || 'auto'}
+              data-section-spacing={sectionAppearance?.[key]?.spacing || 'comfortable'}
+              data-section-background={sectionAppearance?.[key]?.background || 'default'}
+              style={{ '--section-radius': `${sectionAppearance?.[key]?.corners ?? presentation?.corners ?? 0}px` } as CSSProperties}
             >
               {key !== 'insight' && (
                 <div className="widget-heading">
@@ -820,7 +830,7 @@ export function Dashboard({
       </div>
       {layout.order.every((key) => layout.hidden.includes(key)) && (
         <div className="empty-chart">
-          <p>All widgets are hidden. Open Studio to show them again.</p>
+          <p>All sections are hidden. Open Studio and choose Add sections to show them again.</p>
         </div>
       )}
     </div>

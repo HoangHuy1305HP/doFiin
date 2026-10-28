@@ -1,19 +1,19 @@
-/* doFiin / native Figma source measurements. See design/figma-reference.json. */
+/* Weaverse-inspired preview palette; typography and spacing retain their design values. */
 :root {
   --font-body: 'Geist', sans-serif;
   --font-heading: 'Space Grotesk', sans-serif;
-  --color-forest: #163d32;
-  --color-lime: #cfe89b;
-  --color-canvas: #f6f7f3;
+  --color-primary: #0f172a;
+  --color-accent: #fef3c7;
+  --color-canvas: #f8fafc;
   --color-surface: #ffffff;
-  --color-text: #202a27;
-  --color-text-heading: #17231f;
-  --color-text-muted: #69776e;
-  --color-border: #dde3da;
-  --color-positive: #27704f;
+  --color-text: #1e293b;
+  --color-text-heading: #0f172a;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-positive: #2563eb;
   --color-negative: #a15a35;
-  --color-chart-1: #163d32;
-  --color-chart-2: #94ae58;
+  --color-chart-1: #0f172a;
+  --color-chart-2: #64748b;
   --color-chart-3: #c49a3b;
   --text-caption: 0.75rem; /* 12 */
   --text-small: 0.875rem; /* 14 */

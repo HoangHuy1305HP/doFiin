@@ -18,7 +18,7 @@ import {
 import { number } from './api';
 import type { Point, Factor } from './types';
 
-export const COLORS = ['#163d32', '#94ae58', '#c49a3b', '#789f9c', '#d9cba2', '#99a5c1'];
+export const COLORS = ['#0f172a', '#64748b', '#c49a3b', '#94a3b8', '#cbd5e1', '#475569'];
 type ChartProps = {
   data: Point[];
   lines: { key: string; name: string; color: string }[];
@@ -44,7 +44,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
               <stop offset="100%" stopColor={lines[0]?.color} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#e7ebe3" strokeDasharray="3 5" />
+          <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 5" />
           <XAxis
             dataKey="date"
             tickFormatter={(value) =>
@@ -56,7 +56,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
             minTickGap={64}
             tickLine={false}
             axisLine={false}
-            tick={{ fontSize: 11, fill: '#879087' }}
+            tick={{ fontSize: 11, fill: '#64748b' }}
             dy={9}
           />
           <YAxis
@@ -65,19 +65,19 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
             tickLine={false}
             axisLine={false}
             width={kind === 'money' ? 68 : 48}
-            tick={{ fontSize: 11, fill: '#879087' }}
+            tick={{ fontSize: 11, fill: '#64748b' }}
             tickCount={5}
           />
           <Tooltip
             contentStyle={{
-              background: '#173c32',
+              background: '#0f172a',
               border: 0,
               borderRadius: 8,
               color: '#fff',
               fontFamily: 'Geist',
               fontSize: 13,
             }}
-            labelStyle={{ color: '#d4e2d7' }}
+            labelStyle={{ color: '#e2e8f0' }}
             itemStyle={{ color: '#fff' }}
             labelFormatter={(value) =>
               new Date(String(value) + 'T12:00:00').toLocaleDateString('en-US')
@@ -161,12 +161,12 @@ export function FactorChart({
     <div style={{ height: 230 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ left: 0, right: 40, top: 14, bottom: 0 }}>
-          <CartesianGrid horizontal={false} stroke="#e7ebe3" strokeDasharray="3 5" />
+          <CartesianGrid horizontal={false} stroke="#e2e8f0" strokeDasharray="3 5" />
           <XAxis
             type="number"
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 11, fill: '#879087' }}
+            tick={{ fontSize: 11, fill: '#64748b' }}
             tickFormatter={(v) =>
               number(metric === 'momentum' ? v * 100 : v, 1) + (metric === 'momentum' ? '%' : '')
             }
@@ -177,16 +177,16 @@ export function FactorChart({
             width={52}
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 12, fill: '#506056' }}
+            tick={{ fontSize: 12, fill: '#475569' }}
           />
           <Tooltip
-            cursor={{ fill: '#f2f5ed' }}
+            cursor={{ fill: '#f8fafc' }}
             formatter={(v) =>
               number(metric === 'momentum' ? Number(v) * 100 : Number(v), 2) +
               (metric === 'momentum' ? '%' : '')
             }
           />
-          <ReferenceLine x={0} stroke="#b8c4b8" />
+          <ReferenceLine x={0} stroke="#cbd5e1" />
           <Bar
             dataKey="value"
             name={metric === 'beta' ? 'Beta vs SPY' : 'Momentum 12–1'}

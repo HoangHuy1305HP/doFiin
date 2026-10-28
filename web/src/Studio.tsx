@@ -1,16 +1,17 @@
-import { useRef, useState } from 'react';
-import type { MouseEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { MouseEvent, PointerEvent } from 'react';
 import {
   ArrowDown,
   ArrowUp,
   Check,
-  ChevronLeft,
+  ChevronDown,
   Eye,
   GripVertical,
   LayoutTemplate,
   LoaderCircle,
   Monitor,
   Palette,
+  Pencil,
   Plus,
   RotateCcw,
   Save,
@@ -21,15 +22,17 @@ import {
 } from 'lucide-react';
 import { BrandHome } from './Auth';
 import StudioModeSwitch from './StudioModeSwitch';
-import { Dashboard, defaultLayout, TITLES } from './pages';
+import StudioSelect from './StudioSelect';
+import { Dashboard, TITLES } from './pages';
 import type { BacktestForm } from './pages';
 import type { Analysis, Backtest, Layout, Page } from './types';
 import { put } from './api';
-import { DEFAULT_MENU, PAGE_LABELS } from './preferences';
-import type { ContentLocale, PageContent, Preferences } from './preferences';
+import { DEFAULT_MENU, DEFAULT_SECTION_APPEARANCE, PAGE_LABELS } from './preferences';
+import type { PageContent, Preferences, SectionAppearance } from './preferences';
 import { useDialogFocus } from './useDialogFocus';
 
 type Props = {
+  closing: boolean;
   preferences: Preferences;
   onPreferencesSaved: (preferences: Preferences) => void;
   page: Page;
@@ -50,10 +53,14 @@ type Props = {
 };
 type InspectorTab = 'content' | 'design' | 'function';
 type Viewport = 'desktop' | 'tablet' | 'mobile';
-const LOCALES: { id: ContentLocale; label: string }[] = [
-  { id: 'en-US', label: '🇺🇸 English · United States' },
-  { id: 'vi-VN', label: '🇻🇳 Tiếng Việt · Việt Nam' },
-];
+type ReorderKind = 'menu' | 'widget';
+type DropPosition = 'before' | 'after';
+function currentDeviceViewport(): Viewport {
+  if (typeof window === 'undefined') return 'desktop';
+  if (window.innerWidth <= 760) return 'mobile';
+  if (window.innerWidth < 1200) return 'tablet';
+  return 'desktop';
+}
 const FUNCTION_DESCRIPTIONS: Record<Page, string> = {
   portfolio: 'Choose the data behind this portfolio view and edit its holdings and weights.',
   risk: 'Choose the data period and source used by the risk charts.',
@@ -63,6 +70,7 @@ const FUNCTION_DESCRIPTIONS: Record<Page, string> = {
 };
 
 export default function Studio({
+  closing,
   preferences,
   onPreferencesSaved,
   page,
@@ -87,13 +95,93 @@ export default function Studio({
   const [draftSource, setDraftSource] = useState(source);
   const [draftBacktest, setDraftBacktest] = useState(() => ({ ...btForm }));
   const [selected, setSelected] = useState<string>('page');
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+  const [sectionFocusRequest, setSectionFocusRequest] = useState<{ key: string; id: number } | null>(null);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('content');
+  const [deviceViewport, setDeviceViewport] = useState<Viewport>(currentDeviceViewport);
   const [viewport, setViewport] = useState<Viewport>('desktop');
+  const previewViewport = deviceViewport === 'desktop' ? viewport : deviceViewport;
   const [addingMenu, setAddingMenu] = useState(false);
+  const [addingSections, setAddingSections] = useState(false);
+  const [navigationExpanded, setNavigationExpanded] = useState(true);
+  const [sectionsExpanded, setSectionsExpanded] = useState(true);
+  const [dragging, setDragging] = useState<{ kind: ReorderKind; key: string } | null>(null);
+  const [dropTarget, setDropTarget] = useState<{
+    kind: ReorderKind;
+    key: string;
+    position: DropPosition;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const studioRef = useRef<HTMLDivElement>(null);
+  const rowPositions = useRef(new Map<string, number>());
+  const activePointer = useRef<{
+    pointerId: number;
+    kind: ReorderKind;
+    key: string;
+    startX: number;
+    startY: number;
+    active: boolean;
+    target: { key: string; position: DropPosition } | null;
+  } | null>(null);
+  const incomingLayoutSignature = JSON.stringify(layout.config);
+  const previousLayoutSignature = useRef(incomingLayoutSignature);
+  useEffect(() => {
+    const updateDeviceViewport = () => setDeviceViewport(currentDeviceViewport());
+    window.addEventListener('resize', updateDeviceViewport);
+    return () => window.removeEventListener('resize', updateDeviceViewport);
+  }, []);
+  useEffect(() => {
+    if (incomingLayoutSignature === previousLayoutSignature.current) return;
+    const previousSignature = previousLayoutSignature.current;
+    previousLayoutSignature.current = incomingLayoutSignature;
+    setConfig((current) =>
+      JSON.stringify(current) === previousSignature ? structuredClone(layout.config) : current,
+    );
+  }, [incomingLayoutSignature, layout.config]);
+  useLayoutEffect(() => {
+    if (!rowPositions.current.size) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      rowPositions.current.clear();
+      return;
+    }
+    for (const row of studioRef.current?.querySelectorAll<HTMLElement>('[data-reorder-key]') || []) {
+      const id = `${row.dataset.reorderKind}:${row.dataset.reorderKey}`;
+      const previousTop = rowPositions.current.get(id);
+      if (previousTop === undefined) continue;
+      const delta = previousTop - row.getBoundingClientRect().top;
+      if (Math.abs(delta) > 1) {
+        row.animate(
+          [{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }],
+          { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+        );
+      }
+    }
+    rowPositions.current.clear();
+  }, [settings.menu, config.order]);
+  useEffect(() => {
+    if (!sectionFocusRequest) return;
+    const stage = studioRef.current?.querySelector<HTMLElement>('.studio-preview-stage');
+    const target = Array.from(stage?.querySelectorAll<HTMLElement>('[data-studio-section]') || [])
+      .find((element) => element.dataset.studioSection === sectionFocusRequest.key);
+    if (!stage || !target) return;
+    const stageBounds = stage.getBoundingClientRect();
+    const targetBounds = target.getBoundingClientRect();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setHighlightedSection(sectionFocusRequest.key);
+    stage.scrollTo({
+      top: stage.scrollTop + targetBounds.top - stageBounds.top - 24,
+      behavior: reducedMotion ? 'instant' : 'smooth',
+    });
+    if (deviceViewport !== 'desktop')
+      studioRef.current?.querySelector<HTMLElement>('.studio-body')?.scrollTo({
+        top: 0,
+        behavior: reducedMotion ? 'instant' : 'smooth',
+      });
+    const timeout = window.setTimeout(() => setHighlightedSection(null), 500);
+    return () => window.clearTimeout(timeout);
+  }, [sectionFocusRequest]);
   const layoutChanged = JSON.stringify(config) !== JSON.stringify(layout.config);
   const preferencesChanged = JSON.stringify(settings) !== JSON.stringify(preferences);
   const analysisChanged = draftPeriod !== period || draftSource !== source;
@@ -101,7 +189,13 @@ export default function Studio({
   const changed = layoutChanged || preferencesChanged || analysisChanged || backtestChanged;
   const currentContent = settings.content[page]?.[settings.locale];
   const content = currentContent || defaultContent;
-  const isWidget = config.order.includes(selected);
+  const visibleSectionOrder = config.order.filter((key) => !config.hidden.includes(key));
+  const isWidget = visibleSectionOrder.includes(selected);
+  const sectionAppearance: SectionAppearance = {
+    ...DEFAULT_SECTION_APPEARANCE,
+    corners: settings.presentation.corners as SectionAppearance['corners'],
+    ...settings.sectionAppearance[page]?.[selected],
+  };
   const isMenu = selected.startsWith('menu:');
   const inspectorTitle =
     selected === 'page'
@@ -122,24 +216,136 @@ export default function Studio({
     }));
     setSaved(false);
   }
+  function updateSectionAppearance(patch: Partial<SectionAppearance>) {
+    setSettings((previous) => ({
+      ...previous,
+      sectionAppearance: {
+        ...previous.sectionAppearance,
+        [page]: {
+          ...previous.sectionAppearance[page],
+          [selected]: {
+            ...DEFAULT_SECTION_APPEARANCE,
+            corners: previous.presentation.corners as SectionAppearance['corners'],
+            ...previous.sectionAppearance[page]?.[selected],
+            ...patch,
+          },
+        },
+      },
+    }));
+    setSaved(false);
+  }
   function select(item: string, tab: InspectorTab = 'content') {
     setSelected(item);
     setInspectorTab(tab);
+    if (visibleSectionOrder.includes(item))
+      setSectionFocusRequest((current) => ({ key: item, id: (current?.id || 0) + 1 }));
+  }
+  function captureRowPositions() {
+    rowPositions.current.clear();
+    for (const row of studioRef.current?.querySelectorAll<HTMLElement>('[data-reorder-key]') || []) {
+      rowPositions.current.set(
+        `${row.dataset.reorderKind}:${row.dataset.reorderKey}`,
+        row.getBoundingClientRect().top,
+      );
+    }
+  }
+  function reorder<T extends string>(order: T[], source: T, target: T, position: DropPosition) {
+    if (!order.includes(source) || !order.includes(target) || source === target) return null;
+    const next = order.filter((key) => key !== source);
+    const targetIndex = next.indexOf(target);
+    next.splice(targetIndex + (position === 'after' ? 1 : 0), 0, source);
+    return next.every((key, index) => key === order[index]) ? null : next;
+  }
+  function startPointerDrag(event: PointerEvent<HTMLButtonElement>, kind: ReorderKind, key: string) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    activePointer.current = {
+      pointerId: event.pointerId,
+      kind,
+      key,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+      target: null,
+    };
+  }
+  function movePointerDrag(event: PointerEvent<HTMLButtonElement>) {
+    const pointer = activePointer.current;
+    if (!pointer || pointer.pointerId !== event.pointerId) return;
+    if (!pointer.active) {
+      if (Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) < 5) return;
+      pointer.active = true;
+      setDragging({ kind: pointer.kind, key: pointer.key });
+    }
+    event.preventDefault();
+    const row = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-reorder-key]');
+    const key = row?.dataset.reorderKey;
+    if (!row || row.dataset.reorderKind !== pointer.kind || !key || key === pointer.key) {
+      pointer.target = null;
+      setDropTarget(null);
+      return;
+    }
+    const bounds = row.getBoundingClientRect();
+    const position = event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after';
+    pointer.target = { key, position };
+    setDropTarget((current) =>
+      current?.kind === pointer.kind && current.key === key && current.position === position
+        ? current
+        : { kind: pointer.kind, key, position },
+    );
+  }
+  function finishDrag() {
+    activePointer.current = null;
+    setDragging(null);
+    setDropTarget(null);
+  }
+  function endPointerDrag(event: PointerEvent<HTMLButtonElement>) {
+    const pointer = activePointer.current;
+    if (!pointer || pointer.pointerId !== event.pointerId) return;
+    const target = pointer.active ? pointer.target : null;
+    const order = pointer.kind === 'menu' ? settings.menu : visibleSectionOrder;
+    const next = target ? reorder(order, pointer.key, target.key, target.position) : null;
+    if (next) {
+      captureRowPositions();
+      if (pointer.kind === 'menu') setSettings({ ...settings, menu: next as Page[] });
+      else setConfig({ ...config, order: [...next, ...config.order.filter((key) => config.hidden.includes(key))] });
+      setSaved(false);
+    }
+    finishDrag();
+  }
+  function dragClass(kind: ReorderKind, key: string) {
+    if (dragging?.kind === kind && dragging.key === key) return ' dragging';
+    if (dropTarget?.kind === kind && dropTarget.key === key)
+      return ` drop-${dropTarget.position}`;
+    return '';
   }
   function move(key: string, offset: number) {
-    const order = [...config.order];
+    const order = [...visibleSectionOrder];
     const index = order.indexOf(key);
     const target = index + offset;
     if (target < 0 || target >= order.length) return;
+    captureRowPositions();
     [order[index], order[target]] = [order[target], order[index]];
-    setConfig({ ...config, order });
+    setConfig({ ...config, order: [...order, ...config.order.filter((item) => config.hidden.includes(item))] });
     setSaved(false);
   }
-  function drop(source: string, target: string) {
-    if (!config.order.includes(source) || source === target) return;
-    const order = config.order.filter((key) => key !== source);
-    order.splice(order.indexOf(target), 0, source);
-    setConfig({ ...config, order });
+  function removeSection(key: string) {
+    setConfig({ ...config, hidden: [...config.hidden, key] });
+    setAddingSections(false);
+    select('page');
+    setSaved(false);
+  }
+  function addSection(key: string) {
+    setConfig({
+      ...config,
+      order: [...config.order.filter((item) => item !== key), key],
+      hidden: config.hidden.filter((item) => item !== key),
+    });
+    setAddingSections(false);
+    setSectionsExpanded(true);
+    select(key);
+    setSectionFocusRequest((current) => ({ key, id: (current?.id || 0) + 1 }));
     setSaved(false);
   }
   function switchPage(next: Page) {
@@ -189,49 +395,16 @@ export default function Studio({
   return (
     <div
       ref={studioRef}
-      className="studio-shell studio-editor"
+      className={'studio-shell studio-editor' + (closing ? ' studio-exiting' : '')}
       role="dialog"
       aria-modal="true"
       aria-label="doFiin Studio"
     >
       <header className="studio-header">
-        <button className="icon-button" aria-label="Exit Studio" onClick={close}>
-          <ChevronLeft size={20} />
-        </button>
         <BrandHome onClick={leaveForLanding} />
         <span className="studio-slash">/</span>
         <span className="studio-label">Studio</span>
         <span className="studio-header-spacer" />
-        <label className="studio-top-select">
-          <span>Content language</span>
-          <select
-            aria-label="Content language"
-            value={settings.locale}
-            onChange={(event) =>
-              setSettings({ ...settings, locale: event.target.value as ContentLocale })
-            }
-          >
-            {LOCALES.map((locale) => (
-              <option key={locale.id} value={locale.id}>
-                {locale.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="studio-top-select studio-page-select">
-          <span>Page</span>
-          <select
-            aria-label="Studio page"
-            value={page}
-            onChange={(event) => switchPage(event.target.value as Page)}
-          >
-            {DEFAULT_MENU.map((item) => (
-              <option key={item} value={item}>
-                {PAGE_LABELS[item]}
-              </option>
-            ))}
-          </select>
-        </label>
         <span className={'studio-header-status ' + (changed ? 'unsaved' : '')} role="status">
           {busy ? 'Saving…' : changed ? 'Unsaved changes' : saved ? 'Saved' : 'Up to date'}
         </span>
@@ -259,106 +432,89 @@ export default function Studio({
         </button>
       </header>
       <div className="studio-body">
-        <aside className="studio-left" aria-label="Studio sections">
+        <aside className="studio-left" aria-label="Studio navigation and sections">
           <div className="studio-panel-heading">
-            <strong>Sections</strong>
-            <span>{PAGE_LABELS[page]}</span>
-          </div>
-          <div className="studio-tree-group">
             <button
-              className={
-                'studio-tree-row studio-tree-parent ' + (selected === 'page' ? 'selected' : '')
-              }
-              onClick={() => select('page')}
+              className="studio-group-toggle"
+              aria-expanded={navigationExpanded}
+              aria-controls="studio-navigation-list"
+              onClick={() => setNavigationExpanded((expanded) => !expanded)}
             >
-              <LayoutTemplate size={16} />
-              <span>Page content</span>
-            </button>
-            {config.order.map((key, index) => (
-              <div
-                className={
-                  'studio-tree-row studio-tree-child ' + (selected === key ? 'selected' : '')
-                }
-                key={key}
-                draggable
-                onDragStart={(event) =>
-                  event.dataTransfer.setData('application/dofiin-widget', key)
-                }
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  drop(event.dataTransfer.getData('application/dofiin-widget'), key);
-                }}
-              >
-                <button className="studio-tree-select" onClick={() => select(key)}>
-                  <GripVertical size={14} />
-                  <span>{config.titles[key] || TITLES[key]}</span>
-                </button>
-                <div className="studio-tree-actions">
-                  <button
-                    aria-label={'Move ' + TITLES[key] + ' up'}
-                    disabled={index === 0}
-                    onClick={() => move(key, -1)}
-                  >
-                    <ArrowUp size={13} />
-                  </button>
-                  <button
-                    aria-label={'Move ' + TITLES[key] + ' down'}
-                    disabled={index === config.order.length - 1}
-                    onClick={() => move(key, 1)}
-                  >
-                    <ArrowDown size={13} />
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button
-              className="studio-tree-add"
-              onClick={() => {
-                setConfig(defaultLayout(page));
-                setSaved(false);
-                select('page');
-              }}
-            >
-              <RotateCcw size={14} /> Reset page layout
+              <ChevronDown size={16} aria-hidden="true" />
+              <strong>Navigation</strong>
             </button>
           </div>
-          <div className="studio-tree-group">
-            <div className="studio-tree-caption">NAVIGATION</div>
+          <div className="studio-tree-group" aria-label="Navigation">
+            <div
+              id="studio-navigation-list"
+              className="studio-tree-contents"
+              data-expanded={navigationExpanded}
+              aria-hidden={!navigationExpanded}
+              inert={!navigationExpanded}
+            >
+              <div className="studio-tree-contents-inner">
             {settings.menu.map((item, index) => (
               <div
                 className={
                   'studio-tree-row studio-tree-child ' +
-                  (selected === 'menu:' + item ? 'selected' : '')
+                  (page === item || selected === 'menu:' + item ? 'selected' : '') +
+                  dragClass('menu', item)
                 }
                 key={item}
-                draggable
-                onDragStart={(event) => event.dataTransfer.setData('application/dofiin-menu', item)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  const source = event.dataTransfer.getData('application/dofiin-menu') as Page;
-                  if (!settings.menu.includes(source) || source === item) return;
-                  const menu = settings.menu.filter((key) => key !== source);
-                  menu.splice(menu.indexOf(item), 0, source);
-                  setSettings({ ...settings, menu });
-                }}
+                data-reorder-kind="menu"
+                data-reorder-key={item}
               >
-                <button className="studio-tree-select" onClick={() => select('menu:' + item)}>
+                <button
+                  type="button"
+                  className="studio-drag-handle"
+                  aria-label={'Drag ' + PAGE_LABELS[item]}
+                  title="Drag to reorder"
+                  onPointerDown={(event) => startPointerDrag(event, 'menu', item)}
+                  onPointerMove={movePointerDrag}
+                  onPointerUp={endPointerDrag}
+                  onPointerCancel={finishDrag}
+                >
                   <GripVertical size={14} />
+                </button>
+                <button
+                  className="studio-tree-select"
+                  aria-current={page === item ? 'page' : undefined}
+                  onClick={() => item === page ? select('page') : switchPage(item)}
+                >
                   <span>{PAGE_LABELS[item]}</span>
                 </button>
                 <div className="studio-tree-actions">
+                  <button
+                    aria-label={'Edit ' + PAGE_LABELS[item] + ' menu item'}
+                    onClick={() => select('menu:' + item)}
+                  >
+                    <Pencil size={13} />
+                  </button>
                   <button
                     aria-label={'Move ' + PAGE_LABELS[item] + ' up'}
                     disabled={index === 0}
                     onClick={() => {
                       const menu = [...settings.menu];
+                      captureRowPositions();
                       [menu[index - 1], menu[index]] = [menu[index], menu[index - 1]];
                       setSettings({ ...settings, menu });
+                      setSaved(false);
                     }}
                   >
                     <ArrowUp size={13} />
+                  </button>
+                  <button
+                    aria-label={'Move ' + PAGE_LABELS[item] + ' down'}
+                    disabled={index === settings.menu.length - 1}
+                    onClick={() => {
+                      const menu = [...settings.menu];
+                      captureRowPositions();
+                      [menu[index], menu[index + 1]] = [menu[index + 1], menu[index]];
+                      setSettings({ ...settings, menu });
+                      setSaved(false);
+                    }}
+                  >
+                    <ArrowDown size={13} />
                   </button>
                 </div>
               </div>
@@ -371,27 +527,123 @@ export default function Studio({
               <Plus size={14} /> Add menu item
             </button>
             {addingMenu && (
-              <select
-                className="studio-add-menu"
-                aria-label="Add navigation menu"
+              <div className="studio-add-menu">
+                <StudioSelect
+                label="Add navigation menu"
                 value=""
-                onChange={(event) => {
-                  const item = event.target.value as Page;
+                placeholder="Select a page"
+                options={DEFAULT_MENU.filter((item) => !settings.menu.includes(item)).map((item) => ({
+                  value: item,
+                  label: PAGE_LABELS[item],
+                }))}
+                onChange={(value) => {
+                  const item = value as Page;
                   setSettings({ ...settings, menu: [...settings.menu, item] });
                   setAddingMenu(false);
                   select('menu:' + item);
                 }}
-              >
-                <option value="" disabled>
-                  Select a page
-                </option>
-                {DEFAULT_MENU.filter((item) => !settings.menu.includes(item)).map((item) => (
-                  <option key={item} value={item}>
-                    {PAGE_LABELS[item]}
-                  </option>
-                ))}
-              </select>
+                />
+              </div>
             )}
+              </div>
+            </div>
+          </div>
+          <div className="studio-tree-group">
+            <button
+              className={
+                'studio-tree-row studio-tree-parent ' + (selected === 'page' ? 'selected' : '')
+              }
+              aria-expanded={sectionsExpanded}
+              aria-controls="studio-sections-list"
+              onClick={() => {
+                setSectionsExpanded((expanded) => !expanded);
+                select('page');
+              }}
+            >
+              <ChevronDown size={16} className="studio-section-chevron" aria-hidden="true" />
+              <LayoutTemplate size={16} />
+              <span>Sections</span>
+            </button>
+            <div
+              id="studio-sections-list"
+              className="studio-tree-contents"
+              data-expanded={sectionsExpanded}
+              aria-hidden={!sectionsExpanded}
+              inert={!sectionsExpanded}
+            >
+              <div className="studio-tree-contents-inner">
+            {visibleSectionOrder.map((key, index) => (
+              <div
+                className={
+                  'studio-tree-row studio-tree-child ' + (selected === key ? 'selected' : '') +
+                  dragClass('widget', key)
+                }
+                key={key}
+                data-reorder-kind="widget"
+                data-reorder-key={key}
+              >
+                <button
+                  type="button"
+                  className="studio-drag-handle"
+                  aria-label={'Drag ' + (config.titles[key] || TITLES[key])}
+                  title="Drag to reorder"
+                  onPointerDown={(event) => startPointerDrag(event, 'widget', key)}
+                  onPointerMove={movePointerDrag}
+                  onPointerUp={endPointerDrag}
+                  onPointerCancel={finishDrag}
+                >
+                  <GripVertical size={14} />
+                </button>
+                <button className="studio-tree-select" onClick={() => select(key)}>
+                  <span>{config.titles[key] || TITLES[key]}</span>
+                </button>
+                <div className="studio-tree-actions">
+                  <button
+                    aria-label={'Move ' + TITLES[key] + ' up'}
+                    disabled={index === 0}
+                    onClick={() => move(key, -1)}
+                  >
+                    <ArrowUp size={13} />
+                  </button>
+                  <button
+                    aria-label={'Move ' + TITLES[key] + ' down'}
+                    disabled={index === visibleSectionOrder.length - 1}
+                    onClick={() => move(key, 1)}
+                  >
+                    <ArrowDown size={13} />
+                  </button>
+                  <button
+                    aria-label={'Remove ' + (config.titles[key] || TITLES[key]) + ' section'}
+                    onClick={() => removeSection(key)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              className="studio-tree-add"
+              aria-expanded={addingSections}
+              aria-controls="studio-section-picker"
+              onClick={() => setAddingSections((open) => !open)}
+            >
+              <Plus size={14} /> Add sections
+            </button>
+            {addingSections && (
+              <div id="studio-section-picker" className="studio-section-picker">
+                {config.hidden.length ? (
+                  config.order.filter((key) => config.hidden.includes(key)).map((key) => (
+                    <button key={key} onClick={() => addSection(key)}>
+                      <Plus size={13} /> {config.titles[key] || TITLES[key]}
+                    </button>
+                  ))
+                ) : (
+                  <p>All available sections are already on this page.</p>
+                )}
+              </div>
+            )}
+              </div>
+            </div>
           </div>
           <div className="studio-tree-group">
             <div className="studio-tree-caption">GLOBAL</div>
@@ -406,40 +658,42 @@ export default function Studio({
             </button>
           </div>
           <div className="studio-tree-footer">
-            Drag sections to reorder. Select an item to edit it.
+            Drag the dotted handles to reorder. Select an item to edit it.
           </div>
         </aside>
         <main className="studio-canvas">
-          <div className="studio-preview-toolbar">
+          <div className={'studio-preview-toolbar' + (deviceViewport === 'desktop' ? ' has-viewports' : '')}>
             <div className="studio-preview-path">
               <span className="studio-preview-dot" /> doFiin / {PAGE_LABELS[page]}
             </div>
-            <div className="viewport-buttons" aria-label="Preview size">
-              {(
-                [
-                  ['desktop', Monitor, 'Desktop'],
-                  ['tablet', Tablet, 'Tablet'],
-                  ['mobile', Smartphone, 'Mobile'],
-                ] as const
-              ).map(([key, Icon, label]) => (
-                <button
-                  key={key}
-                  className={viewport === key ? 'active' : ''}
-                  aria-label={label + ' preview'}
-                  aria-pressed={viewport === key}
-                  onClick={() => setViewport(key)}
-                >
-                  <Icon size={15} />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
+            {deviceViewport === 'desktop' && (
+              <div className="viewport-buttons" aria-label="Preview size">
+                {(
+                  [
+                    ['desktop', Monitor, 'Desktop'],
+                    ['tablet', Tablet, 'Tablet'],
+                    ['mobile', Smartphone, 'Mobile'],
+                  ] as const
+                ).map(([key, Icon, label]) => (
+                  <button
+                    key={key}
+                    className={viewport === key ? 'active' : ''}
+                    aria-label={label + ' preview'}
+                    aria-pressed={viewport === key}
+                    onClick={() => setViewport(key)}
+                  >
+                    <Icon size={15} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <span className="studio-preview-live">
               <Eye size={14} /> Live preview
             </span>
           </div>
           <div className="studio-preview-stage">
-            <div className={'studio-preview ' + viewport}>
+            <div className={'studio-preview ' + previewViewport} data-preview-viewport={previewViewport}>
               <div className="studio-preview-brand">
                 <BrandHome onClick={leaveForLanding} />
                 <span className="tag">Preview</span>
@@ -453,6 +707,7 @@ export default function Studio({
               </div>
               <Dashboard
                 presentation={settings.presentation}
+                sectionAppearance={settings.sectionAppearance[page]}
                 page={page}
                 analysis={analysis}
                 layout={config}
@@ -463,6 +718,7 @@ export default function Studio({
                 onBacktest={() => {}}
                 onOptimize={() => {}}
                 preview
+                selectedSection={highlightedSection || undefined}
               />
             </div>
           </div>
@@ -487,11 +743,6 @@ export default function Studio({
           <div className="studio-inspector-content" role="tabpanel">
             {inspectorTab === 'content' && selected === 'page' && (
               <div className="studio-settings-section">
-                <h4>Page copy</h4>
-                <p>
-                  Edit this page in {LOCALES.find((item) => item.id === settings.locale)?.label}.
-                  Each language has separate copy; the default appears until you edit it.
-                </p>
                 <label>
                   Heading
                   <input
@@ -521,7 +772,7 @@ export default function Studio({
                       });
                     }}
                   >
-                    <RotateCcw size={14} /> Reset this language
+                    <RotateCcw size={14} /> Reset page copy
                   </button>
                 )}
               </div>
@@ -576,24 +827,72 @@ export default function Studio({
             {inspectorTab === 'design' && (
               <>
                 {isWidget && (
-                  <div className="studio-settings-section">
-                    <h4>Widget layout</h4>
-                    <label className="studio-switch-row">
-                      <span>Visible in dashboard</span>
-                      <input
-                        type="checkbox"
-                        checked={!config.hidden.includes(selected)}
-                        onChange={(event) =>
-                          setConfig({
-                            ...config,
-                            hidden: event.target.checked
-                              ? config.hidden.filter((key) => key !== selected)
-                              : [...config.hidden, selected],
-                          })
-                        }
-                      />
-                    </label>
-                  </div>
+                  <>
+                    <div className="studio-settings-section">
+                      <h4>Layout</h4>
+                      <div className="studio-field">
+                        <span>Content width</span>
+                        <StudioSelect
+                          label="Content width"
+                          value={sectionAppearance.width}
+                          options={[{ value: 'stretch', label: 'Stretch' }, { value: 'contained', label: 'Contained' }]}
+                          onChange={(value) => updateSectionAppearance({ width: value as SectionAppearance['width'] })}
+                        />
+                      </div>
+                      <div className="studio-field">
+                        <span>Section height</span>
+                        <StudioSelect
+                          label="Section height"
+                          value={sectionAppearance.height}
+                          options={[
+                            { value: 'auto', label: 'Auto' },
+                            { value: 'medium', label: 'Medium' },
+                            { value: 'large', label: 'Large' },
+                          ]}
+                          onChange={(value) => updateSectionAppearance({ height: value as SectionAppearance['height'] })}
+                        />
+                      </div>
+                      <div className="studio-field">
+                        <span>Spacing</span>
+                        <StudioSelect
+                          label="Section spacing"
+                          value={sectionAppearance.spacing}
+                          options={[
+                            { value: 'compact', label: 'Compact' },
+                            { value: 'comfortable', label: 'Comfortable' },
+                            { value: 'spacious', label: 'Spacious' },
+                          ]}
+                          onChange={(value) => updateSectionAppearance({ spacing: value as SectionAppearance['spacing'] })}
+                        />
+                      </div>
+                    </div>
+                    <div className="studio-settings-section">
+                      <h4>Background</h4>
+                      <div className="studio-background-options" role="group" aria-label="Section background">
+                        {(['default', 'white', 'mist', 'sand'] as const).map((background) => (
+                          <button
+                            key={background}
+                            type="button"
+                            className={sectionAppearance.background === background ? 'active' : ''}
+                            aria-pressed={sectionAppearance.background === background}
+                            onClick={() => updateSectionAppearance({ background })}
+                          >
+                            <span className={'studio-background-swatch ' + background} aria-hidden="true" />
+                            {background[0].toUpperCase() + background.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="studio-field">
+                        <span>Border radius</span>
+                        <StudioSelect
+                          label="Section border radius"
+                          value={String(sectionAppearance.corners)}
+                          options={[0, 4, 8, 12].map((radius) => ({ value: String(radius), label: `${radius} px` }))}
+                          onChange={(value) => updateSectionAppearance({ corners: Number(value) as SectionAppearance['corners'] })}
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
                 {isMenu && (
                   <div className="studio-settings-section">
@@ -601,35 +900,36 @@ export default function Studio({
                     <p>Use the arrows or drag the menu items in the section list.</p>
                   </div>
                 )}
-                <div className="studio-settings-section">
+                {!isWidget && <div className="studio-settings-section">
                   <h4>Charts &amp; spacing</h4>
-                  <label>
-                    Chart type
-                    <select
+                  <div className="studio-field">
+                    <span>Chart type</span>
+                    <StudioSelect
+                      label="Chart type"
                       value={config.chart_style}
-                      onChange={(event) =>
-                        setConfig({ ...config, chart_style: event.target.value as 'area' | 'line' })
+                      options={[{ value: 'area', label: 'Area' }, { value: 'line', label: 'Line' }]}
+                      onChange={(value) =>
+                        setConfig({ ...config, chart_style: value as 'area' | 'line' })
                       }
-                    >
-                      <option value="area">Area</option>
-                      <option value="line">Line</option>
-                    </select>
-                  </label>
-                  <label>
-                    Density
-                    <select
+                    />
+                  </div>
+                  <div className="studio-field">
+                    <span>Density</span>
+                    <StudioSelect
+                      label="Density"
                       value={config.density}
-                      onChange={(event) =>
+                      options={[
+                        { value: 'comfortable', label: 'Comfortable' },
+                        { value: 'compact', label: 'Compact' },
+                      ]}
+                      onChange={(value) =>
                         setConfig({
                           ...config,
-                          density: event.target.value as 'comfortable' | 'compact',
+                          density: value as 'comfortable' | 'compact',
                         })
                       }
-                    >
-                      <option value="comfortable">Comfortable</option>
-                      <option value="compact">Compact</option>
-                    </select>
-                  </label>
+                    />
+                  </div>
                   <label>
                     Chart color
                     <div className="studio-color-control">
@@ -660,28 +960,27 @@ export default function Studio({
                       }
                     />
                   </label>
-                  <label>
-                    Corner radius
-                    <select
-                      value={settings.presentation.corners}
-                      onChange={(event) =>
+                  <div className="studio-field">
+                    <span>Corner radius</span>
+                    <StudioSelect
+                      label="Corner radius"
+                      value={String(settings.presentation.corners)}
+                      options={[0, 4, 8, 12].map((radius) => ({
+                        value: String(radius),
+                        label: `${radius} px`,
+                      }))}
+                      onChange={(value) =>
                         setSettings({
                           ...settings,
                           presentation: {
                             ...settings.presentation,
-                            corners: Number(event.target.value),
+                            corners: Number(value),
                           },
                         })
                       }
-                    >
-                      {[0, 4, 8, 12].map((radius) => (
-                        <option key={radius} value={radius}>
-                          {radius} px
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                    />
+                  </div>
+                </div>}
               </>
             )}
             {inspectorTab === 'function' && (
@@ -699,29 +998,27 @@ export default function Studio({
                 ) : (
                   <>
                     <p>{FUNCTION_DESCRIPTIONS[page]} Save changes to apply new analysis settings.</p>
-                    <label>
-                      Analysis period
-                      <select
-                        aria-label="Studio analysis period"
+                    <div className="studio-field">
+                      <span>Analysis period</span>
+                      <StudioSelect
+                        label="Studio analysis period"
                         value={draftPeriod}
-                        onChange={(event) => setDraftPeriod(event.target.value)}
-                      >
-                        {['1M', '3M', '6M', '1Y', '3Y'].map((value) => (
-                          <option key={value} value={value}>{value}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Data source
-                      <select
-                        aria-label="Studio data source"
+                        options={['1M', '3M', '6M', '1Y', '3Y'].map((value) => ({ value, label: value }))}
+                        onChange={setDraftPeriod}
+                      />
+                    </div>
+                    <div className="studio-field">
+                      <span>Data source</span>
+                      <StudioSelect
+                        label="Studio data source"
                         value={draftSource}
-                        onChange={(event) => setDraftSource(event.target.value as 'demo' | 'yahoo')}
-                      >
-                        <option value="demo">Simulated data</option>
-                        <option value="yahoo">Yahoo Finance</option>
-                      </select>
-                    </label>
+                        options={[
+                          { value: 'demo', label: 'Simulated data' },
+                          { value: 'yahoo', label: 'Yahoo Finance' },
+                        ]}
+                        onChange={(value) => setDraftSource(value as 'demo' | 'yahoo')}
+                      />
+                    </div>
                     {page === 'portfolio' && (
                       <button className="button outline full studio-function-action" onClick={() => openDialog(onOpenPortfolioSettings)}>
                         Edit portfolio holdings &amp; weights
@@ -730,13 +1027,18 @@ export default function Studio({
                     {page === 'backtest' && (
                       <div className="studio-function-rules">
                         <h4>Backtest rules</h4>
-                        <label>
-                          Strategy
-                          <select value={draftBacktest.strategy} onChange={(event) => setDraftBacktest({ ...draftBacktest, strategy: event.target.value })}>
-                            <option value="MA_CROSSOVER">MA 20 / 50 crossover</option>
-                            <option value="BUY_AND_HOLD">Buy and hold</option>
-                          </select>
-                        </label>
+                        <div className="studio-field">
+                          <span>Strategy</span>
+                          <StudioSelect
+                            label="Strategy"
+                            value={draftBacktest.strategy}
+                            options={[
+                              { value: 'MA_CROSSOVER', label: 'MA 20 / 50 crossover' },
+                              { value: 'BUY_AND_HOLD', label: 'Buy and hold' },
+                            ]}
+                            onChange={(value) => setDraftBacktest({ ...draftBacktest, strategy: value })}
+                          />
+                        </div>
                         <label>
                           Initial capital (USD)
                           <input type="number" min={100} max={1e9} value={draftBacktest.initial_capital} onChange={(event) => setDraftBacktest({ ...draftBacktest, initial_capital: Number(event.target.value) })} />
@@ -749,13 +1051,18 @@ export default function Studio({
                           Slippage (bps)
                           <input type="number" min={0} max={100} value={draftBacktest.slippage_bps} onChange={(event) => setDraftBacktest({ ...draftBacktest, slippage_bps: Number(event.target.value) })} />
                         </label>
-                        <label>
-                          Rebalance
-                          <select value={draftBacktest.rebalance_frequency} onChange={(event) => setDraftBacktest({ ...draftBacktest, rebalance_frequency: event.target.value })}>
-                            <option value="MONTHLY">Monthly</option>
-                            <option value="NONE">None</option>
-                          </select>
-                        </label>
+                        <div className="studio-field">
+                          <span>Rebalance</span>
+                          <StudioSelect
+                            label="Rebalance"
+                            value={draftBacktest.rebalance_frequency}
+                            options={[
+                              { value: 'MONTHLY', label: 'Monthly' },
+                              { value: 'NONE', label: 'None' },
+                            ]}
+                            onChange={(value) => setDraftBacktest({ ...draftBacktest, rebalance_frequency: value })}
+                          />
+                        </div>
                         <p>Save these rules, then run the backtest from its dashboard.</p>
                       </div>
                     )}

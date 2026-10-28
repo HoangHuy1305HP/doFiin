@@ -17,6 +17,8 @@ import {
   LogOut,
   Menu,
   MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pencil,
   Plus,
   RefreshCw,
@@ -122,6 +124,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [afterLogout, setAfterLogout] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [portfolioMenu, setPortfolioMenu] = useState(false);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -141,6 +144,24 @@ export default function App() {
   const [btKey, setBtKey] = useState('');
   const [layouts, setLayouts] = useState<Partial<Record<Page, Layout>>>({});
   const [studio, setStudio] = useState(false);
+  const [studioClosing, setStudioClosing] = useState(false);
+  const studioCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (studioCloseTimer.current) clearTimeout(studioCloseTimer.current);
+  }, []);
+  function closeStudio() {
+    if (studioClosing) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setStudio(false);
+      return;
+    }
+    setStudioClosing(true);
+    studioCloseTimer.current = setTimeout(() => {
+      setStudio(false);
+      setStudioClosing(false);
+      studioCloseTimer.current = null;
+    }, 280);
+  }
   function openStudio() {
     setMobileMenu(false);
     setUserMenu(false);
@@ -522,10 +543,7 @@ export default function App() {
   const layout = layouts[activePage] || { revision: 0, config: defaultLayout(activePage) };
   const intro = INTRO[activePage];
   const pageContent = preferences.content[activePage]?.[preferences.locale];
-  const visibleNav = [
-    ...preferences.menu.map((id) => NAV.find((item) => item.id === id)!),
-    NAV[NAV.length - 1],
-  ];
+  const visibleNav = preferences.menu.map((id) => NAV.find((item) => item.id === id)!);
   const analysisControls = (
     <div className="filter-bar">
       <div className="portfolio-selector">
@@ -651,7 +669,7 @@ export default function App() {
     </div>
   );
   return (
-    <div className={'app-shell route-' + page}>
+    <div className={'app-shell route-' + page + (sidebarCollapsed ? ' menu-collapsed' : '')}>
       {mobileMenu && (
         <button
           className="sidebar-scrim"
@@ -659,7 +677,7 @@ export default function App() {
           onClick={() => setMobileMenu(false)}
         />
       )}
-      <aside inert={!!dialog || studio} className={'sidebar ' + (mobileMenu ? 'open' : '')}>
+      <aside id="main-sidebar" inert={!!dialog || studio || (sidebarCollapsed && !mobileMenu)} className={'sidebar ' + (mobileMenu ? 'open' : '')}>
         <div className="sidebar-brand">
           <BrandHome light onClick={() => setMobileMenu(false)} />
           <button
@@ -727,8 +745,19 @@ export default function App() {
           </div>
           <div className="topbar-breadcrumb">
             <button
+              className="icon-button desktop-menu-toggle"
+              aria-label={sidebarCollapsed ? 'Open menu' : 'Close menu'}
+              aria-controls="main-sidebar"
+              aria-expanded={!sidebarCollapsed}
+              onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={24} /> : <PanelLeftClose size={24} />}
+            </button>
+            <button
               className="icon-button mobile-only"
               aria-label="Open menu"
+              aria-controls="main-sidebar"
+              aria-expanded={mobileMenu}
               onClick={() => setMobileMenu(true)}
             >
               <Menu size={21} />
@@ -856,6 +885,7 @@ export default function App() {
               ) : analysis ? (
                 <Dashboard
                   presentation={preferences.presentation}
+                  sectionAppearance={preferences.sectionAppearance[activePage]}
                   controls={analysisControls}
                   page={activePage}
                   analysis={analysis}
@@ -900,9 +930,7 @@ export default function App() {
           </footer>
         </main>
         <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-          {visibleNav
-            .filter((item) => item.id !== 'subscription')
-            .map((item) => (
+          {visibleNav.map((item) => (
               <NavLink
                 className={page === item.id ? 'active' : ''}
                 key={item.id}
@@ -1065,6 +1093,7 @@ export default function App() {
       {studio && analysis && (
         <Studio
           key={activePage}
+          closing={studioClosing}
           preferences={preferences}
           onPreferencesSaved={savePreferences}
           page={activePage}
@@ -1088,7 +1117,7 @@ export default function App() {
             setStudio(false);
             setDialog('help');
           }}
-          onClose={() => setStudio(false)}
+          onClose={closeStudio}
           onPageChange={(nextPage) => navigate(nextPage)}
           defaultContent={INTRO[activePage]}
           onSaved={(result) => {
