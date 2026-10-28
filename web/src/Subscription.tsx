@@ -163,6 +163,7 @@ export default function Subscription({ notify }: { notify: (message: string) => 
       <section className="comparison-section">
         <span className="eyebrow">COMPARE PLANS</span>
         <h2>Choose the support you need.</h2>
+        <span className="comparison-scroll-hint">Swipe to compare all plans →</span>
         <div className="table-wrap">
           <table>
             <thead>

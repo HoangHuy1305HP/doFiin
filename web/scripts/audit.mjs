@@ -128,10 +128,9 @@ const context = await browser.newContext({
 const page = await context.newPage();
 routeApi(page, true);
 await page.goto(BASE + '/sign-in', { waitUntil: 'networkidle' });
-await page
-  .getByRole('button', { name: /Explore demo/ })
-  .click()
-  .catch(() => {});
+await page.getByLabel('Email').fill('demo@example.com');
+await page.locator('input[autocomplete="current-password"]').fill('fixture-password');
+await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 await page.waitForSelector('.app-shell, .widget', { timeout: 15000 });
 await page.evaluate(() => document.fonts.ready);
 await page.waitForTimeout(500);

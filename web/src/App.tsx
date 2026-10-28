@@ -3,7 +3,6 @@ import { matchRoutes, Navigate, NavLink, useLocation, useNavigate } from 'react-
 import {
   Archive,
   ArrowRight,
-  ArrowUpRight,
   ChartNoAxesCombined,
   Check,
   ChevronDown,
@@ -21,14 +20,13 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  Settings2,
   ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
   TrendingUp,
   X,
 } from 'lucide-react';
-import Auth, { Brand } from './Auth';
+import Auth, { BrandHome } from './Auth';
+import StudioModeSwitch from './StudioModeSwitch';
 import {
   api,
   ApiError,
@@ -146,7 +144,8 @@ export default function App() {
   function openStudio() {
     setMobileMenu(false);
     setUserMenu(false);
-    setStudio(true);
+    if (analysis && !loading) setStudio(true);
+    else notify('Select a portfolio and complete an analysis to open Studio.');
   }
   const [preferences, setPreferences] = useState(defaultPreferences);
   useEffect(() => {
@@ -474,31 +473,36 @@ export default function App() {
   if (booting)
     return (
       <div className="boot-screen">
-        <Brand />
+        <BrandHome />
         <LoaderCircle className="spin" size={25} />
         <p>Opening your workspace…</p>
       </div>
     );
   if (!routeId) return <Navigate to={user ? '/portfolio' : '/'} replace />;
-  if (user && publicView && !afterLogout) return <Navigate to="/portfolio" replace />;
+  const landingFromLogo =
+    publicView === 'landing' &&
+    (location.state as { fromLogo?: unknown } | null)?.fromLogo === true;
+  if (user && publicView && !afterLogout && !landingFromLogo)
+    return <Navigate to="/portfolio" replace />;
   if (!user && !publicView)
     return afterLogout ? (
       <Navigate to="/" replace />
     ) : (
       <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
     );
-  if (!user)
-    return publicView === 'landing' ? (
+  if (publicView === 'landing')
+    return (
       <Landing
-        onSignIn={() => routerNavigate('/sign-in')}
-        onStart={() => routerNavigate('/sign-up')}
-        onExplore={() => routerNavigate('/sign-in')}
+        onSignIn={() => routerNavigate(user ? '/portfolio' : '/sign-in')}
+        onStart={() => routerNavigate(user ? '/portfolio' : '/sign-up')}
+        onExplore={() => routerNavigate(user ? '/portfolio' : '/sign-in')}
       />
-    ) : (
+    );
+  if (!user)
+    return (
       <Auth
         key={publicView}
         initialMode={publicView === 'register' ? 'register' : 'login'}
-        onHome={() => routerNavigate('/')}
         onModeChange={(mode) => routerNavigate(mode === 'register' ? '/sign-up' : '/sign-in')}
         onSigned={async (demo) => {
           await signedIn(demo);
@@ -657,7 +661,7 @@ export default function App() {
       )}
       <aside inert={!!dialog || studio} className={'sidebar ' + (mobileMenu ? 'open' : '')}>
         <div className="sidebar-brand">
-          <Brand light />
+          <BrandHome light onClick={() => setMobileMenu(false)} />
           <button
             className="mobile-only icon-button"
             aria-label="Close menu"
@@ -685,24 +689,6 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <button
-            className="studio-teaser"
-            onClick={() => {
-              if (analysis) openStudio();
-              else notify('Select a portfolio and complete an analysis to open Studio.');
-            }}
-          >
-            <span>
-              <SlidersHorizontal size={16} />
-              doFiin Studio
-              <ArrowUpRight size={14} />
-            </span>
-            <p>Your workspace, your way.</p>
-            <span className="studio-teaser-link">
-              Customize layout
-              <ArrowRight size={13} />
-            </span>
-          </button>
           <div className="sidebar-status">
             <i />
             Simulated data
@@ -737,7 +723,7 @@ export default function App() {
       <div className="app-main" inert={!!dialog || studio}>
         <header className="topbar">
           <div className="topbar-brand">
-            <Brand />
+            <BrandHome />
           </div>
           <div className="topbar-breadcrumb">
             <button
@@ -758,37 +744,9 @@ export default function App() {
             </strong>
           </div>
           <div className="topbar-right">
-            <select
-              className="topbar-period"
-              aria-label="Analysis period"
-              value={period}
-              onChange={(event) => setPeriod(event.target.value)}
-            >
-              {['1M', '3M', '6M', '1Y', '3Y'].map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
-            <span className="topbar-demo">
-              <i />
-              Demo 01
-            </span>
-            <button className="icon-button" aria-label="Help" onClick={() => setDialog('help')}>
-              <CircleHelp size={18} />
-            </button>
-            <button
-              className="icon-button"
-              aria-label="Open Studio"
-              disabled={!analysis || page === 'subscription' || page === 'account'}
-              onClick={() => openStudio()}
-            >
-              <SlidersHorizontal size={18} />
-            </button>
-            <button
-              className="button primary topbar-settings"
-              onClick={() => setDialog(portfolio ? 'config' : 'create')}
-            >
-              Portfolio settings
-            </button>
+            {!studio && page !== 'subscription' && page !== 'account' && (
+              <StudioModeSwitch checked={false} onToggle={openStudio} />
+            )}
             <button
               className="topbar-avatar"
               aria-label="Open account"
@@ -829,23 +787,6 @@ export default function App() {
                       ? `Your portfolio ${(analysis.result.metrics.excess_return ?? 0) >= 0 ? 'beat' : 'trailed'} SPY by ${number(Math.abs(analysis.result.metrics.excess_return ?? 0) * 100, 1)} pp. ${[...analysis.result.factors].sort((a, b) => b.weight - a.weight)[0]?.symbol ?? '—'} has the largest weight (${percent(Math.max(...analysis.result.factors.map((f) => f.weight)), 0)}).`
                       : intro.description)}
                   </p>
-                </div>
-                <div className="intro-actions">
-                  <button
-                    className="button outline"
-                    disabled={!analysis || loading}
-                    onClick={() => openStudio()}
-                  >
-                    <SlidersHorizontal size={15} />
-                    Studio
-                  </button>
-                  <button
-                    className="button primary"
-                    onClick={() => setDialog(portfolio ? 'config' : 'create')}
-                  >
-                    <Settings2 size={15} />
-                    {portfolio ? 'Portfolio settings' : 'Create portfolio'}
-                  </button>
                 </div>
               </div>
               {(!analysis || loading || analysisError) && analysisControls}
@@ -1131,6 +1072,22 @@ export default function App() {
           backtest={backtest}
           layout={layout}
           btForm={btForm}
+          period={period}
+          source={source}
+          onAnalysisSettingsSaved={(nextPeriod, nextSource) => {
+            setStudio(false);
+            setPeriod(nextPeriod);
+            setSource(nextSource);
+          }}
+          onBacktestSettingsSaved={setBtForm}
+          onOpenPortfolioSettings={() => {
+            setStudio(false);
+            setDialog(portfolio ? 'config' : 'create');
+          }}
+          onOpenHelp={() => {
+            setStudio(false);
+            setDialog('help');
+          }}
           onClose={() => setStudio(false)}
           onPageChange={(nextPage) => navigate(nextPage)}
           defaultContent={INTRO[activePage]}

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import type { MouseEvent } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -18,7 +19,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { Brand } from './Auth';
+import { BrandHome } from './Auth';
+import StudioModeSwitch from './StudioModeSwitch';
 import { Dashboard, defaultLayout, TITLES } from './pages';
 import type { BacktestForm } from './pages';
 import type { Analysis, Backtest, Layout, Page } from './types';
@@ -35,7 +37,13 @@ type Props = {
   backtest: Backtest | null;
   layout: Layout;
   btForm: BacktestForm;
+  period: string;
+  source: 'demo' | 'yahoo';
   defaultContent: PageContent;
+  onAnalysisSettingsSaved: (period: string, source: 'demo' | 'yahoo') => void;
+  onBacktestSettingsSaved: (form: BacktestForm) => void;
+  onOpenPortfolioSettings: () => void;
+  onOpenHelp: () => void;
   onPageChange: (page: Page) => void;
   onClose: () => void;
   onSaved: (layout: Layout) => void;
@@ -46,6 +54,13 @@ const LOCALES: { id: ContentLocale; label: string }[] = [
   { id: 'en-US', label: '🇺🇸 English · United States' },
   { id: 'vi-VN', label: '🇻🇳 Tiếng Việt · Việt Nam' },
 ];
+const FUNCTION_DESCRIPTIONS: Record<Page, string> = {
+  portfolio: 'Choose the data behind this portfolio view and edit its holdings and weights.',
+  risk: 'Choose the data period and source used by the risk charts.',
+  signals: 'Choose the data used by the moving-average signals.',
+  backtest: 'Choose the data and simulation rules used by this backtest.',
+  factors: 'Choose the data used by factor and optimization analysis.',
+};
 
 export default function Studio({
   preferences,
@@ -55,13 +70,22 @@ export default function Studio({
   backtest,
   layout,
   btForm,
+  period,
+  source,
   defaultContent,
+  onAnalysisSettingsSaved,
+  onBacktestSettingsSaved,
+  onOpenPortfolioSettings,
+  onOpenHelp,
   onPageChange,
   onClose,
   onSaved,
 }: Props) {
   const [config, setConfig] = useState(() => structuredClone(layout.config));
   const [settings, setSettings] = useState(() => structuredClone(preferences));
+  const [draftPeriod, setDraftPeriod] = useState(period);
+  const [draftSource, setDraftSource] = useState(source);
+  const [draftBacktest, setDraftBacktest] = useState(() => ({ ...btForm }));
   const [selected, setSelected] = useState<string>('page');
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('content');
   const [viewport, setViewport] = useState<Viewport>('desktop');
@@ -70,9 +94,11 @@ export default function Studio({
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const studioRef = useRef<HTMLDivElement>(null);
-  const changed =
-    JSON.stringify(config) !== JSON.stringify(layout.config) ||
-    JSON.stringify(settings) !== JSON.stringify(preferences);
+  const layoutChanged = JSON.stringify(config) !== JSON.stringify(layout.config);
+  const preferencesChanged = JSON.stringify(settings) !== JSON.stringify(preferences);
+  const analysisChanged = draftPeriod !== period || draftSource !== source;
+  const backtestChanged = JSON.stringify(draftBacktest) !== JSON.stringify(btForm);
+  const changed = layoutChanged || preferencesChanged || analysisChanged || backtestChanged;
   const currentContent = settings.content[page]?.[settings.locale];
   const content = currentContent || defaultContent;
   const isWidget = config.order.includes(selected);
@@ -126,13 +152,17 @@ export default function Studio({
     setBusy(true);
     setError('');
     try {
-      const result = await put<Layout>('/layouts/' + page, {
-        expected_revision: layout.revision,
-        config,
-      });
-      onPreferencesSaved(settings);
-      onSaved(result);
+      if (layoutChanged) {
+        const result = await put<Layout>('/layouts/' + page, {
+          expected_revision: layout.revision,
+          config,
+        });
+        onSaved(result);
+      }
+      if (preferencesChanged) onPreferencesSaved(settings);
+      if (backtestChanged) onBacktestSettingsSaved(draftBacktest);
       setSaved(true);
+      if (analysisChanged) onAnalysisSettingsSaved(draftPeriod, draftSource);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to save Studio changes.');
     } finally {
@@ -141,6 +171,17 @@ export default function Studio({
   }
   function close() {
     if (changed && !window.confirm('You have unsaved changes. Exit Studio?')) return;
+    onClose();
+  }
+  function openDialog(action: () => void) {
+    if (changed && !window.confirm('You have unsaved changes. Leave Studio?')) return;
+    action();
+  }
+  function leaveForLanding(event: MouseEvent<HTMLAnchorElement>) {
+    if (changed && !window.confirm('You have unsaved changes. Exit Studio?')) {
+      event.preventDefault();
+      return;
+    }
     onClose();
   }
   useDialogFocus(studioRef, close, 'first');
@@ -157,7 +198,7 @@ export default function Studio({
         <button className="icon-button" aria-label="Exit Studio" onClick={close}>
           <ChevronLeft size={20} />
         </button>
-        <Brand />
+        <BrandHome onClick={leaveForLanding} />
         <span className="studio-slash">/</span>
         <span className="studio-label">Studio</span>
         <span className="studio-header-spacer" />
@@ -194,6 +235,7 @@ export default function Studio({
         <span className={'studio-header-status ' + (changed ? 'unsaved' : '')} role="status">
           {busy ? 'Saving…' : changed ? 'Unsaved changes' : saved ? 'Saved' : 'Up to date'}
         </span>
+        <StudioModeSwitch checked onToggle={close} />
         <button
           className="button primary studio-save-button"
           onClick={() => void save()}
@@ -399,7 +441,7 @@ export default function Studio({
           <div className="studio-preview-stage">
             <div className={'studio-preview ' + viewport}>
               <div className="studio-preview-brand">
-                <Brand />
+                <BrandHome onClick={leaveForLanding} />
                 <span className="tag">Preview</span>
               </div>
               <div className="studio-preview-heading">
@@ -645,30 +687,97 @@ export default function Studio({
             {inspectorTab === 'function' && (
               <div className="studio-settings-section studio-function">
                 <h4>Data &amp; rules</h4>
-                <p>
-                  These values come from your active analysis. Change portfolio holdings and rules
-                  from the dashboard.
-                </p>
-                <dl>
-                  <dt>Portfolio</dt>
-                  <dd>{analysis.result.metadata.portfolio_name}</dd>
-                  <dt>Source</dt>
-                  <dd>{analysis.result.metadata.is_demo ? 'Simulated data' : 'Yahoo Finance'}</dd>
-                  <dt>Period</dt>
-                  <dd>
-                    {analysis.result.metadata.first_date} — {analysis.result.metadata.last_date}
-                  </dd>
-                  <dt>Benchmark</dt>
-                  <dd>{analysis.result.metadata.benchmark}</dd>
-                  <dt>Signal windows</dt>
-                  <dd>
-                    MA{analysis.result.signals.short_window} / MA
-                    {analysis.result.signals.long_window}
-                  </dd>
-                </dl>
-                <button className="button outline full" onClick={close}>
-                  Open dashboard
-                </button>
+                {isMenu ? (
+                  <>
+                    <p>{inspectorTitle} opens its analysis page. Select a section on that page to edit its functions.</p>
+                    <button className="button outline full" onClick={() => switchPage(selected.slice(5) as Page)}>
+                      Open {inspectorTitle} page
+                    </button>
+                  </>
+                ) : selected === 'theme' ? (
+                  <p>Theme appearance is configured in the Design tab.</p>
+                ) : (
+                  <>
+                    <p>{FUNCTION_DESCRIPTIONS[page]} Save changes to apply new analysis settings.</p>
+                    <label>
+                      Analysis period
+                      <select
+                        aria-label="Studio analysis period"
+                        value={draftPeriod}
+                        onChange={(event) => setDraftPeriod(event.target.value)}
+                      >
+                        {['1M', '3M', '6M', '1Y', '3Y'].map((value) => (
+                          <option key={value} value={value}>{value}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Data source
+                      <select
+                        aria-label="Studio data source"
+                        value={draftSource}
+                        onChange={(event) => setDraftSource(event.target.value as 'demo' | 'yahoo')}
+                      >
+                        <option value="demo">Simulated data</option>
+                        <option value="yahoo">Yahoo Finance</option>
+                      </select>
+                    </label>
+                    {page === 'portfolio' && (
+                      <button className="button outline full studio-function-action" onClick={() => openDialog(onOpenPortfolioSettings)}>
+                        Edit portfolio holdings &amp; weights
+                      </button>
+                    )}
+                    {page === 'backtest' && (
+                      <div className="studio-function-rules">
+                        <h4>Backtest rules</h4>
+                        <label>
+                          Strategy
+                          <select value={draftBacktest.strategy} onChange={(event) => setDraftBacktest({ ...draftBacktest, strategy: event.target.value })}>
+                            <option value="MA_CROSSOVER">MA 20 / 50 crossover</option>
+                            <option value="BUY_AND_HOLD">Buy and hold</option>
+                          </select>
+                        </label>
+                        <label>
+                          Initial capital (USD)
+                          <input type="number" min={100} max={1e9} value={draftBacktest.initial_capital} onChange={(event) => setDraftBacktest({ ...draftBacktest, initial_capital: Number(event.target.value) })} />
+                        </label>
+                        <label>
+                          Fees (bps)
+                          <input type="number" min={0} max={100} value={draftBacktest.fee_bps} onChange={(event) => setDraftBacktest({ ...draftBacktest, fee_bps: Number(event.target.value) })} />
+                        </label>
+                        <label>
+                          Slippage (bps)
+                          <input type="number" min={0} max={100} value={draftBacktest.slippage_bps} onChange={(event) => setDraftBacktest({ ...draftBacktest, slippage_bps: Number(event.target.value) })} />
+                        </label>
+                        <label>
+                          Rebalance
+                          <select value={draftBacktest.rebalance_frequency} onChange={(event) => setDraftBacktest({ ...draftBacktest, rebalance_frequency: event.target.value })}>
+                            <option value="MONTHLY">Monthly</option>
+                            <option value="NONE">None</option>
+                          </select>
+                        </label>
+                        <p>Save these rules, then run the backtest from its dashboard.</p>
+                      </div>
+                    )}
+                    <dl>
+                      <dt>Active portfolio</dt>
+                      <dd>{analysis.result.metadata.portfolio_name}</dd>
+                      <dt>Current date range</dt>
+                      <dd>{analysis.result.metadata.first_date} — {analysis.result.metadata.last_date}</dd>
+                      <dt>Benchmark</dt>
+                      <dd>{analysis.result.metadata.benchmark}</dd>
+                      {page === 'signals' && (
+                        <>
+                          <dt>Signal windows</dt>
+                          <dd>MA{analysis.result.signals.short_window} / MA{analysis.result.signals.long_window}</dd>
+                        </>
+                      )}
+                    </dl>
+                    <button className="studio-inline-action" onClick={() => openDialog(onOpenHelp)}>
+                      Open analysis help
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

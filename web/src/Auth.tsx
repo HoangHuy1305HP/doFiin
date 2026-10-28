@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
+import type { MouseEventHandler } from 'react';
 import { ArrowUpRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Sparkles } from 'lucide-react';
 import { post, setToken } from './api';
 
@@ -23,15 +25,32 @@ export function Brand({ light = false }: { light?: boolean }) {
     </span>
   );
 }
+export function BrandHome({
+  light = false,
+  onClick,
+}: {
+  light?: boolean;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+}) {
+  return (
+    <Link
+      to="/"
+      state={{ fromLogo: true }}
+      className="brand-home"
+      aria-label="doFiin home"
+      onClick={onClick}
+    >
+      <Brand light={light} />
+    </Link>
+  );
+}
 export default function Auth({
   onSigned,
   initialMode = 'login',
-  onHome,
   onModeChange,
 }: {
   onSigned: (demo?: boolean) => Promise<void>;
   initialMode?: 'login' | 'register';
-  onHome?: () => void;
   onModeChange?: (mode: 'login' | 'register') => void;
 }) {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
@@ -78,9 +97,7 @@ export default function Auth({
   return (
     <div className={'auth-page auth-' + mode}>
       <aside className="auth-story">
-        <button className="brand-home" onClick={onHome} aria-label="doFiin home">
-          <Brand light />
-        </button>
+        <BrandHome light />
         <div className="auth-story-copy">
           <span className="eyebrow light">KNOW YOUR PORTFOLIO. INVEST WITH INTENT.</span>
           <h1>
@@ -108,15 +125,15 @@ export default function Auth({
       </aside>
       <div className="auth-form-wrap">
         <div className="auth-mobile-brand">
-          <button className="brand-home" onClick={onHome}>
-            <Brand />
-          </button>
+          <BrandHome />
           <button
             type="button"
             className="text-button"
             onClick={() =>
               setError(
-                'Sign in with your email and password, or use Explore demo to try a sample portfolio.',
+                mode === 'login'
+                  ? 'Sign in with your email and password. Contact support if you need account access.'
+                  : 'Create an account with your email and password, or use Explore demo to try a sample portfolio.',
               )
             }
           >
@@ -255,15 +272,17 @@ export default function Auth({
             <LockKeyhole size={14} />
             Your data stays private.
           </p>
-          <button
-            className="text-button auth-demo-link"
-            disabled={!!busy}
-            onClick={() => void submit(true)}
-          >
-            {busy === 'demo' ? <LoaderCircle className="spin" size={15} /> : <Sparkles size={15} />}
-            Explore demo
-            <ArrowUpRight size={15} />
-          </button>
+          {mode === 'register' && (
+            <button
+              className="text-button auth-demo-link"
+              disabled={!!busy}
+              onClick={() => void submit(true)}
+            >
+              {busy === 'demo' ? <LoaderCircle className="spin" size={15} /> : <Sparkles size={15} />}
+              Explore demo
+              <ArrowUpRight size={15} />
+            </button>
+          )}
         </div>
         <footer className="auth-bottom">
           <span>© 2026 doFiin</span>

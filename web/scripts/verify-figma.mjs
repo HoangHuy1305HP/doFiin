@@ -81,6 +81,13 @@ try {
         )
         .waitFor();
       await inspect(page, `${route}-${device}`);
+      await expect(page.locator('.topbar-period, .topbar-demo, .topbar-settings')).toHaveCount(0);
+      await expect(page.locator('.studio-teaser')).toHaveCount(0);
+      if (route === 'subscription') {
+        await expect(page.locator('.comparison-section tbody td').first()).toHaveCSS('font-size', '16px');
+        if (device === 'mobile')
+          await expect(page.locator('.comparison-scroll-hint')).toBeVisible();
+      }
       if (route === 'portfolio') {
         const actual = await page
             .locator('.page-intro h1')
@@ -97,10 +104,9 @@ try {
               ? { width: 1194, height: 834 }
               : { width, height },
         );
-        if (device === 'mobile') {
-          await page.getByRole('button', { name: 'Open menu', exact: true }).click();
-          await page.getByRole('button', { name: /doFiin Studio/ }).click();
-        } else await page.getByRole('button', { name: 'Open Studio', exact: true }).click();
+        await expect(page.getByRole('switch', { name: 'Studio mode' })).toHaveAttribute('aria-checked', 'false');
+        await page.getByRole('switch', { name: 'Studio mode' }).click();
+        await expect(page.getByRole('switch', { name: 'Studio mode' })).toHaveAttribute('aria-checked', 'true');
         await expect(page.getByRole('tab', { name: 'Content', exact: true })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Design', exact: true })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Function', exact: true })).toBeVisible();
@@ -109,7 +115,14 @@ try {
         await inspect(page, `studio-${route}-${device}`, false);
         await page.getByRole('tab', { name: 'Function', exact: true }).click();
         await expect(page.getByRole('tabpanel')).toContainText('Data & rules');
-        await page.getByRole('button', { name: device === 'mobile' ? 'Exit Studio' : 'Close Studio', exact: true }).click();
+        await expect(page.getByRole('combobox', { name: 'Studio analysis period' })).toBeVisible();
+        await expect(page.getByRole('combobox', { name: 'Studio data source' })).toBeVisible();
+        if (route === 'portfolio')
+          await expect(page.getByRole('button', { name: 'Edit portfolio holdings & weights' })).toBeVisible();
+        if (route === 'backtest')
+          await expect(page.getByRole('tabpanel')).toContainText('Backtest rules');
+        await page.getByRole('switch', { name: 'Studio mode' }).click();
+        await expect(page.locator('.studio-shell')).toHaveCount(0);
         await page.setViewportSize({ width, height });
       }
     }
@@ -124,6 +137,50 @@ try {
       await p.goto(BASE + '/' + path, { waitUntil: 'networkidle' });
       await p.locator(name === 'landing' ? '.landing' : '.auth-form').waitFor();
       await inspect(p, `${name}-${device}`);
+      if (name === 'login')
+        await expect(p.getByRole('button', { name: 'Explore demo' })).toHaveCount(0);
+      if (name === 'register')
+        await expect(p.getByRole('button', { name: 'Explore demo' })).toBeVisible();
+      if (name === 'landing') {
+        const comparison = p.getByRole('region', { name: 'Plan comparison' });
+        await expect(comparison.locator('thead th')).toHaveCount(5);
+        await expect(comparison.locator('tbody td').first()).toHaveCSS('font-size', '16px');
+        await expect(comparison.locator('thead th').nth(1)).toHaveCSS('text-align', 'center');
+        await expect(comparison.locator('tbody td').first()).toHaveCSS('text-align', 'center');
+        await expect(p.locator('#pricing .landing-pricing-grid h3').first()).toHaveCSS('font-size', '24px');
+        await expect(p.locator('#pricing .landing-pricing-grid p').first()).toHaveCSS('font-size', '14px');
+        await expect(p.locator('.landing-nav .button')).toHaveCSS('font-size', '16px');
+        await expect(p.locator('.landing-nav .text-button')).toHaveCSS('font-size', '16px');
+        await expect(comparison.getByRole('row', { name: /Personalized workflows/ })).toContainText('By agreement');
+        await expect(comparison.locator('thead')).toContainText('Let’s Talk');
+        if (device === 'mobile')
+          await expect(p.locator('.landing-comparison-hint')).toBeVisible();
+        if (device !== 'mobile') {
+          const cardPositions = await p.locator('#pricing .landing-pricing-grid article').evaluateAll((cards) =>
+            cards.map((card) => ({
+              row: card.getBoundingClientRect().top,
+              price: card.querySelector('strong').getBoundingClientRect().top,
+              features: card.querySelector('li').getBoundingClientRect().top,
+            })),
+          );
+          for (const card of cardPositions) {
+            const rowStart = cardPositions.find((item) => item.row === card.row);
+            expect(Math.abs(card.price - rowStart.price)).toBeLessThan(1);
+            expect(Math.abs(card.features - rowStart.features)).toBeLessThan(1);
+          }
+        }
+        checks.push({ name: `Landing plan comparison ${device}`, issues: [] });
+      }
+      if (name === 'landing' && device === 'desktop') {
+        const cards = p.locator('#pricing .landing-pricing-grid article');
+        await expect(cards).toHaveCount(4);
+        await expect(cards.nth(1)).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+        await expect(p.getByRole('button', { name: 'Coming soon' })).toBeDisabled();
+        await expect(cards.nth(3)).toContainText('Pricing by agreement');
+        await cards.nth(1).hover();
+        await expect(cards.nth(1)).toHaveCSS('background-color', 'rgb(45, 118, 88)');
+        checks.push({ name: 'Landing pricing hover and coming-soon plan', issues: [] });
+      }
     }
     await pub.close();
   }
@@ -131,7 +188,7 @@ try {
     page = await context.newPage();
   page.on('pageerror', (e) => errors.push({ name: 'interaction', error: e.message }));
   await page.goto(BASE + '/portfolio', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Open Studio', exact: true }).click();
+  await page.getByRole('switch', { name: 'Studio mode' }).click();
   await page.getByRole('combobox', { name: 'Content language' }).selectOption('vi-VN');
   await page.getByRole('textbox', { name: 'Heading' }).fill('Hiểu rõ danh mục của bạn');
   await page.getByRole('textbox', { name: 'Description' }).fill('Nội dung tiếng Việt dành riêng cho trang này.');
@@ -154,7 +211,7 @@ try {
   await expect(page.locator('.dashboard')).toHaveAttribute('data-legend', 'false');
   await expect(page.locator('.widget-growth')).toHaveCSS('border-radius', '8px');
   checks.push({ name: 'Studio save/reload/menu/legend/corners', issues: [] });
-  await page.getByRole('button', { name: 'Open Studio', exact: true }).click();
+  await page.getByRole('switch', { name: 'Studio mode' }).click();
   await page.getByRole('combobox', { name: 'Studio page' }).selectOption('risk');
   await expect(page).toHaveURL(BASE + '/risk');
   await expect(page.locator('.studio-panel-heading')).toContainText('Risk');
@@ -162,6 +219,20 @@ try {
   await expect(page.locator('.studio-inspector-heading')).toContainText('Relationships between assets');
   await page.getByRole('button', { name: 'Close Studio', exact: true }).click();
   checks.push({ name: 'Studio page selector and contextual widget inspector', issues: [] });
+  await page.goto(BASE + '/portfolio', { waitUntil: 'networkidle' });
+  await page.getByRole('switch', { name: 'Studio mode' }).click();
+  await page.getByRole('tab', { name: 'Function', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Studio analysis period' }).selectOption('6M');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.locator('.studio-shell')).toHaveCount(0);
+  await expect(page.locator('.page-intro .eyebrow')).toContainText('6M');
+  await expect(page.locator('.widgets-grid')).toBeVisible();
+  await page.getByRole('switch', { name: 'Studio mode' }).click();
+  await page.getByRole('tab', { name: 'Function', exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Studio analysis period' })).toHaveValue('6M');
+  await page.getByRole('button', { name: 'Edit portfolio holdings & weights' }).click();
+  await expect(page.getByRole('dialog')).toContainText('Portfolio settings');
+  checks.push({ name: 'Studio Function analysis period and portfolio settings', issues: [] });
   await context.close();
 } catch (error) {
   errors.push({ error: error.message });

@@ -33,6 +33,20 @@ try {
   await expect(page).toHaveURL(base + '/portfolio');
   checks++;
 
+  await page.getByRole('link', { name: 'doFiin home' }).first().click();
+  await expect(page).toHaveURL(base + '/');
+  await expect(page.locator('.landing')).toBeVisible();
+  await page.goto(base + '/portfolio');
+  await expect(page.locator('.widgets-grid')).toBeVisible();
+  checks++;
+  await page.getByRole('switch', { name: 'Studio mode' }).click();
+  await page.locator('.studio-header').getByRole('link', { name: 'doFiin home' }).click();
+  await expect(page).toHaveURL(base + '/');
+  await expect(page.locator('.landing')).toBeVisible();
+  await page.goto(base + '/portfolio');
+  await expect(page.locator('.widgets-grid')).toBeVisible();
+  checks++;
+
   await page.getByRole('link', { name: 'Risk', exact: true }).first().click();
   await expect(page).toHaveURL(base + '/risk');
   await expect(page.locator('.page-intro h1')).toContainText('Risk, from every angle.');
@@ -57,7 +71,10 @@ try {
   const guestPage = await unsigned.newPage();
   await guestPage.goto(base + '/factors');
   await expect(guestPage).toHaveURL(base + '/sign-in');
-  await guestPage.getByRole('button', { name: /Explore demo/ }).click();
+  await expect(guestPage.getByRole('button', { name: 'Explore demo' })).toHaveCount(0);
+  await guestPage.getByLabel('Email').fill('demo@example.com');
+  await guestPage.locator('input[autocomplete="current-password"]').fill('fixture-password');
+  await guestPage.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(guestPage).toHaveURL(base + '/factors');
   await expect(guestPage.locator('.widgets-grid')).toBeVisible();
   checks++;
@@ -67,10 +84,18 @@ try {
   await expect(guestPage.locator('.landing')).toBeVisible();
   checks++;
   await guestPage.goto(base + '/sign-in');
+  await guestPage.getByRole('link', { name: 'doFiin home' }).first().click();
+  await expect(guestPage).toHaveURL(base + '/');
+  await guestPage.goto(base + '/sign-in');
+  checks++;
   await guestPage.getByRole('button', { name: /Sign up free/ }).click();
   await expect(guestPage).toHaveURL(base + '/sign-up');
   await guestPage.getByRole('button', { name: /Sign in →/ }).click();
   await expect(guestPage).toHaveURL(base + '/sign-in');
+  checks++;
+  const favicon = await guestPage.request.get(base + '/favicon.svg');
+  expect(favicon.ok()).toBeTruthy();
+  expect(await favicon.text()).toContain('stroke="#ffffff"');
   checks++;
   await unsigned.close();
 } finally {

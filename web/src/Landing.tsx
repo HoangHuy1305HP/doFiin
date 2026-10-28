@@ -1,11 +1,19 @@
 import { ArrowRight, ChartNoAxesCombined, ShieldCheck, TrendingUp, Layers3 } from 'lucide-react';
-import { Brand } from './Auth';
+import { BrandHome } from './Auth';
 import { TimeChart } from './charts';
 const illustration = Array.from({ length: 36 }, (_, i) => ({
   date: `2025-${String(Math.floor(i / 3) + 1).padStart(2, '0')}-${String((i % 3) * 9 + 1).padStart(2, '0')}`,
   portfolio: 100 + i * 0.8 + Math.sin(i * 1.7) * 3,
   benchmark: 100 + i * 0.45 + Math.sin(i * 1.3) * 2,
 }));
+const planComparison = [
+  { feature: 'Portfolios', values: ['1', '5', '20', 'Tailored'] },
+  { feature: 'Price history', values: ['1 year', '5 years', 'Available', 'Tailored'] },
+  { feature: 'Signals & backtests', values: ['—', 'Included', 'Included', 'Tailored'] },
+  { feature: 'Factor analysis', values: ['—', 'Included', 'Included', 'Tailored'] },
+  { feature: 'Studio layouts', values: ['Standard', '3', 'Unlimited', 'Tailored'] },
+  { feature: 'Personalized workflows', values: ['—', '—', '—', 'By agreement'] },
+];
 export default function Landing({
   onSignIn,
   onStart,
@@ -18,7 +26,7 @@ export default function Landing({
   return (
     <div className="landing">
       <header className="landing-nav">
-        <Brand />
+        <BrandHome />
         <nav aria-label="Product navigation">
           <a
             href="#product"
@@ -89,7 +97,7 @@ export default function Landing({
           </div>
           <div className="landing-product-body">
             <aside>
-              <Brand light />
+              <BrandHome light />
               {['Overview', 'Risk', 'Signals', 'Backtest', 'Factors'].map((text) => (
                 <span key={text}>{text}</span>
               ))}
@@ -238,6 +246,7 @@ export default function Landing({
                 name: 'Free',
                 description: 'Start with the essentials.',
                 price: '0',
+                billing: 'VND / month',
                 features: ['1 portfolio', '1 year of price history'],
                 cta: 'Get started',
               },
@@ -245,6 +254,7 @@ export default function Landing({
                 name: 'Plus',
                 description: 'Go deeper into your portfolio.',
                 price: '99,000',
+                billing: 'VND / month',
                 features: ['5 portfolios', 'Signals, backtests, and Studio'],
                 cta: 'Choose Plus',
               },
@@ -252,16 +262,29 @@ export default function Landing({
                 name: 'Pro',
                 description: 'Make room for more exploration.',
                 price: '199,000',
+                billing: 'VND / month',
                 features: ['20 portfolios', 'Unlimited Studio layouts'],
                 cta: 'Choose Pro',
+              },
+              {
+                name: "Let's Talk",
+                description: 'Work with our team to shape a plan around your needs.',
+                price: 'Custom',
+                billing: 'Pricing by agreement',
+                features: ['Personalized features and workflows', 'Options tailored to your requests'],
+                cta: 'Coming soon',
+                comingSoon: true,
               },
             ].map((plan) => (
               <article key={plan.name} className={plan.name === 'Plus' ? 'featured' : ''}>
                 <h3>{plan.name}</h3>
                 {plan.name === 'Plus' && <span className="landing-popular">MOST POPULAR</span>}
+                {plan.comingSoon && (
+                  <span className="landing-popular landing-coming-soon">COMING SOON</span>
+                )}
                 <p>{plan.description}</p>
                 <strong>{plan.price}</strong>
-                <small>VND / month</small>
+                <small>{plan.billing}</small>
                 <ul>
                   {plan.features.map((f) => (
                     <li key={f}>
@@ -273,6 +296,7 @@ export default function Landing({
                 <button
                   className={'button full ' + (plan.name === 'Plus' ? 'lime' : 'outline')}
                   onClick={onStart}
+                  disabled={plan.comingSoon}
                 >
                   {plan.cta}
                 </button>
@@ -281,6 +305,42 @@ export default function Landing({
           </div>
           <small className="landing-price-note">
             Illustrative pricing in VND. Taxes included. Plan limits shown for design demonstration.
+          </small>
+        </section>
+        <section className="landing-section landing-plan-comparison" aria-labelledby="plan-comparison-title">
+          <span className="eyebrow">COMPARE PLANS</span>
+          <h2 id="plan-comparison-title">Find the plan that fits.</h2>
+          <p>See what each plan offers at a glance.</p>
+          <span className="landing-comparison-hint">Swipe to compare all plans →</span>
+          <div className="landing-comparison-scroll" role="region" aria-label="Plan comparison" tabIndex={0}>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Feature</th>
+                  <th scope="col">Free</th>
+                  <th scope="col">Plus</th>
+                  <th scope="col">Pro</th>
+                  <th scope="col">
+                    Let’s Talk <span className="landing-comparison-soon">SOON</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {planComparison.map(({ feature, values }) => (
+                  <tr key={feature}>
+                    <th scope="row">{feature}</th>
+                    {values.map((value, index) => (
+                      <td key={`${feature}-${index}`} className={value === '—' ? 'unavailable' : ''}>
+                        {value}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <small className="landing-price-note">
+            Illustrative benefits for this demo. Let’s Talk is coming soon; its scope and pricing will be agreed with our team.
           </small>
         </section>
         <section className="landing-cta">
@@ -295,7 +355,7 @@ export default function Landing({
       </main>
       <footer className="landing-footer">
         <div>
-          <Brand />
+          <BrandHome />
           <p>Portfolio clarity, without the noise.</p>
           <button className="text-button" onClick={onSignIn}>
             Sign in

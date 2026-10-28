@@ -15,12 +15,12 @@
   --color-chart-1: #163d32;
   --color-chart-2: #94ae58;
   --color-chart-3: #c49a3b;
-  --text-caption: 0.6875rem; /* 11 */
-  --text-small: 0.75rem; /* 12 */
+  --text-caption: 0.75rem; /* 12 */
+  --text-small: 0.875rem; /* 14 */
   --text-label: 0.875rem; /* 14 */
   --text-body: 1rem; /* 16 */
   --text-lead: 1.125rem; /* 18 */
-  --text-card-title: 1.125rem; /* 18 */
+  --text-card-title: 1.25rem; /* 20 */
   --text-page-title: 2.625rem; /* 42 */
   --text-portfolio-title: 2.97rem; /* 47.52 */
   --text-metric: 2.0625rem; /* 33 */

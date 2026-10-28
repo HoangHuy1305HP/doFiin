@@ -76,7 +76,9 @@ async function shoot(
 
 const signIn = async (page) => {
   if (await page.locator('.app-shell').count()) return;
-  await page.getByRole('button', { name: /Explore demo/ }).click();
+  await page.getByLabel('Email').fill('demo@example.com');
+  await page.locator('input[autocomplete="current-password"]').fill('fixture-password');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForSelector('.app-shell', { timeout: 15000 });
   await page.waitForSelector('.widget', { timeout: 15000 });
   await page.waitForTimeout(700);
@@ -131,14 +133,16 @@ await shoot('dialog-create', {
 await shoot('dialog-help', {
   setup: async (page) => {
     await signIn(page);
-    await page.getByRole('button', { name: 'Help' }).click();
+    await page.getByRole('switch', { name: 'Studio mode' }).click();
+    await page.getByRole('tab', { name: 'Function' }).click();
+    await page.getByRole('button', { name: 'Open analysis help' }).click();
     await page.waitForSelector('.modal');
   },
 });
 await shoot('studio', {
   setup: async (page) => {
     await signIn(page);
-    await page.getByRole('button', { name: 'Open Studio', exact: true }).click();
+    await page.getByRole('switch', { name: 'Studio mode' }).click();
     await page.waitForSelector('.studio-shell', { timeout: 15000 });
     await page.waitForTimeout(600);
   },
