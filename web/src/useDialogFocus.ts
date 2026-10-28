@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 
-export function useDialogFocus(root: RefObject<HTMLElement | null>, onClose: () => void) {
+export function useDialogFocus(
+  root: RefObject<HTMLElement | null>,
+  onClose: () => void,
+  initialFocus: 'input' | 'first' = 'input',
+) {
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
@@ -16,7 +20,7 @@ export function useDialogFocus(root: RefObject<HTMLElement | null>, onClose: () 
       ).filter((item) => item.getClientRects().length > 0);
     const animation = requestAnimationFrame(() => {
       const input = root.current?.querySelector<HTMLInputElement>('input:not([disabled])');
-      (input || focusable()[0])?.focus();
+      (initialFocus === 'input' ? input || focusable()[0] : focusable()[0])?.focus();
     });
     const handler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -47,5 +51,5 @@ export function useDialogFocus(root: RefObject<HTMLElement | null>, onClose: () 
       document.body.style.overflow = overflow;
       if (previous?.isConnected) previous.focus();
     };
-  }, [root]);
+  }, [root, initialFocus]);
 }

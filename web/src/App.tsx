@@ -517,6 +517,7 @@ export default function App() {
   const activePage = page === 'subscription' || page === 'account' ? 'portfolio' : page;
   const layout = layouts[activePage] || { revision: 0, config: defaultLayout(activePage) };
   const intro = INTRO[activePage];
+  const pageContent = preferences.content[activePage]?.[preferences.locale];
   const visibleNav = [
     ...preferences.menu.map((id) => NAV.find((item) => item.id === id)!),
     NAV[NAV.length - 1],
@@ -816,7 +817,7 @@ export default function App() {
                     {page === 'portfolio' ? ' · ' + period : ''}
                   </span>
                   <h1>
-                    {intro.title.split('\n').map((line, i) => (
+                    {(pageContent?.title ?? intro.title).split('\n').map((line, i) => (
                       <span key={line}>
                         {i > 0 && <br />}
                         {line}
@@ -824,9 +825,9 @@ export default function App() {
                     ))}
                   </h1>
                   <p>
-                    {page === 'portfolio' && analysis
+                    {pageContent?.description ?? (page === 'portfolio' && analysis
                       ? `Your portfolio ${(analysis.result.metrics.excess_return ?? 0) >= 0 ? 'beat' : 'trailed'} SPY by ${number(Math.abs(analysis.result.metrics.excess_return ?? 0) * 100, 1)} pp. ${[...analysis.result.factors].sort((a, b) => b.weight - a.weight)[0]?.symbol ?? '—'} has the largest weight (${percent(Math.max(...analysis.result.factors.map((f) => f.weight)), 0)}).`
-                      : intro.description}
+                      : intro.description)}
                   </p>
                 </div>
                 <div className="intro-actions">
@@ -1122,6 +1123,7 @@ export default function App() {
       )}
       {studio && analysis && (
         <Studio
+          key={activePage}
           preferences={preferences}
           onPreferencesSaved={savePreferences}
           page={activePage}
@@ -1130,6 +1132,8 @@ export default function App() {
           layout={layout}
           btForm={btForm}
           onClose={() => setStudio(false)}
+          onPageChange={(nextPage) => navigate(nextPage)}
+          defaultContent={INTRO[activePage]}
           onSaved={(result) => {
             setLayouts((previous) => ({ ...previous, [activePage]: result }));
             notify('Studio layout saved to your account.');

@@ -48,6 +48,8 @@ async function inspect(page, name, fullPage = true) {
         : null;
     if (!getComputedStyle(document.documentElement).fontFamily.includes('Geist'))
       issues.push('Wrong body font');
+    if (!document.querySelector('.brand-monogram svg'))
+      issues.push('Missing dolphin brand mark');
     if (heading && !heading.family.includes('Space Grotesk')) issues.push('Wrong heading font');
     if (heading && heading.weight !== '700') issues.push('Wrong heading weight');
     for (const img of document.images)
@@ -99,13 +101,15 @@ try {
           await page.getByRole('button', { name: 'Open menu', exact: true }).click();
           await page.getByRole('button', { name: /doFiin Studio/ }).click();
         } else await page.getByRole('button', { name: 'Open Studio', exact: true }).click();
-        await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Content', exact: true })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Design', exact: true })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Function', exact: true })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Add Menu', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Add menu item', exact: true })).toBeVisible();
+        await expect(page.getByRole('combobox', { name: 'Content language' })).toBeVisible();
         await inspect(page, `studio-${route}-${device}`, false);
         await page.getByRole('tab', { name: 'Function', exact: true }).click();
         await expect(page.getByRole('tabpanel')).toContainText('Data & rules');
-        await page.getByRole('button', { name: 'Close Studio', exact: true }).click();
+        await page.getByRole('button', { name: device === 'mobile' ? 'Exit Studio' : 'Close Studio', exact: true }).click();
         await page.setViewportSize({ width, height });
       }
     }
@@ -128,21 +132,36 @@ try {
   page.on('pageerror', (e) => errors.push({ name: 'interaction', error: e.message }));
   await page.goto(BASE + '/portfolio', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Open Studio', exact: true }).click();
-  await page.getByRole('button', { name: 'Remove Risk menu', exact: true }).click();
-  await page.getByRole('button', { name: 'Add Menu', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Content language' }).selectOption('vi-VN');
+  await page.getByRole('textbox', { name: 'Heading' }).fill('Hiểu rõ danh mục của bạn');
+  await page.getByRole('textbox', { name: 'Description' }).fill('Nội dung tiếng Việt dành riêng cho trang này.');
+  await expect(page.locator('.studio-preview-heading h2')).toHaveText('Hiểu rõ danh mục của bạn');
+  await page.locator('.studio-left .studio-tree-select').filter({ hasText: 'Risk' }).click();
+  await page.getByRole('button', { name: 'Remove from menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Add menu item', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Add navigation menu', exact: true })
     .selectOption('risk');
-  await page.getByLabel('Legend', { exact: true }).selectOption('false');
-  await page.getByLabel('Corner radius', { exact: true }).selectOption('8');
-  await page.getByRole('button', { name: 'Save layout', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Design', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Show legend' }).uncheck();
+  await page.getByRole('combobox', { name: 'Corner radius' }).selectOption('8');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.locator('.studio-header-status')).toHaveText('Saved');
   await page.getByRole('button', { name: 'Close Studio', exact: true }).click();
   await page.reload({ waitUntil: 'networkidle' });
   await expect(page.locator('.sidebar nav .nav-item').nth(4)).toContainText('Risk');
+  await expect(page.locator('.page-intro h1')).toHaveText('Hiểu rõ danh mục của bạn');
   await expect(page.locator('.dashboard')).toHaveAttribute('data-legend', 'false');
   await expect(page.locator('.widget-growth')).toHaveCSS('border-radius', '8px');
   checks.push({ name: 'Studio save/reload/menu/legend/corners', issues: [] });
+  await page.getByRole('button', { name: 'Open Studio', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Studio page' }).selectOption('risk');
+  await expect(page).toHaveURL(BASE + '/risk');
+  await expect(page.locator('.studio-panel-heading')).toContainText('Risk');
+  await page.locator('.studio-left .studio-tree-select').filter({ hasText: 'Relationships between assets' }).click();
+  await expect(page.locator('.studio-inspector-heading')).toContainText('Relationships between assets');
+  await page.getByRole('button', { name: 'Close Studio', exact: true }).click();
+  checks.push({ name: 'Studio page selector and contextual widget inspector', issues: [] });
   await context.close();
 } catch (error) {
   errors.push({ error: error.message });
