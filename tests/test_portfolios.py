@@ -81,11 +81,16 @@ def test_partial_allocation_preserves_cash_and_weights(client, auth, instrument_
     portfolio_id = response.json()["id"]
     response = client.put(
         f"/api/v1/portfolios/{portfolio_id}/configuration",
-        json={"expected_version": 1, "allocations": portfolio_payload(instrument_ids, ("0.2", "0.3"))["allocations"]},
+        json={
+            "expected_version": 1,
+            "allocations": portfolio_payload(instrument_ids, ("0.2", "0.3"))["allocations"],
+        },
         headers=auth,
     )
     assert response.status_code == 200, response.text
-    assert sum(Decimal(item["weight"]) for item in response.json()["latest_version"]["allocations"]) == Decimal("0.5")
+    assert sum(
+        Decimal(item["weight"]) for item in response.json()["latest_version"]["allocations"]
+    ) == Decimal("0.5")
 
 
 @pytest.mark.parametrize(

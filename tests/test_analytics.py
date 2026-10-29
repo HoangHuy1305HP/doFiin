@@ -39,7 +39,9 @@ def test_unallocated_weight_stays_as_cash_in_analysis():
     frame = pd.DataFrame({"AAPL": price, "SPY": price}, index=days)
     result = build_analysis(frame, {"AAPL": 0.4}, "SPY", days[70].date())
     assert result["series"][0]["portfolio"] == pytest.approx(100)
-    assert result["series"][-1]["portfolio"] == pytest.approx(100 * (0.6 + 0.4 * price[-1] / price[70]))
+    assert result["series"][-1]["portfolio"] == pytest.approx(
+        100 * (0.6 + 0.4 * price[-1] / price[70])
+    )
     assert result["metrics"]["total_return"] == pytest.approx(0.4 * (price[-1] / price[70] - 1))
 
 

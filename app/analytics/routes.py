@@ -14,12 +14,12 @@ from app.analytics.schemas import (
     AnalysisOutput,
     BacktestInput,
     BacktestOutput,
-    StudioPreviewInput,
-    StudioPreviewOutput,
     LayoutInput,
     LayoutOutput,
     OptimizeInput,
     PageKey,
+    StudioPreviewInput,
+    StudioPreviewOutput,
     SubscriptionInput,
 )
 from app.dependencies import DB, CurrentIdentity
