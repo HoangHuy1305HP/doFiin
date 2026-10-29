@@ -1,6 +1,8 @@
 import { ArrowRight, ChartNoAxesCombined, ShieldCheck, TrendingUp, Layers3 } from 'lucide-react';
 import { BrandHome } from './Auth';
+import AccountMenu from './AccountMenu';
 import { TimeChart } from './charts';
+import type { User } from './types';
 const illustration = Array.from({ length: 36 }, (_, i) => ({
   date: `2025-${String(Math.floor(i / 3) + 1).padStart(2, '0')}-${String((i % 3) * 9 + 1).padStart(2, '0')}`,
   portfolio: 100 + i * 0.8 + Math.sin(i * 1.7) * 3,
@@ -15,13 +17,19 @@ const planComparison = [
   { feature: 'Personalized workflows', values: ['—', '—', '—', 'By agreement'] },
 ];
 export default function Landing({
+  user,
   onSignIn,
   onStart,
   onExplore,
+  onAccount,
+  onSignOut,
 }: {
+  user: User | null;
   onSignIn: () => void;
   onStart: () => void;
   onExplore: () => void;
+  onAccount: () => void;
+  onSignOut: () => void;
 }) {
   return (
     <div className="landing">
@@ -57,12 +65,17 @@ export default function Landing({
           </a>
         </nav>
         <div>
-          <button className="text-button" onClick={onSignIn}>
-            Sign in
-          </button>
-          <button className="button primary" onClick={onStart}>
-            Start free →
-          </button>
+          {user ? (
+            <>
+              <button className="button primary" onClick={onStart}>Open workspace →</button>
+              <AccountMenu user={user} onAccount={onAccount} onSignOut={onSignOut} />
+            </>
+          ) : (
+            <>
+              <button className="text-button" onClick={onSignIn}>Sign in</button>
+              <button className="button primary" onClick={onStart}>Start free →</button>
+            </>
+          )}
         </div>
       </header>
       <main>
@@ -80,13 +93,13 @@ export default function Landing({
           </p>
           <div className="landing-actions">
             <button className="button primary" onClick={onStart}>
-              Start your free portfolio →
+              {user ? 'Open your portfolio →' : 'Start your free portfolio →'}
             </button>
             <button className="button outline" onClick={onExplore}>
               Explore the product
             </button>
           </div>
-          <small>Free to start. No card required.</small>
+          <small>{user ? `Signed in as ${user.display_name}` : 'Free to start. No card required.'}</small>
         </section>
         <div className="landing-product-preview" aria-label="Illustrative portfolio dashboard">
           <div className="landing-browser-bar">
@@ -349,7 +362,7 @@ export default function Landing({
             <p>Start building a clearer picture today.</p>
           </div>
           <button className="button lime" onClick={onStart}>
-            Create your free account <ArrowRight size={16} />
+            {user ? 'Open your workspace' : 'Create your free account'} <ArrowRight size={16} />
           </button>
         </section>
       </main>
@@ -357,9 +370,11 @@ export default function Landing({
         <div>
           <BrandHome />
           <p>Portfolio clarity, without the noise.</p>
-          <button className="text-button" onClick={onSignIn}>
-            Sign in
-          </button>
+          {user ? (
+            <button className="text-button" onClick={onStart}>Open workspace</button>
+          ) : (
+            <button className="text-button" onClick={onSignIn}>Sign in</button>
+          )}
         </div>
         <div>
           <span>© 2026 doFiin · Research and historical analysis.</span>

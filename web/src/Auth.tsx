@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { MouseEventHandler } from 'react';
 import { ArrowUpRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Sparkles } from 'lucide-react';
 import { post, setToken } from './api';
+import GoogleSignInButton from './GoogleSignInButton';
 
 export function Brand({ light = false }: { light?: boolean }) {
   return (
@@ -35,7 +36,6 @@ export function BrandHome({
   return (
     <Link
       to="/"
-      state={{ fromLogo: true }}
       className="brand-home"
       aria-label="doFiin home"
       onClick={onClick}
@@ -94,6 +94,24 @@ export default function Auth({
       setBusy('');
     }
   }
+  async function signInWithGoogle(credential: string) {
+    if (busy) return;
+    setBusy('google');
+    setError('');
+    try {
+      const tokens = await post<{ access_token: string }>('/auth/google', { credential });
+      try {
+        localStorage.setItem('dofiin:remember', 'true');
+        sessionStorage.setItem('dofiin:active-session', 'true');
+      } catch { /* The server session remains active. */ }
+      setToken(tokens.access_token);
+      await onSigned();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Unable to sign in with Google.');
+    } finally {
+      setBusy('');
+    }
+  }
   return (
     <div className={'auth-page auth-' + mode}>
       <aside className="auth-story">
@@ -148,16 +166,7 @@ export default function Auth({
               ? 'Continue exploring your portfolio.'
               : 'Create an account to track your portfolio.'}
           </p>
-          <button
-            className="button google-button"
-            type="button"
-            onClick={() =>
-              setError('Google sign-in is not available yet. Please continue with email.')
-            }
-          >
-            <img src="/assets/google.svg" width="22" height="22" alt="" />
-            Continue with Google
-          </button>
+          <GoogleSignInButton onCredential={(credential) => void signInWithGoogle(credential)} onError={setError} />
           <div className="separator">
             <span>or</span>
           </div>

@@ -59,7 +59,7 @@ def test_database_guards_total_and_history(pg_only, client, auth, instrument_ids
             db.execute(update(PortfolioAllocation).values(weight=Decimal("0.9")))
             db.commit()
         db.rollback()
-        assert len(list(db.scalars(select(PortfolioVersion)))) == 1
+        assert len(list(db.scalars(select(PortfolioVersion)))) == 3
 
 
 def test_concurrent_refresh_only_one_succeeds(pg_only, client):

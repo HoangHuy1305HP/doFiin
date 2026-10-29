@@ -44,9 +44,11 @@ import { Dashboard, DEFAULT_BACKTEST, defaultLayout } from './pages';
 import type { BacktestForm } from './pages';
 import { HistoryDialog, Modal, PortfolioDialog, RenameDialog } from './PortfolioDialog';
 import Studio from './Studio';
+import StudioSelect from './StudioSelect';
 import Subscription from './Subscription';
 import Landing from './Landing';
 import Account from './Account';
+import AccountMenu from './AccountMenu';
 import { defaultPreferences, pageAppearanceStyle, readPreferences } from './preferences';
 import type { Preferences } from './preferences';
 import type {
@@ -55,14 +57,16 @@ import type {
   Backtest,
   Instrument,
   Layout,
+  LiveGrowth,
   Page,
+  Point,
   Portfolio,
   User,
   Version,
 } from './types';
 
 type Route = Page | 'subscription' | 'account';
-const DEFAULT_ANALYSIS_RULES: AnalysisRules = { riskFreeRate: 0.02, shortWindow: 20, longWindow: 50 };
+const DEFAULT_ANALYSIS_RULES: AnalysisRules = { benchmarkPortfolioId: '', riskFreeRate: 0.02, shortWindow: 20, longWindow: 50 };
 const NAV = [
   { id: 'portfolio', label: 'Portfolio', icon: LayoutDashboard },
   { id: 'risk', label: 'Risk', icon: ShieldCheck },
@@ -134,10 +138,44 @@ export default function App() {
   const [instruments, setInstruments] = useState<Instrument[]>([]);
   const [viewVersion, setViewVersion] = useState<Version | null>(null);
   const [period, setPeriod] = useState('1Y');
-  const [source, setSource] = useState<'demo' | 'yahoo'>('demo');
+  const [liveSecondView, setLiveSecondView] = useState(false);
+  const source = 'alpaca' as const;
   const [analysisRules, setAnalysisRules] = useState<AnalysisRules>({ ...DEFAULT_ANALYSIS_RULES });
   const [refresh, setRefresh] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [liveGrowth, setLiveGrowth] = useState<LiveGrowth | null>(null);
+  const [liveSamples, setLiveSamples] = useState<Point[]>([]);
+  useEffect(() => {
+    const runId = analysis?.id;
+    setLiveSamples([]);
+    if (!runId || analysis?.result.metadata.source !== 'alpaca' || page !== 'portfolio') {
+      setLiveGrowth(null);
+      return;
+    }
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const result = await api<LiveGrowth>(`/analysis-runs/${runId}/live-growth`);
+        if (!cancelled) {
+          setLiveGrowth(result);
+          if (result.point && result.as_of && Date.now() - Date.parse(result.as_of) < 30_000) {
+            const sample: Point = {
+              date: new Date().toISOString(),
+              portfolio: result.point.portfolio,
+              benchmark: result.point.benchmark,
+            };
+            setLiveSamples((current) => [...current, sample].slice(-120));
+          }
+        }
+      } catch {
+        if (!cancelled) setLiveGrowth(null);
+      }
+      if (!cancelled) timer = setTimeout(poll, 1000);
+    };
+    void poll();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [analysis?.id, page]);
   const [loading, setLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const analysisRef = useRef('');
@@ -248,6 +286,7 @@ export default function App() {
       const result = await api<Portfolio>('/portfolios/' + id);
       if (request !== portfolioRequest.current) return;
       setPortfolio(result);
+      setBtForm((current) => ({ ...current, initial_capital: Number(result.latest_version.initial_capital) }));
       localStorage.setItem('dofiin-portfolio', id);
     } catch (error) {
       if (request !== portfolioRequest.current) return;
@@ -255,54 +294,39 @@ export default function App() {
       report(error);
     }
   }
-  async function signedIn(demo = false) {
+  async function signedIn() {
     const [me, assets] = await Promise.all([
       api<User>('/users/me'),
       api<Instrument[]>('/instruments'),
     ]);
-    let list = await api<Portfolio[]>('/portfolios');
-    if (demo && !list.length) {
-      const allocations = [
-        ['AAPL', '0.45'],
-        ['MSFT', '0.35'],
-        ['NVDA', '0.20'],
-      ].map(([symbol, weight]) => ({
-        instrument_id: assets.find((item) => item.symbol === symbol)!.id,
-        weight,
-      }));
-      const created = await post<Portfolio>('/portfolios', {
-        name: 'Default',
-        description: 'Demo workspace',
-        allocations,
-      });
-      list = [created];
-    }
+    const list = await api<Portfolio[]>('/portfolios');
     setInstruments(assets);
     setPortfolios(list);
     setPeriod('1Y');
-    setSource('demo');
-    setAnalysisRules({ ...DEFAULT_ANALYSIS_RULES });
+    const starterBenchmarkId = list.find((item) => item.profile_role === 'benchmark')?.id || '';
+    setAnalysisRules({ ...DEFAULT_ANALYSIS_RULES, benchmarkPortfolioId: starterBenchmarkId });
     setBtForm({ ...DEFAULT_BACKTEST });
     try {
       const saved = JSON.parse(localStorage.getItem('dofiin:analysis-settings:' + me.id) || 'null');
       if (saved) {
         if (['1M', '3M', '6M', '1Y', '3Y'].includes(saved.period)) setPeriod(saved.period);
-        if (saved.source === 'demo' || saved.source === 'yahoo') setSource(saved.source);
         const riskFreeRate = Number(saved.rules?.riskFreeRate);
         const shortWindow = Number(saved.rules?.shortWindow);
         const longWindow = Number(saved.rules?.longWindow);
+        const benchmarkPortfolioId = list.some((item) => item.id === saved.rules?.benchmarkPortfolioId)
+          ? saved.rules.benchmarkPortfolioId : starterBenchmarkId;
         if (Number.isFinite(riskFreeRate) && riskFreeRate >= 0 && riskFreeRate <= 0.2 && Number.isInteger(shortWindow) && shortWindow >= 2 && shortWindow <= 100 && Number.isInteger(longWindow) && longWindow >= 3 && longWindow <= 250 && shortWindow < longWindow)
-          setAnalysisRules({ riskFreeRate, shortWindow, longWindow });
+          setAnalysisRules({ benchmarkPortfolioId, riskFreeRate, shortWindow, longWindow });
       }
     } catch { /* Ignore invalid local settings. */ }
     try {
       const saved = JSON.parse(localStorage.getItem('dofiin:backtest-settings:' + me.id) || 'null');
-      if (saved && (saved.strategy === 'MA_CROSSOVER' || saved.strategy === 'BUY_AND_HOLD') && (saved.rebalance_frequency === 'MONTHLY' || saved.rebalance_frequency === 'NONE') && Number.isFinite(saved.initial_capital) && saved.initial_capital >= 100 && saved.initial_capital <= 1e9 && Number.isFinite(saved.fee_bps) && saved.fee_bps >= 0 && saved.fee_bps <= 100 && Number.isFinite(saved.slippage_bps) && saved.slippage_bps >= 0 && saved.slippage_bps <= 100)
+      if (saved && (saved.strategy === 'MA_CROSSOVER' || saved.strategy === 'BUY_AND_HOLD') && (saved.rebalance_frequency === 'MONTHLY' || saved.rebalance_frequency === 'NONE') && Number.isFinite(saved.initial_capital) && saved.initial_capital > 0 && saved.initial_capital <= 1e9 && Number.isFinite(saved.fee_bps) && saved.fee_bps >= 0 && saved.fee_bps <= 100 && Number.isFinite(saved.slippage_bps) && saved.slippage_bps >= 0 && saved.slippage_bps <= 100)
         setBtForm(saved);
     } catch { /* Ignore invalid local settings. */ }
     setUser(me);
     const selected =
-      list.find((item) => item.id === localStorage.getItem('dofiin-portfolio')) || list[0];
+      list.find((item) => item.id === localStorage.getItem('dofiin-portfolio')) || list.find((item) => item.profile_role === 'default') || list[0];
     if (selected) await loadPortfolio(selected.id);
     else {
       setPortfolio(null);
@@ -328,6 +352,13 @@ export default function App() {
   useEffect(() => {
     if (user) window.scrollTo({ top: 0 });
   }, [user?.id]);
+  const benchmarkProfile = portfolios.find((item) => item.id === analysisRules.benchmarkPortfolioId && item.id !== portfolio?.id)
+    || portfolios.find((item) => item.profile_role === 'benchmark' && item.id !== portfolio?.id)
+    || portfolios.find((item) => item.id !== portfolio?.id);
+  useEffect(() => {
+    if (!portfolio || !benchmarkProfile || analysisRules.benchmarkPortfolioId === benchmarkProfile.id) return;
+    setAnalysisRules((current) => ({ ...current, benchmarkPortfolioId: benchmarkProfile.id }));
+  }, [portfolio?.id, benchmarkProfile?.id, analysisRules.benchmarkPortfolioId]);
   const versionId = viewVersion?.id || portfolio?.latest_version.id;
   useEffect(() => {
     if (!user || !versionId) return;
@@ -344,10 +375,12 @@ export default function App() {
     start.setDate(
       start.getDate() - ({ '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '3Y': 1095 }[period] || 365),
     );
+    const requestedStart = localDate(start);
     post<Analysis>('/analysis-runs', {
       portfolio_version_id: versionId,
+      benchmark_portfolio_id: benchmarkProfile?.id,
       source,
-      start_date: localDate(start),
+      start_date: requestedStart,
       end_date: localDate(end),
       risk_free_rate: analysisRules.riskFreeRate,
       short_window: analysisRules.shortWindow,
@@ -372,7 +405,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [user?.id, versionId, period, source, analysisRules.riskFreeRate, analysisRules.shortWindow, analysisRules.longWindow, refresh]);
+  }, [user?.id, versionId, period, source, benchmarkProfile?.id, analysisRules.riskFreeRate, analysisRules.shortWindow, analysisRules.longWindow, refresh]);
   useEffect(() => {
     if (!user) return;
     try {
@@ -424,6 +457,7 @@ export default function App() {
     portfolioRequest.current += 1;
     setPortfolios(await api<Portfolio[]>('/portfolios'));
     setPortfolio(result);
+    setBtForm((current) => ({ ...current, initial_capital: Number(result.latest_version.initial_capital) }));
     setViewVersion(null);
     localStorage.setItem('dofiin-portfolio', result.id);
     notify('Portfolio saved · Version' + result.current_version);
@@ -553,10 +587,7 @@ export default function App() {
       </div>
     );
   if (!routeId) return <Navigate to={user ? '/portfolio' : '/'} replace />;
-  const landingFromLogo =
-    publicView === 'landing' &&
-    (location.state as { fromLogo?: unknown } | null)?.fromLogo === true;
-  if (user && publicView && !afterLogout && !landingFromLogo)
+  if (user && publicView && publicView !== 'landing')
     return <Navigate to="/portfolio" replace />;
   if (!user && !publicView)
     return afterLogout ? (
@@ -567,9 +598,12 @@ export default function App() {
   if (publicView === 'landing')
     return (
       <Landing
+        user={user}
         onSignIn={() => routerNavigate(user ? '/portfolio' : '/sign-in')}
         onStart={() => routerNavigate(user ? '/portfolio' : '/sign-up')}
         onExplore={() => routerNavigate(user ? '/portfolio' : '/sign-in')}
+        onAccount={() => navigate('account')}
+        onSignOut={() => void logout()}
       />
     );
   if (!user)
@@ -578,8 +612,8 @@ export default function App() {
         key={publicView}
         initialMode={publicView === 'register' ? 'register' : 'login'}
         onModeChange={(mode) => routerNavigate(mode === 'register' ? '/sign-up' : '/sign-in')}
-        onSigned={async (demo) => {
-          await signedIn(demo);
+        onSigned={async () => {
+          await signedIn();
           const from = (location.state as { from?: unknown } | null)?.from;
           const match = typeof from === 'string' ? matchRoutes(ROUTES, from) : null;
           const destination = match?.at(-1)?.route.id;
@@ -601,20 +635,13 @@ export default function App() {
     <div className="filter-bar">
       <div className="portfolio-selector">
         <span className="filter-caption">PORTFOLIO</span>
-        <select
-          aria-label="Select portfolio"
+        <StudioSelect
+          label="Select portfolio"
           value={portfolio?.id || ''}
-          onChange={(event) => void loadPortfolio(event.target.value)}
-        >
-          <option value="" disabled>
-            Select portfolio
-          </option>
-          {portfolios.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
+          placeholder="Select portfolio"
+          options={portfolios.map((item) => ({ value: item.id, label: item.name }))}
+          onChange={(id) => void loadPortfolio(id)}
+        />
         <div className="portfolio-menu-wrap">
           <button
             className="icon-button"
@@ -671,6 +698,16 @@ export default function App() {
         </div>
       </div>
       <div className="period-selector">
+        {activePage === 'portfolio' && (
+          <button
+            className={liveSecondView ? 'active' : ''}
+            aria-label="Live chart, one-second updates"
+            aria-pressed={liveSecondView}
+            onClick={() => setLiveSecondView(true)}
+          >
+            1s
+          </button>
+        )}
         {[
           ['1M', '1M'],
           ['3M', '3M'],
@@ -680,28 +717,20 @@ export default function App() {
         ].map(([value, label]) => (
           <button
             key={value}
-            className={period === value ? 'active' : ''}
+            className={(!liveSecondView || activePage !== 'portfolio') && period === value ? 'active' : ''}
             aria-label={
               value.endsWith('M') ? value.slice(0, -1) + ' months' : value.slice(0, -1) + ' years'
             }
-            onClick={() => setPeriod(value)}
+            onClick={() => { setLiveSecondView(false); setPeriod(value); }}
           >
             {label}
           </button>
         ))}
       </div>
       <div className="filter-end">
-        <div className="source-selector">
-          <i className={source === 'demo' ? 'demo-dot' : 'live-dot'} />
-          <select
-            aria-label="Data source"
-            value={source}
-            onChange={(event) => setSource(event.target.value as 'demo' | 'yahoo')}
-          >
-            <option value="demo">Simulated data</option>
-            <option value="yahoo">Yahoo Finance</option>
-          </select>
-        </div>
+        <span className="source-selector" aria-label="Data source: Alpaca IEX">
+          <i className="live-dot" /> Alpaca · IEX
+        </span>
         <button
           className="icon-button"
           disabled={loading || !portfolio}
@@ -762,7 +791,7 @@ export default function App() {
         <div className="sidebar-bottom">
           <div className="sidebar-status">
             <i />
-            Simulated data
+            Alpaca · IEX
           </div>
           <button className="sidebar-user" onClick={() => setUserMenu(!userMenu)}>
             <span className="avatar">{user.display_name.charAt(0).toUpperCase()}</span>
@@ -829,13 +858,7 @@ export default function App() {
             {!studio && page !== 'subscription' && page !== 'account' && (
               <StudioModeSwitch checked={false} onToggle={openStudio} />
             )}
-            <button
-              className="topbar-avatar"
-              aria-label="Open account"
-              onClick={() => navigate('account')}
-            >
-              {user.display_name.charAt(0).toUpperCase()}
-            </button>
+            <AccountMenu user={user} onAccount={() => navigate('account')} onSignOut={() => void logout()} />
           </div>
         </header>
         <main className="main-content" style={page !== 'account' && page !== 'subscription' ? pageAppearanceStyle(preferences.pageAppearance?.[activePage]) : undefined}>
@@ -866,7 +889,7 @@ export default function App() {
                   </h1>
                   <p>
                     {pageContent?.description ?? (page === 'portfolio' && analysis
-                      ? `Your portfolio ${(analysis.result.metrics.excess_return ?? 0) >= 0 ? 'beat' : 'trailed'} SPY by ${number(Math.abs(analysis.result.metrics.excess_return ?? 0) * 100, 1)} pp. ${[...analysis.result.factors].sort((a, b) => b.weight - a.weight)[0]?.symbol ?? '—'} has the largest weight (${percent(Math.max(...analysis.result.factors.map((f) => f.weight)), 0)}).`
+                      ? `Your portfolio ${(analysis.result.metrics.excess_return ?? 0) >= 0 ? 'beat' : 'trailed'} ${analysis.result.metadata.benchmark} by ${number(Math.abs(analysis.result.metrics.excess_return ?? 0) * 100, 1)} pp. ${[...analysis.result.factors].sort((a, b) => b.weight - a.weight)[0]?.symbol ?? '—'} has the largest weight (${percent(Math.max(...analysis.result.factors.map((f) => f.weight)), 0)}).`
                       : intro.description)}
                   </p>
                 </div>
@@ -895,11 +918,6 @@ export default function App() {
                       >
                         Try again
                       </button>
-                      {source === 'yahoo' && (
-                        <button className="button primary small" onClick={() => setSource('demo')}>
-                          Use simulated data
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -921,9 +939,7 @@ export default function App() {
                 <div className="dashboard-skeleton" aria-live="polite">
                   <div className="loading-copy">
                     <LoaderCircle className="spin" size={17} />
-                    {source === 'yahoo'
-                      ? 'Fetching historical prices from Yahoo Finance…'
-                      : 'Analyzing your portfolio…'}
+                    Fetching historical prices from Alpaca IEX…
                   </div>
                   <div className="skeleton-metrics">
                     {[0, 1, 2, 3].map((i) => (
@@ -942,6 +958,10 @@ export default function App() {
                   controls={analysisControls}
                   page={activePage}
                   analysis={analysis}
+                  liveGrowth={liveGrowth}
+                  liveSecondView={liveSecondView}
+                  liveSamples={liveSamples}
+                  portfolioVersion={viewVersion || portfolio?.latest_version}
                   layout={layout.config}
                   backtest={backtest}
                   btBusy={btBusy}
@@ -963,7 +983,7 @@ export default function App() {
                     <span>
                       {analysis.result.metadata.is_demo
                         ? 'Simulated data'
-                        : 'Source: Yahoo Finance'}{' '}
+                        : analysis.result.metadata.source === 'alpaca' ? 'Alpaca · IEX' : 'Source: Yahoo Finance'}{' '}
                       · {dateLabel(analysis.result.metadata.last_date)} ·{' '}
                       {analysis.result.metadata.observations} sessions
                     </span>
@@ -1025,6 +1045,7 @@ export default function App() {
           portfolio={portfolio}
           onView={(version) => {
             setViewVersion(version);
+            setBtForm((current) => ({ ...current, initial_capital: Number(version.initial_capital) }));
             notify('Analyzing version' + version.version_number);
           }}
           onClose={() => setDialog(null)}
@@ -1060,8 +1081,8 @@ export default function App() {
                 'Gain or loss over the selected period. An initial index of 100 makes growth comparable.',
               ],
               [
-                'Benchmark SPY',
-                'A benchmark ETF for US equities, using the same data source as your portfolio.',
+                `Benchmark ${analysis?.result.metadata.benchmark || benchmarkProfile?.name || '—'}`,
+                'The benchmark profile and active portfolio use the same price data source for comparison.',
               ],
               [
                 'Drawdown',
@@ -1077,7 +1098,7 @@ export default function App() {
               ],
               [
                 'Data source',
-                'Simulated data for demonstration. Yahoo Finance requires an internet connection and can fail.',
+                'Alpaca IEX provides historical prices and live trades for this demo. Live prices may differ from the consolidated US market.',
               ],
             ].map(([title, text]) => (
               <div key={title}>
@@ -1150,15 +1171,17 @@ export default function App() {
           onPreferencesSaved={savePreferences}
           page={activePage}
           analysis={analysis}
+          liveGrowth={liveGrowth}
+          liveSecondView={liveSecondView}
+          liveSamples={liveSamples}
           backtest={backtest}
           layout={layout}
           btForm={btForm}
           period={period}
           source={source}
           analysisRules={analysisRules}
-          onAnalysisSettingsSaved={(nextPeriod, nextSource, nextRules) => {
+          onAnalysisSettingsSaved={(nextPeriod, _nextSource, nextRules) => {
             setPeriod(nextPeriod);
-            setSource(nextSource);
             setAnalysisRules(nextRules);
           }}
           onBacktestSettingsSaved={(form, analysisWillRerun) => {

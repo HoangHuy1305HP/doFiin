@@ -1,10 +1,11 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -28,8 +29,21 @@ class User(Base):
     __tablename__ = "users"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True)
-    password_hash: Mapped[str] = mapped_column(Text)
+    password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     display_name: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    @property
+    def has_password(self) -> bool:
+        return self.password_hash is not None
+
+
+class GoogleIdentity(Base):
+    __tablename__ = "google_identities"
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    google_sub: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -72,12 +86,17 @@ class Portfolio(Base):
     __table_args__ = (
         CheckConstraint("base_currency = 'USD'", name="ck_portfolio_currency"),
         CheckConstraint("current_version >= 1", name="ck_portfolio_current_version"),
+        CheckConstraint(
+            "profile_role IS NULL OR profile_role IN ('default', 'benchmark')",
+            name="ck_portfolio_profile_role",
+        ),
         Index("ix_portfolios_user_id", "user_id"),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(Text)
+    profile_role: Mapped[str | None] = mapped_column(String(20))
     base_currency: Mapped[str] = mapped_column(String(3), default="USD")
     current_version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -90,10 +109,15 @@ class PortfolioVersion(Base):
     __table_args__ = (
         UniqueConstraint("portfolio_id", "version_number", name="uq_portfolio_version"),
         CheckConstraint("version_number > 0", name="ck_version_positive"),
+        CheckConstraint(
+            "initial_capital > 0 AND initial_capital <= 1000000000", name="ck_initial_capital"
+        ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     portfolio_id: Mapped[UUID] = mapped_column(ForeignKey("portfolios.id", ondelete="RESTRICT"))
     version_number: Mapped[int] = mapped_column(Integer)
+    purchase_date: Mapped[date | None] = mapped_column(Date)
+    initial_capital: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=Decimal("10000.00"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

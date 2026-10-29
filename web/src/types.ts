@@ -1,22 +1,30 @@
 export type Page = 'portfolio' | 'risk' | 'signals' | 'backtest' | 'factors';
-export type User = { id: string; email: string; display_name: string };
+export type User = { id: string; email: string; display_name: string; has_password: boolean };
 export type Instrument = { id: string; symbol: string; name: string; asset_type: string };
 export type Allocation = { instrument_id: string; symbol: string; weight: string };
 export type Version = {
   id: string;
   version_number: number;
   created_at: string;
+  purchase_date: string | null;
+  initial_capital: string;
   allocations: Allocation[];
 };
 export type Portfolio = {
   id: string;
   name: string;
   description: string | null;
+  profile_role: 'default' | 'benchmark' | null;
   current_version: number;
   archived_at: string | null;
   latest_version: Version;
 };
 export type Point = { date: string; [key: string]: string | number | null };
+export type LiveGrowth = {
+  status: string;
+  point: { date: string; portfolio: number; benchmark: number } | null;
+  as_of: string | null;
+};
 export type Factor = {
   symbol: string;
   weight: number;
@@ -26,13 +34,15 @@ export type Factor = {
   volatility: number | null;
 };
 export type Metadata = {
-  source: 'demo' | 'yahoo';
+  source: 'demo' | 'yahoo' | 'alpaca';
   is_demo: boolean;
   data_as_of: string;
   first_date: string;
   last_date: string;
   observations: number;
   benchmark: string;
+  benchmark_portfolio_id?: string | null;
+  benchmark_version_number?: number | null;
   portfolio_name: string;
   version_number: number;
   warnings: string[];
@@ -46,6 +56,7 @@ export type Analysis = {
   result: {
     metrics: Record<string, number | null>;
     series: Point[];
+    growth_series?: Point[];
     correlation: { symbols: string[]; matrix: (number | null)[][] };
     factors: Factor[];
     momentum_12_1: number | null;
@@ -59,6 +70,7 @@ export type Analysis = {
   };
 };
 export type AnalysisRules = {
+  benchmarkPortfolioId: string;
   riskFreeRate: number;
   shortWindow: number;
   longWindow: number;

@@ -2430,6 +2430,68 @@ select {
 .topbar-avatar {
   border: 1px solid var(--color-border);
 }
+.account-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+.account-menu .topbar-avatar {
+  cursor: pointer;
+}
+.account-menu .topbar-avatar:focus-visible,
+.account-menu-popover button:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+.account-menu-popover {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 80;
+  width: 220px;
+  padding: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 32px #10182824;
+  color: var(--color-text);
+}
+.account-menu-email {
+  display: block;
+  padding: 10px 11px 12px;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--color-border);
+  color: #67717f;
+  font-size: var(--text-small);
+}
+.account-menu-popover button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  font-size: var(--text-body);
+  cursor: pointer;
+}
+.account-menu-popover button:hover {
+  background: #f1f3f0;
+}
+.google-sign-in {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+}
+.landing .account-menu .topbar-avatar {
+  display: grid;
+}
 @media (max-width: 1199px) {
   .account-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -3239,3 +3301,24 @@ h4,
 .studio-editor .studio-settings-section .studio-background-custom-row input[type='text'] { min-width: 0; flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; }
 .studio-editor .studio-background-custom-row input[aria-invalid='true'] { border-color: var(--color-negative); }
 .studio-editor .studio-background-error { display: block; margin-top: 6px; color: var(--color-negative); font-size: var(--text-caption); }
+
+/* Shared dropdown treatment outside Studio. */
+.studio-select-trigger:disabled { background: #f7f8f9; color: var(--color-text-muted); cursor: not-allowed; }
+.portfolio-selector > .studio-select { flex: 0 1 230px; min-width: 120px; }
+.portfolio-selector .studio-select-trigger {
+  min-height: 34px;
+  padding: 4px 8px;
+  border-color: transparent;
+  background: transparent;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.portfolio-selector .studio-select-trigger:hover,
+.portfolio-selector .studio-select-trigger[aria-expanded='true'] { border-color: var(--color-border); background: var(--color-surface); }
+.backtest-select-field,
+.account-readonly-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; color: #505660; font-size: var(--text-small); font-weight: 600; }
+.backtest-select-field .studio-select-trigger { min-height: 36px; padding: 8px; font-size: var(--text-label); }
+.account-readonly-field .studio-select-trigger { min-height: 42px; }
+.period-selector { border-radius: 9px; }
+.period-selector > button { border-radius: 6px; transition: background-color 160ms ease, color 160ms ease; }
+.growth-live-wait { display: grid; place-items: center; height: 290px; color: var(--color-text-muted); font-size: var(--text-small); }

@@ -18,8 +18,8 @@ WIDGETS = {
 
 class AnalysisInput(InputModel):
     portfolio_version_id: UUID
-    benchmark_symbol: Literal["SPY"] = "SPY"
-    source: Literal["demo", "yahoo"] = "demo"
+    benchmark_portfolio_id: UUID | None = None
+    source: Literal["demo", "yahoo", "alpaca"] = "alpaca"
     start_date: date
     end_date: date
     risk_free_rate: float = Field(default=0.02, ge=0, le=0.2)
@@ -43,7 +43,7 @@ class AnalysisInput(InputModel):
 class BacktestInput(InputModel):
     analysis_run_id: UUID
     strategy: Literal["BUY_AND_HOLD", "MA_CROSSOVER"] = "MA_CROSSOVER"
-    initial_capital: float = Field(default=10000, ge=100, le=1e9)
+    initial_capital: float = Field(default=10000, gt=0, le=1e9)
     fee_bps: float = Field(default=10, ge=0, le=100)
     slippage_bps: float = Field(default=5, ge=0, le=100)
     rebalance_frequency: Literal["NONE", "MONTHLY"] = "MONTHLY"
@@ -51,7 +51,7 @@ class BacktestInput(InputModel):
 
 class BacktestPreviewInput(InputModel):
     strategy: Literal["BUY_AND_HOLD", "MA_CROSSOVER"] = "MA_CROSSOVER"
-    initial_capital: float = Field(default=10000, ge=100, le=1e9)
+    initial_capital: float = Field(default=10000, gt=0, le=1e9)
     fee_bps: float = Field(default=10, ge=0, le=100)
     slippage_bps: float = Field(default=5, ge=0, le=100)
     rebalance_frequency: Literal["NONE", "MONTHLY"] = "MONTHLY"
@@ -104,6 +104,12 @@ class SeriesPoint(BaseModel):
     ma_long: float | None
 
 
+class GrowthPoint(BaseModel):
+    date: date
+    portfolio: float | None
+    benchmark: float | None
+
+
 class FactorOutput(BaseModel):
     symbol: str
     weight: float
@@ -131,13 +137,15 @@ class SignalOutput(BaseModel):
 
 
 class AnalysisMetadata(BaseModel):
-    source: Literal["demo", "yahoo"]
+    source: Literal["demo", "yahoo", "alpaca"]
     is_demo: bool
     data_as_of: datetime
     first_date: date
     last_date: date
     observations: int
     benchmark: str
+    benchmark_portfolio_id: UUID | None = None
+    benchmark_version_number: int | None = None
     portfolio_name: str
     version_number: int
     warnings: list[str]
@@ -148,6 +156,7 @@ class AnalysisMetadata(BaseModel):
 class AnalysisResult(BaseModel):
     metrics: dict[str, float | None]
     series: list[SeriesPoint]
+    growth_series: list[GrowthPoint] = Field(default_factory=list)
     factors: list[FactorOutput]
     correlation: CorrelationOutput
     signals: SignalOutput
@@ -159,7 +168,8 @@ class AnalysisOutput(BaseModel):
     id: UUID
     portfolio_version_id: UUID
     created_at: datetime
-    parameters: AnalysisInput
+    # Preserve historical runs that stored an instrument benchmark before profiles.
+    parameters: dict
     engine_version: str
     result: AnalysisResult
 

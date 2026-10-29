@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LockKeyhole, LogOut, ShieldCheck } from 'lucide-react';
+import StudioSelect from './StudioSelect';
+import GoogleSignInButton from './GoogleSignInButton';
+import { api, post } from './api';
 import type { User } from './types';
 export default function Account({
   user,
@@ -19,6 +22,24 @@ export default function Account({
       return false;
     }
   });
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [googleError, setGoogleError] = useState('');
+  useEffect(() => {
+    let active = true;
+    void api<{ connected: boolean }>('/auth/google/status')
+      .then((status) => { if (active) setGoogleConnected(status.connected); })
+      .catch(() => { if (active) setGoogleError('Could not check Google connection.'); });
+    return () => { active = false; };
+  }, [user.id]);
+  async function linkGoogle(credential: string) {
+    setGoogleError('');
+    try {
+      await post('/auth/google/link', { credential });
+      setGoogleConnected(true);
+    } catch (error) {
+      setGoogleError(error instanceof Error ? error.message : 'Could not connect Google.');
+    }
+  }
   return (
     <>
       <div className="page-intro">
@@ -57,13 +78,23 @@ export default function Account({
               <LockKeyhole size={22} />
               <div>
                 <h3>Email &amp; password</h3>
-                <p>{user.email}</p>
+                <p>{user.has_password ? user.email : 'Password not set'}</p>
               </div>
-              <span className="tag">Active</span>
+              <span className="tag">{user.has_password ? 'Active' : 'Not set'}</span>
             </div>
             <div className="account-divider" />
             <h3>Google</h3>
-            <p>Google sign-in is not connected.</p>
+            {googleConnected === null ? (
+              <p>Checking Google connection…</p>
+            ) : googleConnected ? (
+              <p>Google sign-in is connected to this account.</p>
+            ) : (
+              <>
+                <p>Connect Google to sign in to this account without your password.</p>
+                <GoogleSignInButton onCredential={(credential) => void linkGoogle(credential)} onError={setGoogleError} />
+              </>
+            )}
+            {googleError && <p role="alert" className="form-error">{googleError}</p>}
             <div className="account-divider" />
             <h3>Active session</h3>
             <div className="account-security-row">
@@ -77,18 +108,14 @@ export default function Account({
           <section className="account-card">
             <h2>Preferences</h2>
             <div className="account-fields">
-              <label>
-                Language
-                <select value="en" disabled>
-                  <option value="en">English</option>
-                </select>
-              </label>
-              <label>
-                Analysis currency
-                <select value="USD" disabled>
-                  <option value="USD">USD · US dollar</option>
-                </select>
-              </label>
+              <div className="account-readonly-field">
+                <span>Language</span>
+                <StudioSelect label="Language" value="en" options={[{ value: 'en', label: 'English' }]} onChange={() => {}} disabled />
+              </div>
+              <div className="account-readonly-field">
+                <span>Analysis currency</span>
+                <StudioSelect label="Analysis currency" value="USD" options={[{ value: 'USD', label: 'USD · US dollar' }]} onChange={() => {}} disabled />
+              </div>
             </div>
             <p className="small-note">Time zone: Asia/Ho_Chi_Minh (UTC+7)</p>
             <div className="account-divider" />

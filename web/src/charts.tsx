@@ -25,9 +25,35 @@ type ChartProps = {
   height?: number;
   area?: boolean;
   kind?: 'index' | 'percent' | 'money' | 'number';
+  timeScale?: 'day' | 'second';
 };
-export function TimeChart({ data, lines, height = 290, area = true, kind = 'index' }: ChartProps) {
+export function TimeChart({ data, lines, height = 290, area = true, kind = 'index', timeScale = 'day' }: ChartProps) {
   const id = useId().replace(/:/g, '');
+  const firstDate = data[0]?.date;
+  const lastDate = data.at(-1)?.date;
+  const daySpan = firstDate && lastDate && timeScale === 'day'
+    ? (Date.parse(lastDate) - Date.parse(firstDate)) / 86_400_000
+    : 0;
+  const axisTicks = timeScale === 'second'
+    ? data.filter((_, index) => index % Math.max(1, Math.ceil(data.length / 6)) === 0).map((point) => point.date)
+    : data.filter((point, index, points) => {
+      if (index === 0) return true;
+      const current = new Date(point.date + 'T12:00:00');
+      const previous = new Date(points[index - 1].date + 'T12:00:00');
+      if (daySpan <= 45) return Date.parse(point.date) - Date.parse(points[0].date) >= 7 * 86_400_000
+        && Math.floor((Date.parse(point.date) - Date.parse(points[0].date)) / (7 * 86_400_000))
+          !== Math.floor((Date.parse(points[index - 1].date) - Date.parse(points[0].date)) / (7 * 86_400_000));
+      if (daySpan > 600) return current.getFullYear() * 4 + Math.floor(current.getMonth() / 3)
+        !== previous.getFullYear() * 4 + Math.floor(previous.getMonth() / 3);
+      return current.getFullYear() * 12 + current.getMonth()
+        !== previous.getFullYear() * 12 + previous.getMonth();
+    }).map((point) => point.date);
+  const values = data.flatMap((point) => lines.map((line) => point[line.key]))
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  const minimum = values.length ? Math.min(...values) : 0;
+  const maximum = values.length ? Math.max(...values) : 1;
+  const padding = Math.max(maximum - minimum, Math.abs(maximum) * 0.01, kind === 'percent' ? 0.005 : 0.01) * 0.08;
+  const yDomain: [number, number] = [minimum - padding, maximum + padding];
   const formatter = (value: number) =>
     kind === 'percent'
       ? number(value * 100, 1) + '%'
@@ -37,7 +63,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
   return (
     <div className="time-chart" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 16, right: 12, left: 0, bottom: 0 }}>
+        <ComposedChart data={data} margin={{ top: 24, right: 12, left: 0, bottom: 8 }}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={lines[0]?.color} stopOpacity={0.15} />
@@ -47,10 +73,12 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
           <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 5" />
           <XAxis
             dataKey="date"
-            tickFormatter={(value) =>
-              new Date(value + 'T12:00:00').toLocaleDateString('en-US', {
+            ticks={axisTicks}
+            tickFormatter={(value) => timeScale === 'second'
+              ? new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+              : new Date(value + 'T12:00:00').toLocaleDateString('en-US', {
                 month: 'short',
-                year: '2-digit',
+                ...(daySpan <= 45 ? { day: 'numeric' } : { year: '2-digit' }),
               })
             }
             minTickGap={64}
@@ -60,7 +88,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
             dy={9}
           />
           <YAxis
-            domain={['auto', 'auto']}
+            domain={yDomain}
             tickFormatter={formatter}
             tickLine={false}
             axisLine={false}
@@ -79,9 +107,9 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
             }}
             labelStyle={{ color: '#e2e8f0' }}
             itemStyle={{ color: '#fff' }}
-            labelFormatter={(value) =>
-              new Date(String(value) + 'T12:00:00').toLocaleDateString('en-US')
-            }
+            labelFormatter={(value) => timeScale === 'second'
+              ? new Date(String(value)).toLocaleTimeString('en-US')
+              : new Date(String(value) + 'T12:00:00').toLocaleDateString('en-US')}
             formatter={(value) => formatter(Number(value))}
           />
           {lines.map((line, index) =>
@@ -94,6 +122,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
                 stroke={line.color}
                 fill={'url(#' + id + ')'}
                 strokeWidth={2.3}
+                dot={timeScale === 'second' && data.length === 1}
                 isAnimationActive={false}
                 connectNulls={false}
               />
@@ -157,10 +186,12 @@ export function AllocationChart({ factors }: { factors: Factor[] }) {
 export function FactorChart({
   factors,
   metric,
+  benchmark = 'SPY',
   color,
 }: {
   factors: Factor[];
   metric: 'beta' | 'momentum';
+  benchmark?: string;
   color?: string;
 }) {
   const data = factors.map((f) => ({ symbol: f.symbol, value: f[metric] }));
@@ -196,7 +227,7 @@ export function FactorChart({
           <ReferenceLine x={0} stroke="#cbd5e1" />
           <Bar
             dataKey="value"
-            name={metric === 'beta' ? 'Beta vs SPY' : 'Momentum 12–1'}
+            name={metric === 'beta' ? `Beta vs ${benchmark}` : 'Momentum 12–1'}
             barSize={19}
             radius={[0, 3, 3, 0]}
             isAnimationActive={false}

@@ -10,6 +10,16 @@ const formatWeight = (value: number) => value.toLocaleString('vi-VN', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+const localDate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const defaultPurchaseDate = () => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 1);
+  return localDate(date);
+};
+const usd = (value: number) => new Intl.NumberFormat('en-US', {
+  style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
+}).format(value);
 
 export function Modal({
   title,
@@ -59,6 +69,8 @@ export function PortfolioDialog({
   onClose: () => void;
 }) {
   const [name, setName] = useState(portfolio?.name || '');
+  const [purchaseDate, setPurchaseDate] = useState(portfolio ? portfolio.latest_version.purchase_date || '' : defaultPurchaseDate());
+  const [initialCapital, setInitialCapital] = useState(portfolio?.latest_version.initial_capital || '10000.00');
   const [rows, setRows] = useState(
     portfolio
       ? portfolio.latest_version.allocations.map((a) => ({
@@ -73,8 +85,18 @@ export function PortfolioDialog({
   const [error, setError] = useState('');
   const totalCents = rows.reduce((sum, row) => sum + (Math.round(parseWeight(row.weight || '0') * 100) || 0), 0);
   const total = totalCents / 100;
+  const capital = parseWeight(initialCapital);
+  const cashAmount = Number.isFinite(capital) ? capital * Math.max(0, 1 - totalCents / 10000) : NaN;
   async function save() {
     setError('');
+    if ((!portfolio && !purchaseDate) || (purchaseDate && (purchaseDate < '2018-01-01' || purchaseDate > localDate(new Date())))) {
+      setError('Choose a purchase date between 2018 and today.');
+      return;
+    }
+    if (!/^\d+(?:[.,]\d{1,2})?$/.test(initialCapital) || !Number.isFinite(capital) || capital <= 0 || capital > 1_000_000_000) {
+      setError('Starting capital must be greater than $0 and no more than $1,000,000,000.');
+      return;
+    }
     if (
       !rows.length ||
       rows.some(
@@ -99,9 +121,9 @@ export function PortfolioDialog({
       const result = portfolio
         ? await api<Portfolio>('/portfolios/' + portfolio.id + '/configuration', {
             method: 'PUT',
-            body: JSON.stringify({ expected_version: portfolio.current_version, allocations }),
+            body: JSON.stringify({ expected_version: portfolio.current_version, purchase_date: purchaseDate || null, initial_capital: capital.toFixed(2), allocations }),
           })
-        : await post<Portfolio>('/portfolios', { name, base_currency: 'USD', allocations });
+        : await post<Portfolio>('/portfolios', { name, base_currency: 'USD', purchase_date: purchaseDate, initial_capital: capital.toFixed(2), allocations });
       await onSaved(result);
       onClose();
     } catch (error) {
@@ -137,6 +159,17 @@ export function PortfolioDialog({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Default"
           />
+        </label>
+        <label>
+          Purchase date
+          <input type="date" min="2018-01-01" max={localDate(new Date())} required={!portfolio}
+            value={purchaseDate} onChange={(event) => setPurchaseDate(event.target.value)} />
+        </label>
+        <label>
+          Starting capital (USD)
+          <input type="text" inputMode="decimal" value={initialCapital}
+            onChange={(event) => setInitialCapital(event.target.value)}
+            onBlur={() => { if (Number.isFinite(capital) && capital > 0) setInitialCapital(capital.toFixed(2)); }} />
         </label>
         <div className="allocation-editor-heading">
           <span>Asset</span>
@@ -212,7 +245,8 @@ export function PortfolioDialog({
           </span>
         </div>
         <p className="small-note">
-          Remaining {Number.isFinite(total) ? formatWeight(Math.max(0, 100 - total)) : '—'}% stays as USD cash. Asset weights are not normalized.
+          Remaining {Number.isFinite(total) ? formatWeight(Math.max(0, 100 - total)) : '—'}% stays as USD cash
+          {Number.isFinite(cashAmount) ? ` (${usd(cashAmount)} at purchase)` : ''}. Asset weights are not normalized.
         </p>
         {error && (
           <div className="inline-error" role="alert">

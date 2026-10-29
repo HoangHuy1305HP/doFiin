@@ -34,6 +34,32 @@ def performance(growth, daily_returns, annual_risk_free=0.02):
     }
 
 
+def profile_growth_series(prices, weights, benchmark_weights, requested_start, portfolio_start, benchmark_start):
+    """Plot each profile from its own purchase date on one calendar axis."""
+    prices = prices.sort_index().dropna()
+    portfolio_start = max(requested_start, portfolio_start or requested_start)
+    benchmark_start = max(requested_start, benchmark_start or requested_start)
+
+    def normalized_profile(allocations, start):
+        shown = prices.loc[prices.index >= pd.Timestamp(start)]
+        symbols = list(allocations)
+        allocated = sum(allocations.values())
+        weights_array = np.asarray([allocations[symbol] for symbol in symbols], dtype=float)
+        return (shown[symbols] / shown[symbols].iloc[0]).dot(weights_array) + max(0.0, 1.0 - allocated)
+
+    portfolio = normalized_profile(weights, portfolio_start)
+    benchmark = normalized_profile(benchmark_weights, benchmark_start)
+    dates = portfolio.index.union(benchmark.index)
+    return [
+        {
+            "date": timestamp.date().isoformat(),
+            "portfolio": finite(portfolio.loc[timestamp] * 100) if timestamp in portfolio.index else None,
+            "benchmark": finite(benchmark.loc[timestamp] * 100) if timestamp in benchmark.index else None,
+        }
+        for timestamp in dates
+    ]
+
+
 def build_analysis(
     prices, weights, benchmark, start_date, risk_free=0.02, short_window=20, long_window=50
 ):
@@ -62,7 +88,12 @@ def build_analysis(
         raise ValueError("Cần ít nhất 5 phiên giá chung trong khoảng thời gian đã chọn.")
     normalized = shown[symbols] / shown[symbols].iloc[0]
     growth = normalized.dot(w) + cash_weight
-    benchmark_growth = shown[benchmark] / shown[benchmark].iloc[0]
+    benchmark_weights = {benchmark: 1.0} if isinstance(benchmark, str) else benchmark
+    benchmark_symbols = list(benchmark_weights)
+    benchmark_allocated = sum(benchmark_weights.values())
+    benchmark_growth = (shown[benchmark_symbols] / shown[benchmark_symbols].iloc[0]).dot(
+        np.asarray([benchmark_weights[symbol] for symbol in benchmark_symbols], dtype=float)
+    ) + max(0.0, 1.0 - benchmark_allocated)
     daily = growth.pct_change().iloc[1:]
     benchmark_returns = benchmark_growth.pct_change().iloc[1:]
     asset_returns = shown[symbols].pct_change().iloc[1:]
@@ -156,9 +187,12 @@ def build_analysis(
         "snapshot": {
             "symbols": symbols,
             "weights": [weights[s] for s in symbols],
+            "benchmark_weights": benchmark_weights,
+            "base_prices": {symbol: float(shown[symbol].iloc[0]) for symbol in prices.columns},
+            "last_prices": {symbol: float(shown[symbol].iloc[-1]) for symbol in prices.columns},
             "dates": [timestamp.date().isoformat() for timestamp in shown.index],
             "prices": shown[symbols].to_numpy().tolist(),
-            "benchmark_prices": shown[benchmark].tolist(),
+            "benchmark_prices": (benchmark_growth * 100).tolist(),
             # A signal at close t can only be used for an execution at close t+1.
             "execution_signals": (short > long)
             .shift(1, fill_value=False)

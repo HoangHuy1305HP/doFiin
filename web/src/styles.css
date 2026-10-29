@@ -2434,7 +2434,7 @@ td strong {
   .backtest-fields {
     grid-template-columns: 1.4fr 1fr 0.7fr 0.7fr;
   }
-  .backtest-fields > label:nth-last-child(2) {
+  .backtest-fields > .backtest-select-field:nth-last-child(2) {
     grid-column: span 2;
   }
   .backtest-fields > .button {
@@ -3058,10 +3058,10 @@ td strong {
     grid-template-columns: 1fr 1fr;
     gap: 13px;
   }
-  .backtest-fields > label:first-child {
+  .backtest-fields > .backtest-select-field:first-child {
     grid-column: span 2;
   }
-  .backtest-fields > label:nth-last-child(2) {
+  .backtest-fields > .backtest-select-field:nth-last-child(2) {
     grid-column: span 1;
   }
   .backtest-fields > .button {

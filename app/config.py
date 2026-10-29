@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     database_url: str
     jwt_secret: str = Field(min_length=32)
+    alpaca_api_key: str | None = None
+    alpaca_api_secret: str | None = None
+    google_client_id: str | None = None
     jwt_issuer: str = "dofiin"
     jwt_audience: str = "dofiin-api"
     access_token_minutes: int = Field(default=15, ge=1, le=60)

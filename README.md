@@ -15,7 +15,7 @@ Máy Windows hiện tại đã được cài thư viện, build web và PostgreS
 - Tài khoản riêng, refresh cookie HttpOnly, phân quyền theo chủ sở hữu.
 - Danh mục mô phỏng theo tỷ trọng, phiên bản bất biến và xem lịch sử.
 - Năm trang: **Danh mục / Rủi ro / Tín hiệu / Kiểm thử / Yếu tố**.
-- Giá mô phỏng có nhãn rõ và tùy chọn lấy giá đóng cửa điều chỉnh từ Yahoo Finance.
+- Giá lịch sử Alpaca IEX và điểm giao dịch live cho Cumulative growth khi đã cấu hình API key.
 - Return, CAGR, volatility, Sharpe, drawdown, beta, CAPM alpha, tương quan, momentum.
 - Backtest buy-and-hold/MA crossover, phí, slippage, vốn và tái cân bằng.
 - Tối ưu Max Sharpe, xem trước rồi lưu thành phiên bản mới.
@@ -23,7 +23,7 @@ Máy Windows hiện tại đã được cài thư viện, build web và PostgreS
 - Gói dịch vụ minh họa, không thanh toán và không áp hạn mức trong demo.
 - Xuất CSV; font đóng gói local để thuyết trình không phụ thuộc Google Fonts.
 
-Đây là danh mục mô phỏng, chưa giao dịch tiền thật. Dữ liệu Yahoo phụ thuộc provider/mạng; lỗi được báo rõ, không âm thầm thay bằng giá mô phỏng.
+Đây là danh mục mô phỏng, chưa giao dịch tiền thật. Dữ liệu Alpaca phụ thuộc provider/mạng; lỗi được báo rõ, không âm thầm thay bằng giá mô phỏng.
 
 ## Tài liệu cho nhóm
 
@@ -48,6 +48,16 @@ Cần Docker Desktop engine đang chạy. Tạo cấu hình bằng `python scrip
 Dockerfile build web bằng Node rồi đóng gói cùng Python API. PostgreSQL Compose nghe localhost:5432; bản native nghe localhost:55432. Docker engine trên máy hiện chưa hoạt động; bản local native đã được dùng để kiểm tra.
 
 ## Phát triển giao diện
+
+### Đăng nhập Google
+
+Tạo OAuth client loại **Web application** trong Google Auth Platform. Với luồng Google Identity Services, thêm origin của giao diện (ví dụ `http://127.0.0.1:5173`, `http://localhost:5173`, `http://127.0.0.1:8000`) vào **Authorized JavaScript origins**; không cần redirect URI hay client secret. Điền cùng Client ID vào `GOOGLE_CLIENT_ID` và `VITE_GOOGLE_CLIENT_ID` trong `.env` ở gốc repo, rồi khởi động lại backend và Vite hoặc build lại frontend. Client ID được đưa vào frontend để hiển thị nút Google; backend xác thực ID token trước khi tạo session doFiin. Giữ app ở chế độ **Testing** và thêm email của người thử trong **Audience → Test users**.
+
+Nếu email Google đã có tài khoản doFiin bằng mật khẩu, đăng nhập bằng mật khẩu trước, vào **Account** và kết nối Google. App không tự gộp hai tài khoản chỉ vì email trùng nhau. Client secret không dùng trong luồng này và không được đặt vào frontend.
+
+### Dữ liệu thị trường Alpaca
+
+Điền `ALPACA_API_KEY` và `ALPACA_API_SECRET` vào `.env` của backend rồi khởi động lại API. Không đặt key trong `web/.env` hoặc commit lên Git. Phân tích mặc định lấy daily bars từ Alpaca IEX; biểu đồ **Cumulative growth** nhận live trade từ một kết nối Alpaca WebSocket chung của backend và cập nhật preview khoảng mỗi giây khi có giao dịch. Ngoài giờ giao dịch, biểu đồ giữ điểm lịch sử cuối cùng. Gói Basic giới hạn 30 mã live và dữ liệu IEX chỉ phản ánh giao dịch trên IEX, không đại diện toàn thị trường Mỹ. Khi Alpaca chưa được cấu hình hoặc không trả giá, app báo lỗi rõ thay vì chuyển sang dữ liệu mô phỏng.
 
 Backend: START_BACKEND.cmd. Terminal khác, trong thư mục web: `npm ci` rồi `npm run dev`. Mở http://localhost:5173. Vite proxy /api tới backend. Sau khi sửa source, chạy **REBUILD_WEB.cmd** để cập nhật bản web được API phục vụ.
 

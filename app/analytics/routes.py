@@ -1,12 +1,13 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.analytics.engine import backtest, build_analysis, optimize
-from app.analytics.market import load_prices
+from app.analytics.alpaca_live import live_growth
+from app.analytics.engine import backtest, build_analysis, optimize, profile_growth_series
+from app.analytics.market import alpaca_prices, load_prices
 from app.analytics.models import AnalysisRun, BacktestRun, DashboardLayout, DemoSubscription
 from app.analytics.schemas import (
     WIDGETS,
@@ -53,7 +54,7 @@ def analysis_output(run, include_snapshot=False):
     }
 
 
-def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: DB):
+def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: DB, settings=None):
     version = db.get(PortfolioVersion, data.portfolio_version_id)
     if version is None:
         fail(404, "VERSION_NOT_FOUND", "Không tìm thấy phiên bản.")
@@ -70,11 +71,55 @@ def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: D
     )
     if len(allocations) > 12:
         fail(422, "ANALYSIS_LIMIT", "Demo 1 hỗ trợ tối đa 12 tài sản mỗi lần phân tích.")
-    benchmark = db.scalar(select(Instrument).where(Instrument.symbol == data.benchmark_symbol))
-    if benchmark is None:
-        fail(422, "BENCHMARK_NOT_FOUND", "Chạy seed để tạo benchmark SPY.")
+    if data.benchmark_portfolio_id is None:
+        benchmark = db.scalar(
+            select(Portfolio).where(
+                Portfolio.user_id == identity.user.id,
+                Portfolio.profile_role == "benchmark",
+                Portfolio.id != portfolio.id,
+                Portfolio.archived_at.is_(None),
+            )
+        )
+        if benchmark is None:
+            benchmark = db.scalar(
+                select(Portfolio)
+                .where(
+                    Portfolio.user_id == identity.user.id,
+                    Portfolio.id != portfolio.id,
+                    Portfolio.archived_at.is_(None),
+                )
+                .order_by(Portfolio.created_at, Portfolio.id)
+            )
+    else:
+        benchmark = owned_portfolio(db, data.benchmark_portfolio_id, identity.user.id)
+    if benchmark is None or benchmark.archived_at:
+        fail(422, "BENCHMARK_NOT_FOUND", "Select an active benchmark profile.")
+    if benchmark.id == portfolio.id:
+        fail(422, "BENCHMARK_SAME_PROFILE", "Choose another profile as benchmark.")
+    benchmark_version = db.scalar(
+        select(PortfolioVersion).where(
+            PortfolioVersion.portfolio_id == benchmark.id,
+            PortfolioVersion.version_number == benchmark.current_version,
+        )
+    )
+    benchmark_allocations = list(
+        db.execute(
+            select(PortfolioAllocation, Instrument)
+            .join(Instrument, Instrument.id == PortfolioAllocation.instrument_id)
+            .where(PortfolioAllocation.portfolio_version_id == benchmark_version.id)
+        )
+    )
+    if not benchmark_allocations:
+        fail(422, "BENCHMARK_EMPTY", "Benchmark profile has no holdings.")
+    common_start = max(
+        data.start_date,
+        version.purchase_date or data.start_date,
+        benchmark_version.purchase_date or data.start_date,
+    )
+    if common_start >= data.end_date:
+        fail(422, "ANALYSIS_NO_OVERLAP", "The profiles have no shared trading period yet.")
     instruments = {instrument.id: instrument for _, instrument in allocations}
-    instruments[benchmark.id] = benchmark
+    instruments.update({instrument.id: instrument for _, instrument in benchmark_allocations})
     try:
         prices, fetched_at = load_prices(
             db,
@@ -83,15 +128,27 @@ def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: D
             data.end_date,
             data.source,
             data.force_refresh,
+            settings,
         )
         result = build_analysis(
             prices,
             {instrument.symbol: float(allocation.weight) for allocation, instrument in allocations},
-            benchmark.symbol,
-            data.start_date,
+            {
+                instrument.symbol: float(allocation.weight)
+                for allocation, instrument in benchmark_allocations
+            },
+            common_start,
             data.risk_free_rate,
             data.short_window,
             data.long_window,
+        )
+        result["growth_series"] = profile_growth_series(
+            prices,
+            {instrument.symbol: float(allocation.weight) for allocation, instrument in allocations},
+            {instrument.symbol: float(allocation.weight) for allocation, instrument in benchmark_allocations},
+            data.start_date,
+            version.purchase_date,
+            benchmark_version.purchase_date,
         )
     except ValueError as error:
         db.rollback()
@@ -101,7 +158,7 @@ def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: D
         fail(
             502,
             "MARKET_PROVIDER_ERROR",
-            "Nguồn giá chưa sẵn sàng. Thử lại hoặc chủ động chuyển sang dữ liệu mô phỏng.",
+            "Nguồn giá chưa sẵn sàng. Thử lại sau.",
         )
     warnings = []
     if data.source == "demo":
@@ -117,19 +174,21 @@ def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: D
         "first_date": result["series"][0]["date"],
         "last_date": result["series"][-1]["date"],
         "observations": len(result["series"]),
-        "benchmark": benchmark.symbol,
+        "benchmark": benchmark.name,
+        "benchmark_portfolio_id": str(benchmark.id),
+        "benchmark_version_number": benchmark_version.version_number,
         "portfolio_name": portfolio.name,
         "version_number": version.version_number,
         "warnings": warnings,
         "methodology": "Buy-and-hold theo tỷ trọng đầu kỳ; phần chưa phân bổ giữ USD tiền mặt không sinh lãi; giá đóng cửa điều chỉnh; 252 phiên/năm.",
         "risk_free_rate": data.risk_free_rate,
     }
-    return result, version, benchmark
+    return result, version, benchmark_version
 
 
 @router.post("/studio-preview", response_model=StudioPreviewOutput)
-def preview_studio(data: StudioPreviewInput, identity: CurrentIdentity, db: DB):
-    result, _, _ = build_analysis_preview(data.analysis, identity, db)
+def preview_studio(data: StudioPreviewInput, identity: CurrentIdentity, db: DB, request: Request):
+    result, _, _ = build_analysis_preview(data.analysis, identity, db, request.app.state.settings)
     simulation = None
     if data.backtest is not None:
         rules = data.backtest
@@ -148,12 +207,31 @@ def preview_studio(data: StudioPreviewInput, identity: CurrentIdentity, db: DB):
 
 
 @router.post("/analysis-runs", status_code=201, response_model=AnalysisOutput)
-def analyze(data: AnalysisInput, identity: CurrentIdentity, db: DB):
-    result, version, benchmark = build_analysis_preview(data, identity, db)
+def analyze(data: AnalysisInput, identity: CurrentIdentity, db: DB, request: Request):
+    settings = request.app.state.settings
+    result, version, benchmark_version = build_analysis_preview(data, identity, db, settings)
+    if data.source == "alpaca":
+        snapshot = result["snapshot"]
+        symbols = list(snapshot["base_prices"])
+        last_date = date.fromisoformat(result["metadata"]["last_date"])
+        try:
+            raw = alpaca_prices(symbols, last_date, last_date, settings, adjustment="raw")
+            snapshot["live_reference"] = {
+                symbol: {
+                    "base": snapshot["base_prices"][symbol],
+                    "last_adjusted": snapshot["last_prices"][symbol],
+                    "last_raw": float(raw[symbol].dropna().iloc[-1]),
+                }
+                for symbol in symbols
+            }
+        except (ValueError, KeyError, IndexError):
+            result["metadata"]["warnings"].append(
+                "Live chart chưa có giá tham chiếu; biểu đồ lịch sử vẫn hoạt động."
+            )
     run = AnalysisRun(
         user_id=identity.user.id,
         portfolio_version_id=version.id,
-        benchmark_instrument_id=benchmark.id,
+        benchmark_portfolio_version_id=benchmark_version.id,
         parameters=data.model_dump(mode="json"),
         result=result,
     )
@@ -165,6 +243,30 @@ def analyze(data: AnalysisInput, identity: CurrentIdentity, db: DB):
 @router.get("/analysis-runs/{run_id}", response_model=AnalysisOutput)
 def get_analysis(run_id: UUID, identity: CurrentIdentity, db: DB):
     return analysis_output(owned_analysis(db, run_id, identity.user.id))
+
+
+@router.get("/analysis-runs/{run_id}/live-growth")
+def get_live_growth(run_id: UUID, identity: CurrentIdentity, db: DB, request: Request):
+    run = owned_analysis(db, run_id, identity.user.id)
+    if run.parameters.get("source") != "alpaca":
+        fail(422, "LIVE_SOURCE_UNAVAILABLE", "Live growth requires an Alpaca analysis.")
+    snapshot = run.result.get("snapshot", {})
+    references = snapshot.get("live_reference")
+    if not references:
+        return {"status": "unavailable", "point": None, "as_of": None}
+    stream = request.app.state.alpaca_live
+    try:
+        stream.subscribe(references)
+    except ValueError as error:
+        fail(503, "ALPACA_LIVE_UNAVAILABLE", str(error))
+    status, quotes = stream.snapshot(references)
+    point = live_growth(snapshot, quotes, run.result["metadata"]["last_date"])
+    timestamps = [quote[1] for quote in quotes.values() if quote]
+    return {
+        "status": status,
+        "point": point,
+        "as_of": max(timestamps).isoformat() if timestamps else None,
+    }
 
 
 @router.post("/analysis-runs/{run_id}/optimize")

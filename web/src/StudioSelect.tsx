@@ -11,9 +11,10 @@ type Props = {
   options: StudioSelectOption[];
   onChange: (value: string) => void;
   placeholder?: string;
+  disabled?: boolean;
 };
 
-export default function StudioSelect({ label, value, options, onChange, placeholder = 'Select an option' }: Props) {
+export default function StudioSelect({ label, value, options, onChange, placeholder = 'Select an option', disabled = false }: Props) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -124,6 +125,7 @@ export default function StudioSelect({ label, value, options, onChange, placehol
       <button
         ref={triggerRef}
         type="button"
+        disabled={disabled}
         className="studio-select-trigger"
         role="combobox"
         aria-label={label}

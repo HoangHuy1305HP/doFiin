@@ -21,13 +21,13 @@ import {
   X,
 } from 'lucide-react';
 import { BrandHome } from './Auth';
-import { PortfolioDialog } from './PortfolioDialog';
+import { PortfolioDialog, RenameDialog } from './PortfolioDialog';
 import StudioModeSwitch from './StudioModeSwitch';
 import StudioBackgroundPicker from './StudioBackgroundPicker';
 import StudioSelect from './StudioSelect';
 import { Dashboard, TITLES } from './pages';
 import type { BacktestForm } from './pages';
-import type { Analysis, AnalysisRules, Backtest, Instrument, Layout, Page, Portfolio } from './types';
+import type { Analysis, AnalysisRules, Backtest, Instrument, Layout, LiveGrowth, Page, Point, Portfolio } from './types';
 import { post, put } from './api';
 import { DEFAULT_MENU, DEFAULT_PAGE_APPEARANCE, DEFAULT_SECTION_APPEARANCE, PAGE_LABELS, pageAppearanceStyle } from './preferences';
 import type { PageAppearance, PageContent, Preferences, SectionAppearance } from './preferences';
@@ -39,14 +39,17 @@ type Props = {
   onPreferencesSaved: (preferences: Preferences) => void;
   page: Page;
   analysis: Analysis;
+  liveGrowth: LiveGrowth | null;
+  liveSecondView: boolean;
+  liveSamples: Point[];
   backtest: Backtest | null;
   layout: Layout;
   btForm: BacktestForm;
   period: string;
-  source: 'demo' | 'yahoo';
+  source: 'demo' | 'yahoo' | 'alpaca';
   analysisRules: AnalysisRules;
   defaultContent: PageContent;
-  onAnalysisSettingsSaved: (period: string, source: 'demo' | 'yahoo', rules: AnalysisRules) => void;
+  onAnalysisSettingsSaved: (period: string, source: 'demo' | 'yahoo' | 'alpaca', rules: AnalysisRules) => void;
   onBacktestSettingsSaved: (form: BacktestForm, analysisWillRerun: boolean) => void;
   portfolio: Portfolio | null;
   portfolios: Portfolio[];
@@ -72,11 +75,11 @@ function currentDeviceViewport(): Viewport {
 const localDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const FUNCTION_DESCRIPTIONS: Record<Page, string> = {
-  portfolio: 'Choose the data behind this portfolio view and edit its holdings and weights.',
-  risk: 'Choose the portfolio, date range, data source and risk-free rate used by the risk analysis.',
+  portfolio: 'Choose the data behind this portfolio view and edit its purchase date, starting capital, holdings and weights.',
+  risk: 'Choose the portfolio, date range and risk-free rate used by the risk analysis.',
   signals: 'Choose the portfolio and moving-average windows used by the signals.',
   backtest: 'Choose the portfolio, moving-average windows and simulation rules used by the backtest.',
-  factors: 'Choose the portfolio, date range, data source and risk-free rate used by factor analysis.',
+  factors: 'Choose the portfolio, date range and risk-free rate used by factor analysis.',
 };
 
 export default function Studio({
@@ -85,6 +88,9 @@ export default function Studio({
   onPreferencesSaved,
   page,
   analysis,
+  liveGrowth,
+  liveSecondView,
+  liveSamples,
   backtest,
   layout,
   btForm,
@@ -131,7 +137,7 @@ export default function Studio({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
-  const [portfolioEditor, setPortfolioEditor] = useState<'create' | 'edit' | null>(null);
+  const [portfolioEditor, setPortfolioEditor] = useState<'create' | 'edit' | 'rename' | null>(null);
   const [previewAnalysis, setPreviewAnalysis] = useState<Analysis['result'] | null>(null);
   const [previewBacktest, setPreviewBacktest] = useState<Backtest['result'] | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
@@ -236,16 +242,26 @@ export default function Studio({
   const layoutChanged = JSON.stringify(config) !== JSON.stringify(layout.config);
   const preferencesChanged = JSON.stringify(settings) !== JSON.stringify(preferences);
   const analysisChanged = draftPeriod !== period || draftSource !== source || JSON.stringify(draftAnalysisRules) !== JSON.stringify(analysisRules);
+  const benchmarkProfiles = portfolios.filter((item) => item.id !== portfolio?.id);
+  const selectedBenchmarkProfile = benchmarkProfiles.find((item) => item.id === draftAnalysisRules.benchmarkPortfolioId)
+    || benchmarkProfiles.find((item) => item.profile_role === 'benchmark')
+    || benchmarkProfiles[0];
+  useEffect(() => {
+    if (!portfolio || !selectedBenchmarkProfile || draftAnalysisRules.benchmarkPortfolioId !== portfolio.id) return;
+    setDraftAnalysisRules((current) => ({ ...current, benchmarkPortfolioId: selectedBenchmarkProfile.id }));
+  }, [portfolio?.id, selectedBenchmarkProfile?.id, draftAnalysisRules.benchmarkPortfolioId]);
   const analysisRulesError = !Number.isFinite(draftAnalysisRules.riskFreeRate) || draftAnalysisRules.riskFreeRate < 0 || draftAnalysisRules.riskFreeRate > 0.2
     ? 'Risk-free rate must be between 0% and 20%.'
+    : !selectedBenchmarkProfile
+      ? 'Create another portfolio to use as a benchmark profile.'
     : !Number.isInteger(draftAnalysisRules.shortWindow) || draftAnalysisRules.shortWindow < 2 || draftAnalysisRules.shortWindow > 100
       ? 'Short moving-average window must be 2–100 sessions.'
       : !Number.isInteger(draftAnalysisRules.longWindow) || draftAnalysisRules.longWindow < 3 || draftAnalysisRules.longWindow > 250 || draftAnalysisRules.shortWindow >= draftAnalysisRules.longWindow
         ? 'Long moving-average window must be larger than the short window and at most 250 sessions.'
         : '';
   const backtestRulesError = page !== 'backtest' ? ''
-    : !Number.isFinite(draftBacktest.initial_capital) || draftBacktest.initial_capital < 100 || draftBacktest.initial_capital > 1e9
-      ? 'Initial capital must be between $100 and $1,000,000,000.'
+    : !Number.isFinite(draftBacktest.initial_capital) || draftBacktest.initial_capital <= 0 || draftBacktest.initial_capital > 1e9
+      ? 'Initial capital must be greater than $0 and at most $1,000,000,000.'
       : !Number.isFinite(draftBacktest.fee_bps) || draftBacktest.fee_bps < 0 || draftBacktest.fee_bps > 100 || !Number.isFinite(draftBacktest.slippage_bps) || draftBacktest.slippage_bps < 0 || draftBacktest.slippage_bps > 100
         ? 'Fees and slippage must each be between 0 and 100 bps.'
         : '';
@@ -289,6 +305,7 @@ export default function Studio({
       const end = new Date();
       const start = new Date(end);
       start.setDate(start.getDate() - ({ '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '3Y': 1095 }[draftPeriod] || 365));
+      const requestedStart = localDate(start);
       try {
         const result = await post<{
           analysis: Analysis['result'];
@@ -296,8 +313,9 @@ export default function Studio({
         }>('/studio-preview', {
           analysis: {
             portfolio_version_id: analysis.portfolio_version_id,
+            benchmark_portfolio_id: selectedBenchmarkProfile?.id,
             source: draftSource,
-            start_date: localDate(start),
+            start_date: requestedStart,
             end_date: localDate(end),
             risk_free_rate: draftAnalysisRules.riskFreeRate,
             short_window: draftAnalysisRules.shortWindow,
@@ -318,7 +336,7 @@ export default function Studio({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [analysis.portfolio_version_id, portfolioAnalysisReady, page, draftPeriod, draftSource, draftAnalysisRules.riskFreeRate, draftAnalysisRules.shortWindow, draftAnalysisRules.longWindow, analysisRulesError, backtestRulesError, previewRulesKey, previewNeedsRun]);
+  }, [analysis.portfolio_version_id, portfolio?.latest_version.purchase_date, portfolioAnalysisReady, page, draftPeriod, draftSource, selectedBenchmarkProfile?.id, draftAnalysisRules.riskFreeRate, draftAnalysisRules.shortWindow, draftAnalysisRules.longWindow, analysisRulesError, backtestRulesError, previewRulesKey, previewNeedsRun]);
   useEffect(() => {
     if (previewNeedsRun) return;
     preservePreviewAfterSave.current = false;
@@ -874,6 +892,10 @@ export default function Studio({
                 sectionAppearance={settings.sectionAppearance[page]}
                 page={page}
                 analysis={previewAnalysis ? { ...analysis, result: previewAnalysis } : analysis}
+                liveGrowth={!previewAnalysis && !analysisChanged ? liveGrowth : null}
+                liveSecondView={!previewAnalysis && !analysisChanged && liveSecondView}
+                liveSamples={!previewAnalysis && !analysisChanged ? liveSamples : []}
+                portfolioVersion={portfolio?.latest_version}
                 layout={config}
                 backtest={previewBacktest ? { id: 'preview', parameters: { analysis_run_id: analysis.id }, result: previewBacktest } : backtest}
                 btBusy={false}
@@ -1244,10 +1266,14 @@ export default function Studio({
                       <dd>{PAGE_LABELS[page]} sections</dd>
                       <dt>Active portfolio</dt>
                       <dd>{portfolio?.name || 'No portfolio selected'}</dd>
+                      <dt>Purchase date</dt>
+                      <dd>{portfolio?.latest_version.purchase_date || 'Not set'}</dd>
+                      <dt>Starting capital</dt>
+                      <dd>${Number(portfolio?.latest_version.initial_capital || 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd>
+                      <dt>Benchmark</dt>
+                      <dd>{selectedBenchmarkProfile?.name || '—'}</dd>
                       <dt>Analysis period</dt>
                       <dd>{draftPeriod}</dd>
-                      <dt>Data source</dt>
-                      <dd>{draftSource === 'demo' ? 'Simulated data' : 'Yahoo Finance'}</dd>
                       {page === 'risk' || page === 'factors' ? <>
                         <dt>Risk-free rate</dt>
                         <dd>{(draftAnalysisRules.riskFreeRate * 100).toFixed(2)}% / year</dd>
@@ -1261,6 +1287,16 @@ export default function Studio({
                         <dd>{draftBacktest.strategy === 'BUY_AND_HOLD' ? 'Buy and hold' : `MA${draftAnalysisRules.shortWindow} / MA${draftAnalysisRules.longWindow} crossover`}</dd>
                       </>}
                     </dl>
+                    {selected === 'growth' && <div className="studio-field">
+                      <span>Benchmark</span>
+                      <StudioSelect
+                        label="Cumulative growth benchmark profile"
+                        value={selectedBenchmarkProfile?.id || ''}
+                        options={benchmarkProfiles.map((item) => ({ value: item.id, label: item.name }))}
+                        onChange={(benchmarkPortfolioId) => setDraftAnalysisRules({ ...draftAnalysisRules, benchmarkPortfolioId })}
+                      />
+                      <p>This profile is shared with the other analysis sections. Edit its holdings by selecting it as the active portfolio.</p>
+                    </div>}
                     <button className="button outline full studio-function-action" onClick={() => select('page', 'function')}>
                       Edit parent settings
                     </button>
@@ -1282,12 +1318,26 @@ export default function Studio({
                           <Plus size={16} /> Add portfolio
                         </button>
                         {portfolio && (
+                          <button className="button outline full studio-function-action" onClick={() => setPortfolioEditor('rename')}>
+                            <Pencil size={16} /> Rename active portfolio
+                          </button>
+                        )}
+                        {portfolio && (
                           <button className="button outline full studio-function-action" onClick={() => setPortfolioEditor('edit')}>
-                            <Pencil size={16} /> Edit holdings &amp; weights
+                            <Pencil size={16} /> Edit holdings, date &amp; capital
                           </button>
                         )}
                         {portfolioLoading && <p role="status">Updating child sections from the selected portfolio…</p>}
                     </>}
+                    <div className="studio-field">
+                      <span>Benchmark</span>
+                      <StudioSelect
+                        label="Benchmark profile for analysis sections"
+                        value={selectedBenchmarkProfile?.id || ''}
+                        options={benchmarkProfiles.map((item) => ({ value: item.id, label: item.name }))}
+                        onChange={(benchmarkPortfolioId) => setDraftAnalysisRules({ ...draftAnalysisRules, benchmarkPortfolioId })}
+                      />
+                    </div>
                     <div className="studio-field">
                       <span>Analysis period</span>
                       <StudioSelect
@@ -1295,18 +1345,6 @@ export default function Studio({
                         value={draftPeriod}
                         options={['1M', '3M', '6M', '1Y', '3Y'].map((value) => ({ value, label: value }))}
                         onChange={setDraftPeriod}
-                      />
-                    </div>
-                    <div className="studio-field">
-                      <span>Data source</span>
-                      <StudioSelect
-                        label="Studio data source"
-                        value={draftSource}
-                        options={[
-                          { value: 'demo', label: 'Simulated data' },
-                          { value: 'yahoo', label: 'Yahoo Finance' },
-                        ]}
-                        onChange={(value) => setDraftSource(value as 'demo' | 'yahoo')}
                       />
                     </div>
                     {(page === 'risk' || page === 'factors') && <label>
@@ -1364,7 +1402,7 @@ export default function Studio({
                         </div>
                         <label>
                           Initial capital (USD)
-                          <input type="number" min={100} max={1e9} value={draftBacktest.initial_capital} onChange={(event) => setDraftBacktest({ ...draftBacktest, initial_capital: Number(event.target.value) })} />
+                          <input type="number" min={0.01} max={1e9} value={draftBacktest.initial_capital} onChange={(event) => setDraftBacktest({ ...draftBacktest, initial_capital: Number(event.target.value) })} />
                         </label>
                         <label>
                           Fees (bps)
@@ -1393,6 +1431,10 @@ export default function Studio({
                     <dl>
                       <dt>Active portfolio</dt>
                       <dd>{(previewAnalysis || analysis.result).metadata.portfolio_name}</dd>
+                      <dt>Purchase date</dt>
+                      <dd>{portfolio?.latest_version.purchase_date || 'Not set'}</dd>
+                      <dt>Starting capital</dt>
+                      <dd>${Number(portfolio?.latest_version.initial_capital || 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd>
                       <dt>Current date range</dt>
                       <dd>{(previewAnalysis || analysis.result).metadata.first_date} — {(previewAnalysis || analysis.result).metadata.last_date}</dd>
                       <dt>Benchmark</dt>
@@ -1422,11 +1464,21 @@ export default function Studio({
           </div>
         </aside>
       </div>
-      {portfolioEditor && (
+      {portfolioEditor === 'rename' && portfolio && (
+        <RenameDialog
+          portfolio={portfolio}
+          onSaved={onPortfolioSaved}
+          onClose={() => setPortfolioEditor(null)}
+        />
+      )}
+      {portfolioEditor && portfolioEditor !== 'rename' && (
         <PortfolioDialog
           portfolio={portfolioEditor === 'edit' ? portfolio : null}
           instruments={instruments}
-          onSaved={onPortfolioSaved}
+          onSaved={async (savedPortfolio) => {
+            setDraftBacktest((current) => ({ ...current, initial_capital: Number(savedPortfolio.latest_version.initial_capital) }));
+            await onPortfolioSaved(savedPortfolio);
+          }}
           onClose={() => setPortfolioEditor(null)}
         />
       )}

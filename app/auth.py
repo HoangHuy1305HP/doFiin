@@ -3,13 +3,23 @@ from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
+from app.default_profiles import ensure_default_profiles
 from app.dependencies import DB, CurrentIdentity, aware
 from app.errors import fail
-from app.models import AuthSession, User, utcnow
-from app.schemas import LoginInput, RefreshInput, RegisterInput, TokenOutput, UserOutput
+from app.models import AuthSession, GoogleIdentity, User, utcnow
+from app.schemas import (
+    GoogleCredentialInput,
+    LoginInput,
+    RefreshInput,
+    RegisterInput,
+    TokenOutput,
+    UserOutput,
+)
 from app.security import (
     create_access_token,
     dummy_password_hash,
@@ -51,6 +61,40 @@ def token_response(auth_session, refresh_token, request, response):
     return result
 
 
+def verify_google_credential(credential, settings):
+    if not settings.google_client_id:
+        fail(503, "GOOGLE_NOT_CONFIGURED", "Google sign-in is not configured.")
+    try:
+        claims = id_token.verify_oauth2_token(
+            credential, google_requests.Request(), settings.google_client_id
+        )
+    except ValueError:
+        fail(401, "INVALID_GOOGLE_TOKEN", "Google sign-in could not be verified.")
+    if (
+        claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com")
+        or not claims.get("sub")
+        or not claims.get("email")
+        or claims.get("email_verified") is not True
+    ):
+        fail(401, "INVALID_GOOGLE_TOKEN", "Google sign-in could not be verified.")
+    return claims
+
+
+def start_web_session(user, request, response, db):
+    auth_session = AuthSession(
+        user_id=user.id,
+        client_type="web",
+        expires_at=utcnow() + timedelta(days=request.app.state.settings.refresh_token_days),
+        refresh_token_hash="pending",
+    )
+    db.add(auth_session)
+    db.flush()
+    refresh_token = new_refresh_token(auth_session.id)
+    auth_session.refresh_token_hash = token_hash(refresh_token)
+    db.commit()
+    return token_response(auth_session, refresh_token, request, response)
+
+
 @router.post("/auth/register", response_model=UserOutput, status_code=201)
 def register(data: RegisterInput, db: DB):
     user = User(
@@ -60,6 +104,8 @@ def register(data: RegisterInput, db: DB):
     )
     db.add(user)
     try:
+        db.flush()
+        ensure_default_profiles(db, user.id)
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -74,9 +120,9 @@ def login(data: LoginInput, request: Request, response: Response, db: DB):
     user = db.scalar(select(User).where(User.email == str(data.email).lower()))
     valid = password_hasher.verify(
         data.password,
-        user.password_hash if user else dummy_password_hash,
+        user.password_hash if user and user.password_hash else dummy_password_hash,
     )
-    if not user or not valid:
+    if not user or not user.password_hash or not valid:
         fail(401, "INVALID_CREDENTIALS", "Incorrect email or password.")
     auth_session = AuthSession(
         user_id=user.id,
@@ -90,6 +136,60 @@ def login(data: LoginInput, request: Request, response: Response, db: DB):
     auth_session.refresh_token_hash = token_hash(refresh_token)
     db.commit()
     return token_response(auth_session, refresh_token, request, response)
+
+
+@router.post("/auth/google", response_model=TokenOutput, response_model_exclude_none=True)
+def google_login(data: GoogleCredentialInput, request: Request, response: Response, db: DB):
+    require_web_origin(request)
+    claims = verify_google_credential(data.credential, request.app.state.settings)
+    identity = db.scalar(select(GoogleIdentity).where(GoogleIdentity.google_sub == claims["sub"]))
+    if identity:
+        user = db.get(User, identity.user_id)
+    else:
+        email = claims["email"].lower()
+        existing = db.scalar(select(User).where(User.email == email))
+        if existing:
+            fail(
+                409,
+                "GOOGLE_LINK_REQUIRED",
+                "This email already has a doFiin account. Sign in with your password and connect Google in Account.",
+            )
+        user = User(email=email, display_name=(claims.get("name") or email.split("@")[0])[:100])
+        db.add(user)
+        try:
+            db.flush()
+            db.add(GoogleIdentity(user_id=user.id, google_sub=claims["sub"]))
+            ensure_default_profiles(db, user.id)
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            fail(409, "GOOGLE_ACCOUNT_CONFLICT", "This Google account could not be linked.")
+    return start_web_session(user, request, response, db)
+
+
+@router.get("/auth/google/status")
+def google_status(identity: CurrentIdentity, db: DB):
+    return {"connected": db.get(GoogleIdentity, identity.user.id) is not None}
+
+
+@router.post("/auth/google/link")
+def google_link(data: GoogleCredentialInput, identity: CurrentIdentity, request: Request, db: DB):
+    require_web_origin(request)
+    claims = verify_google_credential(data.credential, request.app.state.settings)
+    existing = db.scalar(select(GoogleIdentity).where(GoogleIdentity.google_sub == claims["sub"]))
+    if existing and existing.user_id != identity.user.id:
+        fail(409, "GOOGLE_ALREADY_LINKED", "This Google account is connected to another doFiin account.")
+    own = db.get(GoogleIdentity, identity.user.id)
+    if own and own.google_sub != claims["sub"]:
+        fail(409, "GOOGLE_ALREADY_CONNECTED", "This doFiin account already has a Google sign-in.")
+    if not own:
+        db.add(GoogleIdentity(user_id=identity.user.id, google_sub=claims["sub"]))
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            fail(409, "GOOGLE_ALREADY_LINKED", "This Google account is connected to another doFiin account.")
+    return {"connected": True}
 
 
 @router.post("/auth/refresh", response_model=TokenOutput, response_model_exclude_none=True)

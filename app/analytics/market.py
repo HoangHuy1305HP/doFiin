@@ -5,6 +5,7 @@ from datetime import timedelta
 
 import numpy as np
 import pandas as pd
+import requests
 from sqlalchemy import select
 
 from app.analytics.models import PriceBar
@@ -60,7 +61,69 @@ def yahoo_prices(symbols, start, end):
     return frame[symbols].astype(float).replace([np.inf, -np.inf], np.nan)
 
 
-def load_prices(db, instruments, start, end, source, force=False):
+def alpaca_prices(symbols, start, end, settings, adjustment="all"):
+    """Fetch IEX daily bars; history and live ticks use the same exchange feed."""
+    if not settings.alpaca_api_key or not settings.alpaca_api_secret:
+        raise ValueError(
+            "Alpaca chưa được cấu hình. Điền ALPACA_API_KEY và ALPACA_API_SECRET vào .env."
+        )
+    headers = {
+        "APCA-API-KEY-ID": settings.alpaca_api_key,
+        "APCA-API-SECRET-KEY": settings.alpaca_api_secret,
+    }
+    params = {
+        "symbols": ",".join(symbols),
+        "timeframe": "1Day",
+        "start": start.isoformat(),
+        "end": (end + timedelta(days=1)).isoformat(),
+        "feed": "iex",
+        "adjustment": adjustment,
+        "limit": 10000,
+    }
+    records = []
+    for _ in range(100):
+        try:
+            response = requests.get(
+                "https://data.alpaca.markets/v2/stocks/bars",
+                params=params,
+                headers=headers,
+                timeout=15,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except requests.RequestException as error:
+            status = getattr(getattr(error, "response", None), "status_code", None)
+            if status in (401, 403):
+                raise ValueError(
+                    f"Alpaca từ chối API key hoặc quyền truy cập IEX (HTTP {status})."
+                ) from error
+            if status == 429:
+                raise ValueError("Alpaca đã đạt giới hạn yêu cầu. Hãy thử lại sau.") from error
+            raise ValueError(f"Alpaca chưa trả dữ liệu giá ({type(error).__name__}).") from error
+        for symbol, bars in payload.get("bars", {}).items():
+            for bar in bars:
+                records.append(
+                    {
+                        "date": pd.Timestamp(bar["t"]).tz_convert("America/New_York").date(),
+                        "symbol": symbol,
+                        "price": float(bar["c"]),
+                    }
+                )
+        token = payload.get("next_page_token")
+        if not token:
+            break
+        params["page_token"] = token
+    else:
+        raise ValueError("Alpaca trả quá nhiều trang dữ liệu; hãy chọn khoảng thời gian ngắn hơn.")
+    if not records:
+        raise ValueError("Alpaca không có dữ liệu IEX trong khoảng thời gian đã chọn.")
+    frame = pd.DataFrame(records).pivot(index="date", columns="symbol", values="price")
+    frame.index = pd.to_datetime(frame.index)
+    frame = frame.loc[(frame.index.date >= start) & (frame.index.date <= end)]
+    return frame.reindex(columns=symbols).replace([np.inf, -np.inf], np.nan)
+
+
+def load_prices(db, instruments, start, end, source, force=False, settings=None):
     ids = [item.id for item in instruments]
     rows = list(
         db.scalars(
@@ -89,11 +152,12 @@ def load_prices(db, instruments, start, end, source, force=False):
     )
     if force or set(ids) != seen or not fresh or not coverage:
         symbols = [item.symbol for item in instruments]
-        frame = (
-            synthetic_prices(symbols, end)
-            if source == "demo"
-            else yahoo_prices(symbols, start, end)
-        )
+        if source == "demo":
+            frame = synthetic_prices(symbols, end)
+        elif source == "alpaca":
+            frame = alpaca_prices(symbols, start, end, settings)
+        else:
+            frame = yahoo_prices(symbols, start, end)
         frame = frame.loc[(frame.index >= pd.Timestamp(start)) & (frame.index <= pd.Timestamp(end))]
         payload = []
         now = utcnow()

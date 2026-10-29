@@ -9,9 +9,10 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { AllocationChart, COLORS, FactorChart, TimeChart } from './charts';
+import StudioSelect from './StudioSelect';
 import { dateLabel, money, number, percent } from './api';
 import type { Presentation, SectionAppearance } from './preferences';
-import type { Analysis, Backtest, LayoutConfig, Page } from './types';
+import type { Analysis, Backtest, LayoutConfig, LiveGrowth, Page, Point, Version } from './types';
 
 export const TITLES: Record<string, string> = {
   growth: 'Cumulative growth',
@@ -110,6 +111,7 @@ export const DEFAULT_BACKTEST: BacktestForm = {
 type Props = {
   page: Page;
   analysis: Analysis;
+  portfolioVersion?: Version;
   layout: LayoutConfig;
   backtest: Backtest | null;
   btBusy: boolean;
@@ -123,10 +125,14 @@ type Props = {
   presentation?: Presentation;
   sectionAppearance?: Record<string, SectionAppearance>;
   btStale?: boolean;
+  liveGrowth?: LiveGrowth | null;
+  liveSecondView?: boolean;
+  liveSamples?: Point[];
 };
 export function Dashboard({
   page,
   analysis,
+  portfolioVersion,
   layout,
   backtest,
   btBusy,
@@ -140,8 +146,28 @@ export function Dashboard({
   presentation,
   sectionAppearance,
   btStale = false,
+  liveGrowth = null,
+  liveSecondView = false,
+  liveSamples = [],
 }: Props) {
   const { metrics: m, series, factors, signals, correlation, metadata } = analysis.result;
+  const historicalGrowth = analysis.result.growth_series?.length ? analysis.result.growth_series : series;
+  const liveChartPoint = liveGrowth?.point && series.length && historicalGrowth.length
+    ? {
+      ...liveGrowth.point,
+      portfolio: liveGrowth.point.portfolio * Number(historicalGrowth.at(-1)?.portfolio) / Number(series.at(-1)?.portfolio),
+      benchmark: liveGrowth.point.benchmark * Number(historicalGrowth.at(-1)?.benchmark) / Number(series.at(-1)?.benchmark),
+    }
+    : liveGrowth?.point;
+  const growthSeries = liveGrowth?.point && page === 'portfolio'
+    ? [...historicalGrowth.filter((point) => point.date !== liveChartPoint?.date), liveChartPoint!]
+    : historicalGrowth;
+  const showLiveSeconds = page === 'portfolio' && liveSecondView;
+  const startingCapital = Number(portfolioVersion?.initial_capital || 10000);
+  const cashWeight = Math.max(0, 1 - factors.reduce((total, asset) => total + asset.weight, 0));
+  const usdAmount = (value: number) => new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }).format(value);
   const areaFor = (key: string) => (sectionAppearance?.[key]?.chartStyle ?? layout.chart_style) === 'area';
   const widgets: Record<string, ReactNode> = {};
   widgets.growth = (
@@ -153,23 +179,27 @@ export function Dashboard({
           100 at the start
         </span>
         <span>
-          {metadata.observations}
+          {showLiveSeconds ? liveSamples.length : growthSeries.length}
           <br />
-          sessions
+          {showLiveSeconds ? 'live samples' : 'sessions'}
         </span>
+        {liveGrowth?.point && <span>Live · IEX<br />{new Date(liveGrowth.as_of || '').toLocaleTimeString()}</span>}
       </div>
-      <TimeChart
-        data={series}
+      {showLiveSeconds && liveSamples.length === 0 ? (
+        <div className="growth-live-wait" role="status">Waiting for Alpaca IEX trades…</div>
+      ) : <TimeChart
+        data={showLiveSeconds ? liveSamples : growthSeries}
         lines={[
           { key: 'portfolio', name: 'Portfolio', color: 'var(--chart-accent, #0f172a)' },
-          { key: 'benchmark', name: 'SPY', color: '#64748b' },
+          { key: 'benchmark', name: metadata.benchmark, color: '#64748b' },
         ]}
         area={areaFor('growth')}
-      />
+        timeScale={showLiveSeconds ? 'second' : 'day'}
+      />}
       <Legend
         items={[
           { name: 'Portfolio', color: 'var(--chart-accent, #0f172a)' },
-          { name: 'SPY', color: '#64748b' },
+          { name: metadata.benchmark, color: '#64748b' },
         ]}
       />
     </>
@@ -194,7 +224,10 @@ export function Dashboard({
           </div>
         )}
       </div>
-      <div className="small-note">Target weights at the start of the period</div>
+      <div className="small-note">
+        {portfolioVersion?.purchase_date ? `Purchased ${dateLabel(portfolioVersion.purchase_date)} · ` : ''}
+        Starting capital {usdAmount(startingCapital)} · USD cash {usdAmount(startingCapital * cashWeight)}{portfolioVersion?.purchase_date ? ' at purchase' : ''}.
+      </div>
     </>
   );
   widgets.assets = (
@@ -355,7 +388,7 @@ export function Dashboard({
         <h4>Risk, from every angle.</h4>
         <p>
           Volatility measures variation; drawdown measures declines from a peak. Beta{' '}
-          {number(m.beta)} describes sensitivity to SPY during the selected period. These metrics do
+          {number(m.beta)} describes sensitivity to {metadata.benchmark} during the selected period. These metrics do
           not predict maximum future losses.
         </p>
         <small>
@@ -433,9 +466,9 @@ export function Dashboard({
   widgets.beta = (
     <>
       <p className="card-description">
-        Beta of each asset relative to SPY during the selected period.
+        Beta of each asset relative to {metadata.benchmark} during the selected period.
       </p>
-      <FactorChart factors={factors} metric="beta" color={sectionAppearance?.beta?.chartColor} />
+      <FactorChart factors={factors} metric="beta" benchmark={metadata.benchmark} color={sectionAppearance?.beta?.chartColor} />
       <div className="small-note">Beta &gt; 1: more sensitive · Beta &lt; 1: less sensitive</div>
     </>
   );
@@ -454,7 +487,7 @@ export function Dashboard({
         <thead>
           <tr>
             <th>Asset</th>
-            <th>Beta / SPY</th>
+            <th>Beta / {metadata.benchmark}</th>
             <th>Momentum 12–1</th>
             <th>Role in portfolio</th>
           </tr>
@@ -492,7 +525,7 @@ export function Dashboard({
           CAPM alpha is shown separately from excess benchmark return.
         </p>
         <small>
-          Annualized CAPM alpha: {percent(m.capm_alpha)} · Excess return vs SPY:{' '}
+          Annualized CAPM alpha: {percent(m.capm_alpha)} · Excess return vs {metadata.benchmark}:{' '}
           {percent(m.excess_return)}
         </small>
       </div>
@@ -504,14 +537,14 @@ export function Dashboard({
       <Legend
         items={[
           { name: 'Strategy after costs', color: 'var(--chart-accent, #0f172a)' },
-          { name: 'SPY before costs', color: '#94a3b8' },
+          { name: `${metadata.benchmark} before costs`, color: '#94a3b8' },
         ]}
       />
       <TimeChart
         data={b.series}
         lines={[
           { key: 'strategy', name: 'Strategy', color: 'var(--chart-accent, #0f172a)' },
-          { key: 'benchmark', name: 'SPY', color: '#94a3b8' },
+          { key: 'benchmark', name: metadata.benchmark, color: '#94a3b8' },
         ]}
         kind="money"
         area={areaFor('backtest_growth')}
@@ -599,7 +632,7 @@ export function Dashboard({
           positive={false}
         />
         <Metric
-          label="Beta vs SPY"
+          label={`Beta vs ${metadata.benchmark}`}
           value={number(m.beta)}
           detail="Sensitivity to market movements"
         />
@@ -611,7 +644,7 @@ export function Dashboard({
         <Metric
           label="Portfolio beta"
           value={number(m.beta)}
-          detail="Relative to SPY in this period"
+          detail={`Relative to ${metadata.benchmark} in this period`}
         />
         <Metric
           label="Momentum 12–1"
@@ -698,7 +731,7 @@ export function Dashboard({
           detail={
             (m.excess_return !== null
               ? ((m.excess_return ?? 0) >= 0 ? '+' : '') + percent(m.excess_return)
-              : '—') + ' vs SPY'
+              : '—') + ` vs ${metadata.benchmark}`
           }
         />
         <Metric
@@ -735,21 +768,23 @@ export function Dashboard({
             </div>
           </div>
           <div className="backtest-fields">
-            <label>
-              Strategy
-              <select
+            <div className="backtest-select-field">
+              <span>Strategy</span>
+              <StudioSelect
+                label="Strategy"
                 value={btForm.strategy}
-                onChange={(e) => setBtForm({ ...btForm, strategy: e.target.value })}
-              >
-                <option value="MA_CROSSOVER">MA {signals.short_window} / {signals.long_window} crossover</option>
-                <option value="BUY_AND_HOLD">Buy and hold</option>
-              </select>
-            </label>
+                onChange={(strategy) => setBtForm({ ...btForm, strategy })}
+                options={[
+                  { value: 'MA_CROSSOVER', label: `MA ${signals.short_window} / ${signals.long_window} crossover` },
+                  { value: 'BUY_AND_HOLD', label: 'Buy and hold' },
+                ]}
+              />
+            </div>
             <label>
               Initial capital (USD)
               <input
                 type="number"
-                min={100}
+                min={0.01}
                 max={1e9}
                 value={btForm.initial_capital}
                 onChange={(e) => setBtForm({ ...btForm, initial_capital: Number(e.target.value) })}
@@ -775,16 +810,15 @@ export function Dashboard({
                 onChange={(e) => setBtForm({ ...btForm, slippage_bps: Number(e.target.value) })}
               />
             </label>
-            <label>
-              Rebalance
-              <select
+            <div className="backtest-select-field">
+              <span>Rebalance</span>
+              <StudioSelect
+                label="Rebalance"
                 value={btForm.rebalance_frequency}
-                onChange={(e) => setBtForm({ ...btForm, rebalance_frequency: e.target.value })}
-              >
-                <option value="MONTHLY">Monthly</option>
-                <option value="NONE">None</option>
-              </select>
-            </label>
+                onChange={(rebalance_frequency) => setBtForm({ ...btForm, rebalance_frequency })}
+                options={[{ value: 'MONTHLY', label: 'Monthly' }, { value: 'NONE', label: 'None' }]}
+              />
+            </div>
             <button className="button primary" disabled={btBusy} onClick={onBacktest}>
               <Play size={14} />
               {btBusy ? 'Running backtest…' : 'Run backtest'}

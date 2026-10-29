@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID
@@ -35,6 +35,10 @@ class LoginInput(InputModel):
     client_type: Literal["web", "mobile"]
 
 
+class GoogleCredentialInput(InputModel):
+    credential: str = Field(min_length=100, max_length=8192)
+
+
 class RefreshInput(InputModel):
     refresh_token: str | None = Field(default=None, min_length=50, max_length=200)
 
@@ -51,6 +55,7 @@ class UserOutput(BaseModel):
     id: UUID
     email: str
     display_name: str
+    has_password: bool
     created_at: datetime
 
 
@@ -94,10 +99,30 @@ class PortfolioCreate(ConfigurationInput):
     name: NonEmptyName
     description: str | None = Field(default=None, max_length=2000)
     base_currency: Literal["USD"] = "USD"
+    purchase_date: date | None = None
+    initial_capital: Decimal = Field(
+        default=Decimal("10000.00"), gt=0, le=1_000_000_000, max_digits=14, decimal_places=2
+    )
+
+    @model_validator(mode="after")
+    def validate_purchase_date(self):
+        if self.purchase_date and not date(2018, 1, 1) <= self.purchase_date <= date.today():
+            raise ValueError("Purchase date must be between 2018 and today.")
+        return self
 
 
 class ConfigurationUpdate(ConfigurationInput):
     expected_version: int = Field(ge=1)
+    purchase_date: date | None = None
+    initial_capital: Decimal | None = Field(
+        default=None, gt=0, le=1_000_000_000, max_digits=14, decimal_places=2
+    )
+
+    @model_validator(mode="after")
+    def validate_purchase_date(self):
+        if self.purchase_date and not date(2018, 1, 1) <= self.purchase_date <= date.today():
+            raise ValueError("Purchase date must be between 2018 and today.")
+        return self
 
 
 class MetadataUpdate(InputModel):
@@ -120,6 +145,8 @@ class VersionOutput(BaseModel):
     id: UUID
     version_number: int
     created_at: datetime
+    purchase_date: date | None
+    initial_capital: Decimal
     allocations: list[AllocationOutput]
 
 
@@ -128,6 +155,8 @@ class VersionSummary(BaseModel):
     id: UUID
     version_number: int
     created_at: datetime
+    purchase_date: date | None
+    initial_capital: Decimal
 
 
 class PortfolioSummary(BaseModel):
@@ -135,6 +164,7 @@ class PortfolioSummary(BaseModel):
     id: UUID
     name: str
     description: str | None
+    profile_role: Literal["default", "benchmark"] | None
     base_currency: str
     current_version: int
     created_at: datetime

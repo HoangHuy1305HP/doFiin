@@ -27,7 +27,7 @@ class PriceBar(Base):
     __tablename__ = "price_bars"
     __table_args__ = (
         CheckConstraint("adjusted_close > 0", name="ck_price_positive"),
-        CheckConstraint("source IN ('demo', 'yahoo')", name="ck_price_source"),
+        CheckConstraint("source IN ('demo', 'yahoo', 'alpaca')", name="ck_price_source"),
     )
     instrument_id: Mapped[UUID] = mapped_column(ForeignKey("instruments.id"), primary_key=True)
     trading_date: Mapped[date] = mapped_column(Date, primary_key=True)
@@ -42,7 +42,10 @@ class AnalysisRun(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     portfolio_version_id: Mapped[UUID] = mapped_column(ForeignKey("portfolio_versions.id"))
-    benchmark_instrument_id: Mapped[UUID] = mapped_column(ForeignKey("instruments.id"))
+    benchmark_instrument_id: Mapped[UUID | None] = mapped_column(ForeignKey("instruments.id"))
+    benchmark_portfolio_version_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("portfolio_versions.id")
+    )
     parameters: Mapped[dict] = mapped_column(Document)
     result: Mapped[dict] = mapped_column(Document)
     engine_version: Mapped[str] = mapped_column(String(30), default="demo-1.0")

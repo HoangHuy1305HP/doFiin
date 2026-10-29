@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query
 from sqlalchemy import func, or_, select, update
 
+from app.default_profiles import ensure_default_profiles
 from app.dependencies import DB, CurrentIdentity
 from app.errors import fail
 from app.models import Instrument, Portfolio, PortfolioAllocation, PortfolioVersion, utcnow
@@ -45,8 +46,13 @@ def validate_instruments(db, allocations):
         fail(422, "INVALID_INSTRUMENT", "All instruments must be active USD instruments.")
 
 
-def save_version(db, portfolio_id, number, allocations):
-    version = PortfolioVersion(portfolio_id=portfolio_id, version_number=number)
+def save_version(db, portfolio_id, number, allocations, purchase_date=None, initial_capital=None):
+    version = PortfolioVersion(
+        portfolio_id=portfolio_id,
+        version_number=number,
+        purchase_date=purchase_date,
+        initial_capital=initial_capital,
+    )
     db.add(version)
     db.flush()
     db.add_all(
@@ -74,6 +80,8 @@ def version_output(db, version):
         id=version.id,
         version_number=version.version_number,
         created_at=version.created_at,
+        purchase_date=version.purchase_date,
+        initial_capital=version.initial_capital,
         allocations=[
             AllocationOutput(instrument_id=row.instrument_id, symbol=symbol, weight=row.weight)
             for row, symbol in rows
@@ -126,7 +134,7 @@ def create_portfolio(data: PortfolioCreate, identity: CurrentIdentity, db: DB):
     )
     db.add(portfolio)
     db.flush()
-    save_version(db, portfolio.id, 1, data.allocations)
+    save_version(db, portfolio.id, 1, data.allocations, data.purchase_date, data.initial_capital)
     db.commit()
     return detail_output(db, portfolio)
 
@@ -139,6 +147,8 @@ def list_portfolios(
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ):
+    if ensure_default_profiles(db, identity.user.id):
+        db.commit()
     statement = select(Portfolio).where(Portfolio.user_id == identity.user.id)
     if not include_archived:
         statement = statement.where(Portfolio.archived_at.is_(None))
@@ -182,7 +192,20 @@ def update_configuration(
     if changed.rowcount != 1:
         db.rollback()
         fail(409, "VERSION_CONFLICT", "Portfolio changed. Reload before saving.")
-    save_version(db, portfolio_id, data.expected_version + 1, data.allocations)
+    previous = db.scalar(
+        select(PortfolioVersion).where(
+            PortfolioVersion.portfolio_id == portfolio_id,
+            PortfolioVersion.version_number == data.expected_version,
+        )
+    )
+    save_version(
+        db,
+        portfolio_id,
+        data.expected_version + 1,
+        data.allocations,
+        data.purchase_date if data.purchase_date is not None else previous.purchase_date,
+        data.initial_capital if data.initial_capital is not None else previous.initial_capital,
+    )
     db.commit()
     db.refresh(portfolio)
     return detail_output(db, portfolio)
@@ -231,7 +254,14 @@ def update_metadata(
             )
         )
     )
-    save_version(db, portfolio_id, data.expected_version + 1, allocations)
+    save_version(
+        db,
+        portfolio_id,
+        data.expected_version + 1,
+        allocations,
+        old_version.purchase_date,
+        old_version.initial_capital,
+    )
     db.commit()
     db.refresh(portfolio)
     return detail_output(db, portfolio)
