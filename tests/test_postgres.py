@@ -40,19 +40,21 @@ def test_database_guards_total_and_history(pg_only, client, auth, instrument_ids
     payload = portfolio_payload(instrument_ids)
     portfolio_id = client.post("/api/v1/portfolios", headers=auth, json=payload).json()["id"]
     with pg_only.state.session_factory() as db:
-        with pytest.raises(IntegrityError):
-            version = PortfolioVersion(portfolio_id=UUID(portfolio_id), version_number=99)
-            db.add(version)
-            db.flush()
-            db.add(
-                PortfolioAllocation(
-                    portfolio_version_id=version.id,
-                    instrument_id=UUID(instrument_ids["AAPL"]),
-                    weight=Decimal("0.5"),
+        for weights in ((), (Decimal("0.7"), Decimal("0.4"))):
+            with pytest.raises(IntegrityError):
+                version = PortfolioVersion(portfolio_id=UUID(portfolio_id), version_number=99)
+                db.add(version)
+                db.flush()
+                db.add_all(
+                    PortfolioAllocation(
+                        portfolio_version_id=version.id,
+                        instrument_id=UUID(instrument_ids[symbol]),
+                        weight=weight,
+                    )
+                    for symbol, weight in zip(("AAPL", "MSFT"), weights)
                 )
-            )
-            db.commit()
-        db.rollback()
+                db.commit()
+            db.rollback()
         with pytest.raises(IntegrityError):
             db.execute(update(PortfolioAllocation).values(weight=Decimal("0.9")))
             db.commit()
