@@ -121,7 +121,7 @@ def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: D
         "portfolio_name": portfolio.name,
         "version_number": version.version_number,
         "warnings": warnings,
-        "methodology": "Buy-and-hold theo tỷ trọng đầu kỳ; giá đóng cửa điều chỉnh; 252 phiên/năm.",
+        "methodology": "Buy-and-hold theo tỷ trọng đầu kỳ; phần chưa phân bổ giữ USD tiền mặt không sinh lãi; giá đóng cửa điều chỉnh; 252 phiên/năm.",
         "risk_free_rate": data.risk_free_rate,
     }
     return result, version, benchmark

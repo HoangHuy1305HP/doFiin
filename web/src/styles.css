@@ -1660,9 +1660,7 @@ td strong {
   margin-bottom: 11px;
   align-items: center;
 }
-.allocation-editor-row select {
-  font-size: 14px;
-}
+.allocation-editor-row .studio-select-trigger { min-height: 44px; font-size: 14px; }
 .percent-input {
   position: relative;
 }
@@ -3035,7 +3033,7 @@ td strong {
     grid-template-columns: minmax(0, 1fr) 88px 26px;
     gap: 7px;
   }
-  .allocation-editor-row select {
+  .allocation-editor-row .studio-select-trigger {
     font-size: 13px;
     padding: 10px 7px;
   }

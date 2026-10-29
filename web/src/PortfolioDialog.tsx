@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useDialogFocus } from './useDialogFocus';
 import { Check, Clock3, LoaderCircle, Plus, Trash2, X } from 'lucide-react';
 import { api, dateLabel, post } from './api';
+import StudioSelect from './StudioSelect';
 import type { Instrument, Portfolio, Version } from './types';
+
+const parseWeight = (value: string) => Number(value.replace(',', '.'));
+const formatWeight = (value: number) => value.toLocaleString('vi-VN', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 export function Modal({
   title,
@@ -56,25 +63,26 @@ export function PortfolioDialog({
     portfolio
       ? portfolio.latest_version.allocations.map((a) => ({
           id: a.instrument_id,
-          weight: String(Number(a.weight) * 100),
+          weight: formatWeight(Number(a.weight) * 100),
         }))
       : instruments
           .filter((i) => ['AAPL', 'MSFT'].includes(i.symbol))
-          .map((i) => ({ id: i.id, weight: '50' })),
+          .map((i) => ({ id: i.id, weight: '50,00' })),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const total = rows.reduce((sum, row) => sum + Number(row.weight || 0), 0);
+  const totalCents = rows.reduce((sum, row) => sum + (Math.round(parseWeight(row.weight || '0') * 100) || 0), 0);
+  const total = totalCents / 100;
   async function save() {
     setError('');
     if (
       !rows.length ||
       rows.some(
-        (row) => !row.id || !Number.isFinite(Number(row.weight)) || Number(row.weight) <= 0,
+        (row) => !row.id || !/^\d+(?:[.,]\d{1,2})?$/.test(row.weight) || parseWeight(row.weight) <= 0,
       ) ||
-      Math.abs(total - 100) > 1e-8
+      totalCents <= 0 || totalCents > 10000
     ) {
-      setError('Each weight must be greater than 0 and the total must equal 100%.');
+      setError('Each weight must be greater than 0 and the total must not exceed 100%.');
       return;
     }
     if (new Set(rows.map((row) => row.id)).size !== rows.length) {
@@ -83,11 +91,10 @@ export function PortfolioDialog({
     }
     setBusy(true);
     try {
-      const units = rows.map((row) => Math.round(Number(row.weight) * 1e8));
-      units[units.indexOf(Math.max(...units))] += 1e10 - units.reduce((a, b) => a + b, 0);
+      const cents = rows.map((row) => Math.round(parseWeight(row.weight) * 100));
       const allocations = rows.map((row, i) => ({
         instrument_id: row.id,
-        weight: (units[i] / 1e10).toFixed(10),
+        weight: (cents[i] / 10000).toFixed(10),
       }));
       const result = portfolio
         ? await api<Portfolio>('/portfolios/' + portfolio.id + '/configuration', {
@@ -128,7 +135,7 @@ export function PortfolioDialog({
             value={name}
             disabled={!!portfolio}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Long-term portfolio"
+            placeholder="e.g. Default"
           />
         </label>
         <div className="allocation-editor-heading">
@@ -138,36 +145,31 @@ export function PortfolioDialog({
         <div className="allocation-editor">
           {rows.map((row, index) => (
             <div className="allocation-editor-row" key={index}>
-              <select
-                aria-label={'Asset' + (index + 1)}
+              <StudioSelect
+                label={'Asset ' + (index + 1)}
                 value={row.id}
-                onChange={(e) =>
+                options={instruments.map((asset) => ({ value: asset.id, label: `${asset.symbol} · ${asset.name}` }))}
+                onChange={(id) =>
                   setRows(
-                    rows.map((item, i) => (i === index ? { ...item, id: e.target.value } : item)),
+                    rows.map((item, i) => (i === index ? { ...item, id } : item)),
                   )
                 }
-              >
-                {instruments.map((asset) => (
-                  <option key={asset.id} value={asset.id}>
-                    {asset.symbol} · {asset.name}
-                  </option>
-                ))}
-              </select>
+              />
               <div className="percent-input">
                 <input
                   aria-label={'Weight' + (index + 1)}
-                  type="number"
-                  step="any"
-                  min="0.000001"
-                  max={100}
+                  type="text"
+                  inputMode="decimal"
                   value={row.weight}
-                  onChange={(e) =>
-                    setRows(
-                      rows.map((item, i) =>
-                        i === index ? { ...item, weight: e.target.value } : item,
-                      ),
-                    )
-                  }
+                  onChange={(e) => {
+                    if (/^\d{0,3}(?:[.,]\d{0,2})?$/.test(e.target.value))
+                      setRows(rows.map((item, i) => i === index ? { ...item, weight: e.target.value } : item));
+                  }}
+                  onBlur={() => {
+                    const value = parseWeight(row.weight);
+                    if (row.weight && Number.isFinite(value))
+                      setRows((previous) => previous.map((item, i) => i === index ? { ...item, weight: formatWeight(value) } : item));
+                  }}
                 />
                 <span>%</span>
               </div>
@@ -193,7 +195,7 @@ export function PortfolioDialog({
                 {
                   id:
                     instruments.find((asset) => !rows.some((row) => row.id === asset.id))?.id || '',
-                  weight: '0',
+                  weight: '0,00',
                 },
               ])
             }
@@ -201,16 +203,16 @@ export function PortfolioDialog({
             <Plus size={15} />
             Add asset
           </button>
-          <span className={'allocation-total ' + (Math.abs(total - 100) < 1e-8 ? 'valid' : '')}>
-            {Math.abs(total - 100) < 1e-8 && <Check size={14} />}Total{' '}
+          <span className={'allocation-total ' + (total > 0 && total <= 100 ? 'valid' : '')}>
+            {total > 0 && total <= 100 && <Check size={14} />}Assets{' '}
             {Number.isFinite(total)
-              ? total.toLocaleString('vi-VN', { maximumFractionDigits: 6 })
+              ? formatWeight(total)
               : '—'}
             %
           </span>
         </div>
         <p className="small-note">
-          Simulated portfolio · USD · Long only · Weights are not automatically normalized.
+          Remaining {Number.isFinite(total) ? formatWeight(Math.max(0, 100 - total)) : '—'}% stays as USD cash. Asset weights are not normalized.
         </p>
         {error && (
           <div className="inline-error" role="alert">

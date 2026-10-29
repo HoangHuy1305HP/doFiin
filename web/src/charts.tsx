@@ -117,12 +117,17 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
   );
 }
 export function AllocationChart({ factors }: { factors: Factor[] }) {
+  const investedWeight = factors.reduce((total, asset) => total + asset.weight, 0);
+  const cashWeight = Math.max(0, 1 - investedWeight);
+  const slices = cashWeight > 1e-9
+    ? [...factors, { ...factors[0], symbol: 'CASH', weight: cashWeight }]
+    : factors;
   return (
     <div className="donut-wrap">
       <ResponsiveContainer width="100%" height={205}>
         <PieChart>
           <Pie
-            data={factors}
+            data={slices}
             dataKey="weight"
             nameKey="symbol"
             innerRadius={60}
@@ -133,8 +138,8 @@ export function AllocationChart({ factors }: { factors: Factor[] }) {
             endAngle={-270}
             isAnimationActive={false}
           >
-            {factors.map((item, i) => (
-              <Cell key={item.symbol} fill={COLORS[i % COLORS.length]} />
+            {slices.map((item, i) => (
+              <Cell key={item.symbol} fill={item.symbol === 'CASH' ? '#cbd5e1' : COLORS[i % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip formatter={(value) => number(Number(value) * 100, 1) + '%'} />
@@ -142,7 +147,7 @@ export function AllocationChart({ factors }: { factors: Factor[] }) {
       </ResponsiveContainer>
       <div className="donut-center">
         <strong>
-          {number(factors.reduce((total, asset) => total + asset.weight, 0) * 100, 0)}%
+          {number(investedWeight * 100, 0)}%
         </strong>
         <span>stocks</span>
       </div>
@@ -152,9 +157,11 @@ export function AllocationChart({ factors }: { factors: Factor[] }) {
 export function FactorChart({
   factors,
   metric,
+  color,
 }: {
   factors: Factor[];
   metric: 'beta' | 'momentum';
+  color?: string;
 }) {
   const data = factors.map((f) => ({ symbol: f.symbol, value: f[metric] }));
   return (
@@ -195,7 +202,7 @@ export function FactorChart({
             isAnimationActive={false}
           >
             {data.map((item, i) => (
-              <Cell key={item.symbol} fill={COLORS[i % COLORS.length]} />
+              <Cell key={item.symbol} fill={color || COLORS[i % COLORS.length]} />
             ))}
           </Bar>
         </BarChart>

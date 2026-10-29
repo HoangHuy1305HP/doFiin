@@ -58,6 +58,11 @@ export type Analysis = {
     metadata: Metadata;
   };
 };
+export type AnalysisRules = {
+  riskFreeRate: number;
+  shortWindow: number;
+  longWindow: number;
+};
 export type Backtest = {
   id: string;
   parameters: { analysis_run_id: string };

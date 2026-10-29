@@ -21,14 +21,16 @@ import {
   X,
 } from 'lucide-react';
 import { BrandHome } from './Auth';
+import { PortfolioDialog } from './PortfolioDialog';
 import StudioModeSwitch from './StudioModeSwitch';
+import StudioBackgroundPicker from './StudioBackgroundPicker';
 import StudioSelect from './StudioSelect';
 import { Dashboard, TITLES } from './pages';
 import type { BacktestForm } from './pages';
-import type { Analysis, Backtest, Layout, Page } from './types';
+import type { Analysis, AnalysisRules, Backtest, Instrument, Layout, Page, Portfolio } from './types';
 import { post, put } from './api';
-import { DEFAULT_MENU, DEFAULT_SECTION_APPEARANCE, PAGE_LABELS } from './preferences';
-import type { PageContent, Preferences, SectionAppearance } from './preferences';
+import { DEFAULT_MENU, DEFAULT_PAGE_APPEARANCE, DEFAULT_SECTION_APPEARANCE, PAGE_LABELS, pageAppearanceStyle } from './preferences';
+import type { PageAppearance, PageContent, Preferences, SectionAppearance } from './preferences';
 import { useDialogFocus } from './useDialogFocus';
 
 type Props = {
@@ -42,10 +44,16 @@ type Props = {
   btForm: BacktestForm;
   period: string;
   source: 'demo' | 'yahoo';
+  analysisRules: AnalysisRules;
   defaultContent: PageContent;
-  onAnalysisSettingsSaved: (period: string, source: 'demo' | 'yahoo') => void;
-  onBacktestSettingsSaved: (form: BacktestForm) => void;
-  onOpenPortfolioSettings: () => void;
+  onAnalysisSettingsSaved: (period: string, source: 'demo' | 'yahoo', rules: AnalysisRules) => void;
+  onBacktestSettingsSaved: (form: BacktestForm, analysisWillRerun: boolean) => void;
+  portfolio: Portfolio | null;
+  portfolios: Portfolio[];
+  instruments: Instrument[];
+  portfolioLoading: boolean;
+  onPortfolioChange: (id: string) => void;
+  onPortfolioSaved: (portfolio: Portfolio) => Promise<void>;
   onOpenHelp: () => void;
   onPageChange: (page: Page) => void;
   onClose: () => void;
@@ -65,10 +73,10 @@ const localDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const FUNCTION_DESCRIPTIONS: Record<Page, string> = {
   portfolio: 'Choose the data behind this portfolio view and edit its holdings and weights.',
-  risk: 'Choose the data period and source used by the risk charts.',
-  signals: 'Choose the data used by the moving-average signals.',
-  backtest: 'Choose the data and simulation rules used by this backtest.',
-  factors: 'Choose the data used by factor and optimization analysis.',
+  risk: 'Choose the portfolio, date range, data source and risk-free rate used by the risk analysis.',
+  signals: 'Choose the portfolio and moving-average windows used by the signals.',
+  backtest: 'Choose the portfolio, moving-average windows and simulation rules used by the backtest.',
+  factors: 'Choose the portfolio, date range, data source and risk-free rate used by factor analysis.',
 };
 
 export default function Studio({
@@ -82,10 +90,16 @@ export default function Studio({
   btForm,
   period,
   source,
+  analysisRules,
   defaultContent,
   onAnalysisSettingsSaved,
   onBacktestSettingsSaved,
-  onOpenPortfolioSettings,
+  portfolio,
+  portfolios,
+  instruments,
+  portfolioLoading,
+  onPortfolioChange,
+  onPortfolioSaved,
   onOpenHelp,
   onPageChange,
   onClose,
@@ -95,6 +109,7 @@ export default function Studio({
   const [settings, setSettings] = useState(() => structuredClone(preferences));
   const [draftPeriod, setDraftPeriod] = useState(period);
   const [draftSource, setDraftSource] = useState(source);
+  const [draftAnalysisRules, setDraftAnalysisRules] = useState<AnalysisRules>(() => ({ ...analysisRules }));
   const [draftBacktest, setDraftBacktest] = useState(() => ({ ...btForm }));
   const [selected, setSelected] = useState<string>('page');
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
@@ -116,11 +131,13 @@ export default function Studio({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [portfolioEditor, setPortfolioEditor] = useState<'create' | 'edit' | null>(null);
   const [previewAnalysis, setPreviewAnalysis] = useState<Analysis['result'] | null>(null);
   const [previewBacktest, setPreviewBacktest] = useState<Backtest['result'] | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
   const [previewError, setPreviewError] = useState('');
   const preservePreviewAfterSave = useRef(false);
+  const previousAnalysisVersion = useRef(analysis.portfolio_version_id);
   const studioRef = useRef<HTMLDivElement>(null);
   const rowPositions = useRef(new Map<string, number>());
   const activePointer = useRef<{
@@ -143,6 +160,7 @@ export default function Studio({
     setSettings(structuredClone(preferences));
     setDraftPeriod(period);
     setDraftSource(source);
+    setDraftAnalysisRules({ ...analysisRules });
     setDraftBacktest({ ...btForm });
     setSelected('page');
     setHighlightedSection(null);
@@ -159,7 +177,7 @@ export default function Studio({
     preservePreviewAfterSave.current = false;
     studioRef.current?.querySelector<HTMLElement>('.studio-preview-stage')?.scrollTo({ top: 0 });
     studioRef.current?.querySelector<HTMLElement>('.studio-right')?.scrollTo({ top: 0 });
-  }, [page, incomingLayoutSignature, layout.config, preferences, period, source, btForm]);
+  }, [page, incomingLayoutSignature, layout.config, preferences, period, source, analysisRules, btForm]);
   useEffect(() => {
     const updateDeviceViewport = () => setDeviceViewport(currentDeviceViewport());
     window.addEventListener('resize', updateDeviceViewport);
@@ -217,11 +235,43 @@ export default function Studio({
   }, [sectionFocusRequest]);
   const layoutChanged = JSON.stringify(config) !== JSON.stringify(layout.config);
   const preferencesChanged = JSON.stringify(settings) !== JSON.stringify(preferences);
-  const analysisChanged = draftPeriod !== period || draftSource !== source;
+  const analysisChanged = draftPeriod !== period || draftSource !== source || JSON.stringify(draftAnalysisRules) !== JSON.stringify(analysisRules);
+  const analysisRulesError = !Number.isFinite(draftAnalysisRules.riskFreeRate) || draftAnalysisRules.riskFreeRate < 0 || draftAnalysisRules.riskFreeRate > 0.2
+    ? 'Risk-free rate must be between 0% and 20%.'
+    : !Number.isInteger(draftAnalysisRules.shortWindow) || draftAnalysisRules.shortWindow < 2 || draftAnalysisRules.shortWindow > 100
+      ? 'Short moving-average window must be 2–100 sessions.'
+      : !Number.isInteger(draftAnalysisRules.longWindow) || draftAnalysisRules.longWindow < 3 || draftAnalysisRules.longWindow > 250 || draftAnalysisRules.shortWindow >= draftAnalysisRules.longWindow
+        ? 'Long moving-average window must be larger than the short window and at most 250 sessions.'
+        : '';
+  const backtestRulesError = page !== 'backtest' ? ''
+    : !Number.isFinite(draftBacktest.initial_capital) || draftBacktest.initial_capital < 100 || draftBacktest.initial_capital > 1e9
+      ? 'Initial capital must be between $100 and $1,000,000,000.'
+      : !Number.isFinite(draftBacktest.fee_bps) || draftBacktest.fee_bps < 0 || draftBacktest.fee_bps > 100 || !Number.isFinite(draftBacktest.slippage_bps) || draftBacktest.slippage_bps < 0 || draftBacktest.slippage_bps > 100
+        ? 'Fees and slippage must each be between 0 and 100 bps.'
+        : '';
   const backtestChanged = JSON.stringify(draftBacktest) !== JSON.stringify(btForm);
   const previewRulesKey = JSON.stringify(draftBacktest);
   const previewNeedsRun = analysisChanged || (page === 'backtest' && backtestChanged);
+  const portfolioAnalysisReady = !portfolioLoading && !!portfolio && analysis.portfolio_version_id === portfolio.latest_version.id;
   useEffect(() => {
+    if (previousAnalysisVersion.current === analysis.portfolio_version_id) return;
+    previousAnalysisVersion.current = analysis.portfolio_version_id;
+    setPreviewAnalysis(null);
+    setPreviewBacktest(null);
+    preservePreviewAfterSave.current = false;
+  }, [analysis.portfolio_version_id]);
+  useEffect(() => {
+    if (!portfolioAnalysisReady) {
+      setPreviewAnalysis(null);
+      setPreviewBacktest(null);
+      setPreviewPending(false);
+      return;
+    }
+    if (analysisRulesError || backtestRulesError) {
+      setPreviewPending(false);
+      setPreviewError(analysisRulesError || backtestRulesError);
+      return;
+    }
     if (!previewNeedsRun) {
       setPreviewPending(false);
       setPreviewError('');
@@ -249,6 +299,9 @@ export default function Studio({
             source: draftSource,
             start_date: localDate(start),
             end_date: localDate(end),
+            risk_free_rate: draftAnalysisRules.riskFreeRate,
+            short_window: draftAnalysisRules.shortWindow,
+            long_window: draftAnalysisRules.longWindow,
           },
           backtest: page === 'backtest' ? draftBacktest : null,
         });
@@ -265,7 +318,7 @@ export default function Studio({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [analysis.portfolio_version_id, page, draftPeriod, draftSource, previewRulesKey, previewNeedsRun]);
+  }, [analysis.portfolio_version_id, portfolioAnalysisReady, page, draftPeriod, draftSource, draftAnalysisRules.riskFreeRate, draftAnalysisRules.shortWindow, draftAnalysisRules.longWindow, analysisRulesError, backtestRulesError, previewRulesKey, previewNeedsRun]);
   useEffect(() => {
     if (previewNeedsRun) return;
     preservePreviewAfterSave.current = false;
@@ -277,15 +330,19 @@ export default function Studio({
   const content = currentContent || defaultContent;
   const visibleSectionOrder = config.order.filter((key) => !config.hidden.includes(key));
   const isWidget = visibleSectionOrder.includes(selected);
+  const isChartWidget = ['growth', 'drawdown', 'volatility', 'moving_average', 'backtest_growth', 'beta', 'momentum'].includes(selected);
+  const hasChartStyle = ['growth', 'drawdown', 'volatility', 'backtest_growth'].includes(selected);
+  const hasChartLegend = ['growth', 'volatility', 'moving_average', 'backtest_growth'].includes(selected);
   const sectionAppearance: SectionAppearance = {
     ...DEFAULT_SECTION_APPEARANCE,
     corners: settings.presentation.corners as SectionAppearance['corners'],
     ...settings.sectionAppearance[page]?.[selected],
   };
+  const pageAppearance = { ...DEFAULT_PAGE_APPEARANCE, ...settings.pageAppearance?.[page] };
   const isMenu = selected.startsWith('menu:');
   const inspectorTitle =
     selected === 'page'
-      ? 'Page content'
+      ? `${PAGE_LABELS[page]} sections`
       : selected === 'theme'
         ? 'Theme settings'
         : isMenu
@@ -316,6 +373,16 @@ export default function Studio({
             ...patch,
           },
         },
+      },
+    }));
+    setSaved(false);
+  }
+  function updatePageAppearance(patch: Partial<PageAppearance>) {
+    setSettings((previous) => ({
+      ...previous,
+      pageAppearance: {
+        ...previous.pageAppearance,
+        [page]: { ...DEFAULT_PAGE_APPEARANCE, ...previous.pageAppearance[page], ...patch },
       },
     }));
     setSaved(false);
@@ -441,6 +508,10 @@ export default function Studio({
   }
   async function save() {
     if (!changed) return;
+    if (analysisRulesError || backtestRulesError) {
+      setError(analysisRulesError || backtestRulesError);
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -452,10 +523,10 @@ export default function Studio({
         onSaved(result);
       }
       if (preferencesChanged) onPreferencesSaved(settings);
-      if (backtestChanged) onBacktestSettingsSaved(draftBacktest);
+      if (backtestChanged) onBacktestSettingsSaved(draftBacktest, analysisChanged);
       setSaved(true);
       if (analysisChanged || backtestChanged) preservePreviewAfterSave.current = true;
-      if (analysisChanged) onAnalysisSettingsSaved(draftPeriod, draftSource);
+      if (analysisChanged) onAnalysisSettingsSaved(draftPeriod, draftSource, draftAnalysisRules);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to save Studio changes.');
     } finally {
@@ -463,6 +534,10 @@ export default function Studio({
     }
   }
   function close() {
+    if (portfolioEditor) {
+      setPortfolioEditor(null);
+      return;
+    }
     if (changed && !window.confirm('You have unsaved changes. Exit Studio?')) return;
     onClose();
   }
@@ -477,7 +552,7 @@ export default function Studio({
     }
     onClose();
   }
-  useDialogFocus(studioRef, close, 'first');
+  useDialogFocus(studioRef, close, 'first', !portfolioEditor);
 
   return (
     <div
@@ -487,7 +562,7 @@ export default function Studio({
       aria-modal="true"
       aria-label="doFiin Studio"
     >
-      <header className="studio-header">
+      <header className="studio-header" inert={!!portfolioEditor}>
         <BrandHome onClick={leaveForLanding} />
         <span className="studio-slash">/</span>
         <span className="studio-label">Studio</span>
@@ -518,7 +593,7 @@ export default function Studio({
           <X size={18} />
         </button>
       </header>
-      <div className="studio-body">
+      <div className="studio-body" inert={!!portfolioEditor}>
         <aside className="studio-left" aria-label="Studio navigation and sections">
           <div className="studio-panel-heading">
             <button
@@ -607,7 +682,7 @@ export default function Studio({
               </div>
             ))}
             <button
-              className="studio-tree-add"
+              className="studio-tree-add studio-add-menu-item"
               disabled={settings.menu.length === DEFAULT_MENU.length}
               onClick={() => setAddingMenu(!addingMenu)}
             >
@@ -776,12 +851,13 @@ export default function Studio({
               </div>
             )}
             <span className="studio-preview-live">
-              <Eye size={14} /> {previewPending ? 'Updating preview…' : previewError ? 'Preview unavailable' : 'Live preview'}
+              <Eye size={14} /> {previewPending || !portfolioAnalysisReady ? 'Updating preview…' : previewError ? 'Preview unavailable' : 'Live preview'}
             </span>
           </div>
-          <div className="studio-preview-stage">
+          <div className="studio-preview-stage" aria-busy={!portfolioAnalysisReady}>
+            {!portfolioAnalysisReady && <div className="studio-preview-loading" role="status">Updating sections from the active portfolio…</div>}
             {previewError && <div className="studio-preview-error" role="alert">{previewError}</div>}
-            <div className={'studio-preview ' + previewViewport} data-preview-viewport={previewViewport}>
+            <div className={'studio-preview ' + previewViewport} data-preview-viewport={previewViewport} style={pageAppearanceStyle(pageAppearance)}>
               <div className="studio-preview-brand">
                 <BrandHome onClick={leaveForLanding} />
                 <span className="tag">Preview</span>
@@ -793,7 +869,7 @@ export default function Studio({
                 <h2>{content.title}</h2>
                 <p>{content.description}</p>
               </div>
-              <Dashboard
+              {portfolioAnalysisReady && <Dashboard
                 presentation={settings.presentation}
                 sectionAppearance={settings.sectionAppearance[page]}
                 page={page}
@@ -807,7 +883,7 @@ export default function Studio({
                 onOptimize={() => {}}
                 preview
                 selectedSection={highlightedSection || undefined}
-              />
+              />}
             </div>
           </div>
         </main>
@@ -831,6 +907,7 @@ export default function Studio({
           <div className="studio-inspector-content" role="tabpanel">
             {inspectorTab === 'content' && selected === 'page' && (
               <div className="studio-settings-section">
+                <p>These sections show data from {portfolio?.name || 'the active portfolio'}. Choose the portfolio and shared analysis settings in Function.</p>
                 <label>
                   Heading
                   <input
@@ -956,20 +1033,11 @@ export default function Studio({
                     </div>
                     <div className="studio-settings-section">
                       <h4>Background</h4>
-                      <div className="studio-background-options" role="group" aria-label="Section background">
-                        {(['default', 'white', 'mist', 'sand'] as const).map((background) => (
-                          <button
-                            key={background}
-                            type="button"
-                            className={sectionAppearance.background === background ? 'active' : ''}
-                            aria-pressed={sectionAppearance.background === background}
-                            onClick={() => updateSectionAppearance({ background })}
-                          >
-                            <span className={'studio-background-swatch ' + background} aria-hidden="true" />
-                            {background[0].toUpperCase() + background.slice(1)}
-                          </button>
-                        ))}
-                      </div>
+                      <StudioBackgroundPicker
+                        key={`${page}:${selected}`}
+                        value={sectionAppearance.background}
+                        onChange={(background) => updateSectionAppearance({ background })}
+                      />
                       <div className="studio-field">
                         <span>Border radius</span>
                         <StudioSelect
@@ -988,7 +1056,92 @@ export default function Studio({
                     <p>Use the arrows or drag the menu items in the section list.</p>
                   </div>
                 )}
-                {!isWidget && <div className="studio-settings-section">
+                {selected === 'page' && (
+                  <div className="studio-settings-section">
+                    <h4>Page layout</h4>
+                    <p>These settings apply to the entire {PAGE_LABELS[page]} page, including its child sections.</p>
+                    <div className="studio-field">
+                      <span>Left &amp; right padding</span>
+                      <StudioSelect
+                        label="Page left and right padding"
+                        value={String(pageAppearance.horizontalPadding ?? 'default')}
+                        options={[{ value: 'default', label: 'Default' }, ...[16, 24, 32, 40, 48, 60, 80].map((n) => ({ value: String(n), label: `${n} px` }))]}
+                        onChange={(value) => updatePageAppearance({ horizontalPadding: value === 'default' ? null : Number(value) })}
+                      />
+                    </div>
+                    <div className="studio-field">
+                      <span>Top padding</span>
+                      <StudioSelect
+                        label="Page top padding"
+                        value={String(pageAppearance.topPadding ?? 'default')}
+                        options={[{ value: 'default', label: 'Default' }, ...[24, 40, 48, 64, 80, 96].map((n) => ({ value: String(n), label: `${n} px` }))]}
+                        onChange={(value) => updatePageAppearance({ topPadding: value === 'default' ? null : Number(value) })}
+                      />
+                    </div>
+                    <div className="studio-field">
+                      <span>Bottom padding</span>
+                      <StudioSelect
+                        label="Page bottom padding"
+                        value={String(pageAppearance.bottomPadding ?? 'default')}
+                        options={[{ value: 'default', label: 'Default' }, ...[24, 40, 48, 64, 80, 96].map((n) => ({ value: String(n), label: `${n} px` }))]}
+                        onChange={(value) => updatePageAppearance({ bottomPadding: value === 'default' ? null : Number(value) })}
+                      />
+                    </div>
+                    <div className="studio-field">
+                      <span>Content max width</span>
+                      <StudioSelect
+                        label="Page content max width"
+                        value={String(pageAppearance.maxWidth ?? 'default')}
+                        options={[{ value: 'default', label: 'Default' }, ...[1200, 1400, 1600].map((n) => ({ value: String(n), label: `${n} px` }))]}
+                        onChange={(value) => updatePageAppearance({ maxWidth: value === 'default' ? null : Number(value) })}
+                      />
+                    </div>
+                    <div className="studio-field">
+                      <span>Section density</span>
+                      <StudioSelect
+                        label="Page section density"
+                        value={config.density}
+                        options={[{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }]}
+                        onChange={(value) => setConfig({ ...config, density: value as 'comfortable' | 'compact' })}
+                      />
+                    </div>
+                  </div>
+                )}
+                {isChartWidget && (
+                  <div className="studio-settings-section">
+                    <h4>{inspectorTitle} chart</h4>
+                    {hasChartStyle && <div className="studio-field">
+                      <span>Chart type</span>
+                      <StudioSelect
+                        label={`${inspectorTitle} chart type`}
+                        value={sectionAppearance.chartStyle ?? config.chart_style}
+                        options={[{ value: 'area', label: 'Area' }, { value: 'line', label: 'Line' }]}
+                        onChange={(value) => updateSectionAppearance({ chartStyle: value as 'area' | 'line' })}
+                      />
+                    </div>}
+                    <label>
+                      Chart color
+                      <div className="studio-color-control">
+                        <input
+                          type="color"
+                          aria-label={`${inspectorTitle} chart color`}
+                          value={sectionAppearance.chartColor ?? settings.presentation.color}
+                          onChange={(event) => updateSectionAppearance({ chartColor: event.target.value })}
+                        />
+                        <span>{(sectionAppearance.chartColor ?? settings.presentation.color).toUpperCase()}</span>
+                      </div>
+                    </label>
+                    {hasChartLegend && <label className="studio-switch-row">
+                      <span>Show legend</span>
+                      <input
+                        type="checkbox"
+                        checked={sectionAppearance.showLegend ?? settings.presentation.legend}
+                        onChange={(event) => updateSectionAppearance({ showLegend: event.target.checked })}
+                      />
+                    </label>}
+                  </div>
+                )}
+                {selected === 'theme' && <div className="studio-settings-section">
                   <h4>Charts &amp; spacing</h4>
                   <div className="studio-field">
                     <span>Chart type</span>
@@ -1083,9 +1236,58 @@ export default function Studio({
                   </>
                 ) : selected === 'theme' ? (
                   <p>Theme appearance is configured in the Design tab.</p>
+                ) : isWidget ? (
+                  <>
+                    <p>This section reads its data and relevant rules from {PAGE_LABELS[page]} sections. Edit the parent to change its inputs.</p>
+                    <dl>
+                      <dt>Parent</dt>
+                      <dd>{PAGE_LABELS[page]} sections</dd>
+                      <dt>Active portfolio</dt>
+                      <dd>{portfolio?.name || 'No portfolio selected'}</dd>
+                      <dt>Analysis period</dt>
+                      <dd>{draftPeriod}</dd>
+                      <dt>Data source</dt>
+                      <dd>{draftSource === 'demo' ? 'Simulated data' : 'Yahoo Finance'}</dd>
+                      {page === 'risk' || page === 'factors' ? <>
+                        <dt>Risk-free rate</dt>
+                        <dd>{(draftAnalysisRules.riskFreeRate * 100).toFixed(2)}% / year</dd>
+                      </> : null}
+                      {page === 'signals' || page === 'backtest' ? <>
+                        <dt>Signal windows</dt>
+                        <dd>MA{draftAnalysisRules.shortWindow} / MA{draftAnalysisRules.longWindow}</dd>
+                      </> : null}
+                      {page === 'backtest' && <>
+                        <dt>Strategy</dt>
+                        <dd>{draftBacktest.strategy === 'BUY_AND_HOLD' ? 'Buy and hold' : `MA${draftAnalysisRules.shortWindow} / MA${draftAnalysisRules.longWindow} crossover`}</dd>
+                      </>}
+                    </dl>
+                    <button className="button outline full studio-function-action" onClick={() => select('page', 'function')}>
+                      Edit parent settings
+                    </button>
+                  </>
                 ) : (
                   <>
-                    <p>{FUNCTION_DESCRIPTIONS[page]} Changes appear in the preview before you save them.</p>
+                    <p>{FUNCTION_DESCRIPTIONS[page]} The preview shows changes to the affected sections before you save.</p>
+                    {selected === 'page' && <>
+                        <div className="studio-field">
+                          <span>Active portfolio</span>
+                          <StudioSelect
+                            label="Active portfolio for sections"
+                            value={portfolio?.id || ''}
+                            options={portfolios.map((item) => ({ value: item.id, label: item.name }))}
+                            onChange={onPortfolioChange}
+                          />
+                        </div>
+                        <button className="button outline full studio-function-action" onClick={() => setPortfolioEditor('create')}>
+                          <Plus size={16} /> Add portfolio
+                        </button>
+                        {portfolio && (
+                          <button className="button outline full studio-function-action" onClick={() => setPortfolioEditor('edit')}>
+                            <Pencil size={16} /> Edit holdings &amp; weights
+                          </button>
+                        )}
+                        {portfolioLoading && <p role="status">Updating child sections from the selected portfolio…</p>}
+                    </>}
                     <div className="studio-field">
                       <span>Analysis period</span>
                       <StudioSelect
@@ -1107,11 +1309,44 @@ export default function Studio({
                         onChange={(value) => setDraftSource(value as 'demo' | 'yahoo')}
                       />
                     </div>
-                    {page === 'portfolio' && (
-                      <button className="button outline full studio-function-action" onClick={() => openDialog(onOpenPortfolioSettings)}>
-                        Edit portfolio holdings &amp; weights
-                      </button>
-                    )}
+                    {(page === 'risk' || page === 'factors') && <label>
+                      Risk-free rate (% / year)
+                      <input
+                        type="number"
+                        min={0}
+                        max={20}
+                        step={0.01}
+                        value={Number((draftAnalysisRules.riskFreeRate * 100).toFixed(2))}
+                        onChange={(event) => setDraftAnalysisRules({ ...draftAnalysisRules, riskFreeRate: Number(event.target.value) / 100 })}
+                      />
+                    </label>}
+                    {(page === 'signals' || page === 'backtest') && <div className="studio-function-rules">
+                      <h4>Moving-average windows</h4>
+                      <p>These windows drive the signals and the crossover backtest.</p>
+                      <label>
+                        Short window (sessions)
+                        <input
+                          type="number"
+                          min={2}
+                          max={100}
+                          step={1}
+                          value={draftAnalysisRules.shortWindow}
+                          onChange={(event) => setDraftAnalysisRules({ ...draftAnalysisRules, shortWindow: Number(event.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Long window (sessions)
+                        <input
+                          type="number"
+                          min={3}
+                          max={250}
+                          step={1}
+                          value={draftAnalysisRules.longWindow}
+                          onChange={(event) => setDraftAnalysisRules({ ...draftAnalysisRules, longWindow: Number(event.target.value) })}
+                        />
+                      </label>
+                    </div>}
+                    {analysisRulesError && <p className="inline-error" role="alert">{analysisRulesError}</p>}
                     {page === 'backtest' && (
                       <div className="studio-function-rules">
                         <h4>Backtest rules</h4>
@@ -1121,7 +1356,7 @@ export default function Studio({
                             label="Strategy"
                             value={draftBacktest.strategy}
                             options={[
-                              { value: 'MA_CROSSOVER', label: 'MA 20 / 50 crossover' },
+                              { value: 'MA_CROSSOVER', label: `MA ${draftAnalysisRules.shortWindow} / ${draftAnalysisRules.longWindow} crossover` },
                               { value: 'BUY_AND_HOLD', label: 'Buy and hold' },
                             ]}
                             onChange={(value) => setDraftBacktest({ ...draftBacktest, strategy: value })}
@@ -1154,6 +1389,7 @@ export default function Studio({
                         <p>The simulation preview updates as you edit these rules.</p>
                       </div>
                     )}
+                    {backtestRulesError && <p className="inline-error" role="alert">{backtestRulesError}</p>}
                     <dl>
                       <dt>Active portfolio</dt>
                       <dd>{(previewAnalysis || analysis.result).metadata.portfolio_name}</dd>
@@ -1186,6 +1422,14 @@ export default function Studio({
           </div>
         </aside>
       </div>
+      {portfolioEditor && (
+        <PortfolioDialog
+          portfolio={portfolioEditor === 'edit' ? portfolio : null}
+          instruments={instruments}
+          onSaved={onPortfolioSaved}
+          onClose={() => setPortfolioEditor(null)}
+        />
+      )}
     </div>
   );
 }

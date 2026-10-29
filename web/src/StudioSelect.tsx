@@ -107,7 +107,7 @@ export default function StudioSelect({ label, value, options, onChange, placehol
       event.stopPropagation();
       setOpen(false);
       const focusable = Array.from(
-        rootRef.current?.closest('.studio-shell')?.querySelectorAll<HTMLElement>(
+        rootRef.current?.closest('.modal, .studio-shell')?.querySelectorAll<HTMLElement>(
           'button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href]',
         ) || [],
       ).filter((element) => element.getClientRects().length > 0 && !menuRef.current?.contains(element));
@@ -117,7 +117,7 @@ export default function StudioSelect({ label, value, options, onChange, placehol
     }
   }
 
-  const portalRoot = triggerRef.current?.closest('.studio-shell') || document.body;
+  const portalRoot = triggerRef.current?.closest('.modal, .studio-shell') || document.body;
 
   return (
     <div className="studio-select" ref={rootRef}>

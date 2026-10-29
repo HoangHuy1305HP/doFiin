@@ -5,10 +5,12 @@ export function useDialogFocus(
   root: RefObject<HTMLElement | null>,
   onClose: () => void,
   initialFocus: 'input' | 'first' = 'input',
+  enabled = true,
 ) {
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
+    if (!enabled) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -51,5 +53,5 @@ export function useDialogFocus(
       document.body.style.overflow = overflow;
       if (previous?.isConnected) previous.focus();
     };
-  }, [root, initialFocus]);
+  }, [root, initialFocus, enabled]);
 }

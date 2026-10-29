@@ -42,11 +42,12 @@ def build_analysis(
     if len(prices) < long_window + 2:
         raise ValueError("Không đủ dữ liệu để tính đường trung bình dài.")
     w = np.asarray([weights[symbol] for symbol in symbols], dtype=float)
+    cash_weight = max(0.0, 1.0 - float(w.sum()))
     selection = prices.index >= pd.Timestamp(start_date)
     shown = prices.loc[selection]
     if len(shown) < 5:
         raise ValueError("Cần ít nhất 5 phiên giá chung trong khoảng thời gian đã chọn.")
-    full_growth = (prices[symbols] / shown[symbols].iloc[0]).dot(w)
+    full_growth = (prices[symbols] / shown[symbols].iloc[0]).dot(w) + cash_weight
     short = full_growth.rolling(short_window).mean()
     long = full_growth.rolling(long_window).mean()
     states = pd.Series(
@@ -60,7 +61,7 @@ def build_analysis(
     if len(shown) < 5:
         raise ValueError("Cần ít nhất 5 phiên giá chung trong khoảng thời gian đã chọn.")
     normalized = shown[symbols] / shown[symbols].iloc[0]
-    growth = normalized.dot(w)
+    growth = normalized.dot(w) + cash_weight
     benchmark_growth = shown[benchmark] / shown[benchmark].iloc[0]
     daily = growth.pct_change().iloc[1:]
     benchmark_returns = benchmark_growth.pct_change().iloc[1:]
@@ -201,7 +202,7 @@ def backtest(
             turnover = float(np.abs(target - holdings).sum())
             cost = value - after_cost
             units = target / quote
-            cash = after_cost * (1 - desired)
+            cash = after_cost - float(target.sum())
             if turnover > 1e-5:
                 trades.append(
                     {
@@ -257,7 +258,8 @@ def optimize(snapshot, risk_free, max_weight=1.0):
     prices = np.asarray(snapshot["prices"], dtype=float)
     returns = prices[1:] / prices[:-1] - 1
     n = returns.shape[1]
-    if max_weight * n < 1 - 1e-10:
+    invested_weight = sum(snapshot["weights"])
+    if max_weight * n < invested_weight - 1e-10:
         raise ValueError("Giới hạn tỷ trọng khiến bài toán không có nghiệm.")
     mean = returns.mean(axis=0) * TRADING_DAYS
     covariance = np.atleast_2d(np.cov(returns, rowvar=False)) * TRADING_DAYS
@@ -268,15 +270,15 @@ def optimize(snapshot, risk_free, max_weight=1.0):
 
     solution = minimize(
         objective,
-        np.ones(n) / n,
+        np.ones(n) * invested_weight / n,
         method="SLSQP",
         bounds=[(0, max_weight)] * n,
-        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1}],
+        constraints=[{"type": "eq", "fun": lambda w: w.sum() - invested_weight}],
     )
     if not solution.success:
         raise ValueError("Bộ tối ưu chưa hội tụ. Hãy thay đổi giới hạn hoặc khoảng thời gian.")
-    units = np.round(np.maximum(solution.x, 0) / solution.x.sum() * 10**10).astype("int64")
-    units[np.argmax(units)] += 10**10 - units.sum()
+    units = np.round(np.maximum(solution.x, 0) * 10**10).astype("int64")
+    units[np.argmax(units)] += round(invested_weight * 10**10) - units.sum()
     return {
         "weights": [
             {"symbol": symbol, "weight": f"{unit / 10**10:.10f}"}

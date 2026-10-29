@@ -85,8 +85,8 @@ class ConfigurationInput(InputModel):
         ids = [item.instrument_id for item in self.allocations]
         if len(ids) != len(set(ids)):
             raise ValueError("Duplicate instrument_id")
-        if sum((item.weight for item in self.allocations), Decimal("0")) != Decimal("1"):
-            raise ValueError("Allocation weights must sum to exactly 1 (100%)")
+        if sum((item.weight for item in self.allocations), Decimal("0")) > Decimal("1"):
+            raise ValueError("Allocation weights must sum to at most 1 (100%)")
         return self
 
 

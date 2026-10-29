@@ -40,6 +40,14 @@ export const ORDERS: Record<Page, string[]> = {
   backtest: ['backtest_growth', 'backtest_trades', 'backtest_note'],
   factors: ['beta', 'momentum', 'factor_table', 'factor_note'],
 };
+function isDarkBackground(background?: string): boolean {
+  if (!background || !/^#[0-9a-f]{6}$/i.test(background)) return false;
+  const luminance = [1, 3, 5]
+    .map((index) => parseInt(background.slice(index, index + 2), 16) / 255)
+    .map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  return luminance < 0.2;
+}
 export function defaultLayout(page: Page): LayoutConfig {
   return {
     order: [...ORDERS[page]],
@@ -134,7 +142,7 @@ export function Dashboard({
   btStale = false,
 }: Props) {
   const { metrics: m, series, factors, signals, correlation, metadata } = analysis.result;
-  const primary = layout.chart_style === 'area';
+  const areaFor = (key: string) => (sectionAppearance?.[key]?.chartStyle ?? layout.chart_style) === 'area';
   const widgets: Record<string, ReactNode> = {};
   widgets.growth = (
     <>
@@ -156,7 +164,7 @@ export function Dashboard({
           { key: 'portfolio', name: 'Portfolio', color: 'var(--chart-accent, #0f172a)' },
           { key: 'benchmark', name: 'SPY', color: '#64748b' },
         ]}
-        area={primary}
+        area={areaFor('growth')}
       />
       <Legend
         items={[
@@ -179,6 +187,12 @@ export function Dashboard({
             <strong>{percent(asset.weight, 0)}</strong>
           </div>
         ))}
+        {factors.reduce((total, asset) => total + asset.weight, 0) < 1 - 1e-9 && (
+          <div>
+            <span><i style={{ background: '#cbd5e1' }} />USD cash</span>
+            <strong>{percent(1 - factors.reduce((total, asset) => total + asset.weight, 0), 0)}</strong>
+          </div>
+        )}
       </div>
       <div className="small-note">Target weights at the start of the period</div>
     </>
@@ -260,9 +274,9 @@ export function Dashboard({
       </div>
       <TimeChart
         data={series}
-        lines={[{ key: 'drawdown', name: 'Drawdown', color: '#475569' }]}
+        lines={[{ key: 'drawdown', name: 'Drawdown', color: 'var(--chart-accent, #475569)' }]}
         kind="percent"
-        area={primary}
+        area={areaFor('drawdown')}
       />
     </>
   );
@@ -328,7 +342,7 @@ export function Dashboard({
         ]}
         kind="percent"
         height={225}
-        area={primary}
+        area={areaFor('volatility')}
       />
     </>
   );
@@ -421,14 +435,14 @@ export function Dashboard({
       <p className="card-description">
         Beta of each asset relative to SPY during the selected period.
       </p>
-      <FactorChart factors={factors} metric="beta" />
+      <FactorChart factors={factors} metric="beta" color={sectionAppearance?.beta?.chartColor} />
       <div className="small-note">Beta &gt; 1: more sensitive · Beta &lt; 1: less sensitive</div>
     </>
   );
   widgets.momentum = (
     <>
       <p className="card-description">12-month price change, excluding the most recent month.</p>
-      <FactorChart factors={factors} metric="momentum" />
+      <FactorChart factors={factors} metric="momentum" color={sectionAppearance?.momentum?.chartColor} />
       <div className="small-note">
         Requires at least 253 sessions of history, including the initialization period.
       </div>
@@ -500,7 +514,7 @@ export function Dashboard({
           { key: 'benchmark', name: 'SPY', color: '#94a3b8' },
         ]}
         kind="money"
-        area={primary}
+        area={areaFor('backtest_growth')}
         height={310}
       />
     </>
@@ -702,7 +716,6 @@ export function Dashboard({
   return (
     <div
       className={'dashboard ' + (layout.density === 'compact' ? 'compact' : '')}
-      data-legend={presentation?.legend ?? true}
       style={
         presentation
           ? ({
@@ -728,7 +741,7 @@ export function Dashboard({
                 value={btForm.strategy}
                 onChange={(e) => setBtForm({ ...btForm, strategy: e.target.value })}
               >
-                <option value="MA_CROSSOVER">MA 20 / 50 crossover</option>
+                <option value="MA_CROSSOVER">MA {signals.short_window} / {signals.long_window} crossover</option>
                 <option value="BUY_AND_HOLD">Buy and hold</option>
               </select>
             </label>
@@ -799,7 +812,13 @@ export function Dashboard({
               data-section-height={sectionAppearance?.[key]?.height || 'auto'}
               data-section-spacing={sectionAppearance?.[key]?.spacing || 'comfortable'}
               data-section-background={sectionAppearance?.[key]?.background || 'default'}
-              style={{ '--section-radius': `${sectionAppearance?.[key]?.corners ?? presentation?.corners ?? 0}px` } as CSSProperties}
+              data-section-dark={isDarkBackground(sectionAppearance?.[key]?.background)}
+              data-legend={sectionAppearance?.[key]?.showLegend ?? presentation?.legend ?? true}
+              style={{
+                '--section-radius': `${sectionAppearance?.[key]?.corners ?? presentation?.corners ?? 0}px`,
+                '--chart-accent': sectionAppearance?.[key]?.chartColor ?? (isDarkBackground(sectionAppearance?.[key]?.background) ? '#bfdbfe' : presentation?.color ?? '#0f172a'),
+                backgroundColor: sectionAppearance?.[key]?.background?.startsWith('#') ? sectionAppearance?.[key]?.background : undefined,
+              } as CSSProperties}
             >
               {key !== 'insight' && (
                 <div className="widget-heading">

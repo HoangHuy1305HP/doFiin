@@ -72,6 +72,22 @@ def test_version_history_conflict_archive(client, auth, instrument_ids):
     )
 
 
+def test_partial_allocation_preserves_cash_and_weights(client, auth, instrument_ids):
+    payload = portfolio_payload(instrument_ids, ("0.3", "0.4"))
+    response = client.post("/api/v1/portfolios", json=payload, headers=auth)
+    assert response.status_code == 201, response.text
+    allocations = response.json()["latest_version"]["allocations"]
+    assert sum(Decimal(item["weight"]) for item in allocations) == Decimal("0.7")
+    portfolio_id = response.json()["id"]
+    response = client.put(
+        f"/api/v1/portfolios/{portfolio_id}/configuration",
+        json={"expected_version": 1, "allocations": portfolio_payload(instrument_ids, ("0.2", "0.3"))["allocations"]},
+        headers=auth,
+    )
+    assert response.status_code == 200, response.text
+    assert sum(Decimal(item["weight"]) for item in response.json()["latest_version"]["allocations"]) == Decimal("0.5")
+
+
 @pytest.mark.parametrize(
     "case",
     [
@@ -91,7 +107,7 @@ def test_invalid_allocations_are_rejected(client, auth, instrument_ids, case):
     payload = portfolio_payload(instrument_ids)
     allocations = payload["allocations"]
     if case == "sum":
-        allocations[0]["weight"] = "0.5"
+        allocations[0]["weight"] = "0.7"
     elif case == "negative":
         allocations[0]["weight"] = "-0.1"
     elif case == "zero":

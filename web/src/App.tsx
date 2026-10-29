@@ -47,10 +47,11 @@ import Studio from './Studio';
 import Subscription from './Subscription';
 import Landing from './Landing';
 import Account from './Account';
-import { defaultPreferences, readPreferences } from './preferences';
+import { defaultPreferences, pageAppearanceStyle, readPreferences } from './preferences';
 import type { Preferences } from './preferences';
 import type {
   Analysis,
+  AnalysisRules,
   Backtest,
   Instrument,
   Layout,
@@ -61,6 +62,7 @@ import type {
 } from './types';
 
 type Route = Page | 'subscription' | 'account';
+const DEFAULT_ANALYSIS_RULES: AnalysisRules = { riskFreeRate: 0.02, shortWindow: 20, longWindow: 50 };
 const NAV = [
   { id: 'portfolio', label: 'Portfolio', icon: LayoutDashboard },
   { id: 'risk', label: 'Risk', icon: ShieldCheck },
@@ -133,15 +135,18 @@ export default function App() {
   const [viewVersion, setViewVersion] = useState<Version | null>(null);
   const [period, setPeriod] = useState('1Y');
   const [source, setSource] = useState<'demo' | 'yahoo'>('demo');
+  const [analysisRules, setAnalysisRules] = useState<AnalysisRules>({ ...DEFAULT_ANALYSIS_RULES });
   const [refresh, setRefresh] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const analysisRef = useRef('');
+  const portfolioRequest = useRef(0);
   const [backtest, setBacktest] = useState<Backtest | null>(null);
   const [btForm, setBtForm] = useState<BacktestForm>({ ...DEFAULT_BACKTEST });
   const [btBusy, setBtBusy] = useState(false);
   const [btKey, setBtKey] = useState('');
+  const backtestRequest = useRef(0);
   const [layouts, setLayouts] = useState<Partial<Record<Page, Layout>>>({});
   const [studio, setStudio] = useState(false);
   const [studioClosing, setStudioClosing] = useState(false);
@@ -229,16 +234,23 @@ export default function App() {
   }
 
   async function loadPortfolio(id: string) {
+    if (portfolio?.id === id) {
+      if (analysis?.portfolio_version_id === portfolio.latest_version.id) setLoading(false);
+      return;
+    }
+    const request = ++portfolioRequest.current;
     setLoading(true);
-    setAnalysis(null);
+    if (!studio) setAnalysis(null);
     setBacktest(null);
     setViewVersion(null);
     setAnalysisError('');
     try {
       const result = await api<Portfolio>('/portfolios/' + id);
+      if (request !== portfolioRequest.current) return;
       setPortfolio(result);
       localStorage.setItem('dofiin-portfolio', id);
     } catch (error) {
+      if (request !== portfolioRequest.current) return;
       setLoading(false);
       report(error);
     }
@@ -259,7 +271,7 @@ export default function App() {
         weight,
       }));
       const created = await post<Portfolio>('/portfolios', {
-        name: 'Long-term portfolio',
+        name: 'Default',
         description: 'Demo workspace',
         allocations,
       });
@@ -267,6 +279,27 @@ export default function App() {
     }
     setInstruments(assets);
     setPortfolios(list);
+    setPeriod('1Y');
+    setSource('demo');
+    setAnalysisRules({ ...DEFAULT_ANALYSIS_RULES });
+    setBtForm({ ...DEFAULT_BACKTEST });
+    try {
+      const saved = JSON.parse(localStorage.getItem('dofiin:analysis-settings:' + me.id) || 'null');
+      if (saved) {
+        if (['1M', '3M', '6M', '1Y', '3Y'].includes(saved.period)) setPeriod(saved.period);
+        if (saved.source === 'demo' || saved.source === 'yahoo') setSource(saved.source);
+        const riskFreeRate = Number(saved.rules?.riskFreeRate);
+        const shortWindow = Number(saved.rules?.shortWindow);
+        const longWindow = Number(saved.rules?.longWindow);
+        if (Number.isFinite(riskFreeRate) && riskFreeRate >= 0 && riskFreeRate <= 0.2 && Number.isInteger(shortWindow) && shortWindow >= 2 && shortWindow <= 100 && Number.isInteger(longWindow) && longWindow >= 3 && longWindow <= 250 && shortWindow < longWindow)
+          setAnalysisRules({ riskFreeRate, shortWindow, longWindow });
+      }
+    } catch { /* Ignore invalid local settings. */ }
+    try {
+      const saved = JSON.parse(localStorage.getItem('dofiin:backtest-settings:' + me.id) || 'null');
+      if (saved && (saved.strategy === 'MA_CROSSOVER' || saved.strategy === 'BUY_AND_HOLD') && (saved.rebalance_frequency === 'MONTHLY' || saved.rebalance_frequency === 'NONE') && Number.isFinite(saved.initial_capital) && saved.initial_capital >= 100 && saved.initial_capital <= 1e9 && Number.isFinite(saved.fee_bps) && saved.fee_bps >= 0 && saved.fee_bps <= 100 && Number.isFinite(saved.slippage_bps) && saved.slippage_bps >= 0 && saved.slippage_bps <= 100)
+        setBtForm(saved);
+    } catch { /* Ignore invalid local settings. */ }
     setUser(me);
     const selected =
       list.find((item) => item.id === localStorage.getItem('dofiin-portfolio')) || list[0];
@@ -301,7 +334,7 @@ export default function App() {
     let active = true;
     setLoading(true);
     if (analysis?.portfolio_version_id !== versionId) {
-      setAnalysis(null);
+      if (!studio) setAnalysis(null);
       setBacktest(null);
     }
     setAnalysisError('');
@@ -316,6 +349,9 @@ export default function App() {
       source,
       start_date: localDate(start),
       end_date: localDate(end),
+      risk_free_rate: analysisRules.riskFreeRate,
+      short_window: analysisRules.shortWindow,
+      long_window: analysisRules.longWindow,
     })
       .then((result) => {
         if (active) {
@@ -336,7 +372,19 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [user?.id, versionId, period, source, refresh]);
+  }, [user?.id, versionId, period, source, analysisRules.riskFreeRate, analysisRules.shortWindow, analysisRules.longWindow, refresh]);
+  useEffect(() => {
+    if (!user) return;
+    try {
+      localStorage.setItem('dofiin:analysis-settings:' + user.id, JSON.stringify({ period, source, rules: analysisRules }));
+    } catch { /* Analysis settings still work for this session. */ }
+  }, [user?.id, period, source, analysisRules]);
+  useEffect(() => {
+    if (!user) return;
+    try {
+      localStorage.setItem('dofiin:backtest-settings:' + user.id, JSON.stringify(btForm));
+    } catch { /* Backtest settings still work for this session. */ }
+  }, [user?.id, btForm]);
 
   useEffect(() => {
     if (!user || page === 'subscription' || page === 'account') return;
@@ -350,21 +398,22 @@ export default function App() {
       active = false;
     };
   }, [user?.id, page]);
-  async function runBacktest() {
-    if (!analysis || btBusy) return;
+  async function runBacktest(form = btForm) {
+    if (!analysis) return;
+    const request = ++backtestRequest.current;
     setBtBusy(true);
     const runId = analysis.id;
-    const formKey = JSON.stringify(btForm);
+    const formKey = JSON.stringify(form);
     try {
-      const result = await post<Backtest>('/backtest-runs', { analysis_run_id: runId, ...btForm });
-      if (analysisRef.current === runId) {
+      const result = await post<Backtest>('/backtest-runs', { analysis_run_id: runId, ...form });
+      if (request === backtestRequest.current && analysisRef.current === runId) {
         setBacktest(result);
         setBtKey(formKey);
       }
     } catch (error) {
-      report(error);
+      if (request === backtestRequest.current) report(error);
     } finally {
-      setBtBusy(false);
+      if (request === backtestRequest.current) setBtBusy(false);
     }
   }
   useEffect(() => {
@@ -372,6 +421,7 @@ export default function App() {
   }, [page, analysis?.id]);
 
   async function savedPortfolio(result: Portfolio) {
+    portfolioRequest.current += 1;
     setPortfolios(await api<Portfolio[]>('/portfolios'));
     setPortfolio(result);
     setViewVersion(null);
@@ -788,7 +838,7 @@ export default function App() {
             </button>
           </div>
         </header>
-        <main className="main-content">
+        <main className="main-content" style={page !== 'account' && page !== 'subscription' ? pageAppearanceStyle(preferences.pageAppearance?.[activePage]) : undefined}>
           {page === 'subscription' ? (
             <Subscription notify={notify} />
           ) : page === 'account' ? (
@@ -1105,15 +1155,22 @@ export default function App() {
           btForm={btForm}
           period={period}
           source={source}
-          onAnalysisSettingsSaved={(nextPeriod, nextSource) => {
+          analysisRules={analysisRules}
+          onAnalysisSettingsSaved={(nextPeriod, nextSource, nextRules) => {
             setPeriod(nextPeriod);
             setSource(nextSource);
+            setAnalysisRules(nextRules);
           }}
-          onBacktestSettingsSaved={setBtForm}
-          onOpenPortfolioSettings={() => {
-            setStudio(false);
-            setDialog(portfolio ? 'config' : 'create');
+          onBacktestSettingsSaved={(form, analysisWillRerun) => {
+            setBtForm(form);
+            if (!analysisWillRerun) void runBacktest(form);
           }}
+          portfolio={portfolio}
+          portfolios={portfolios}
+          instruments={instruments}
+          portfolioLoading={loading}
+          onPortfolioChange={(id) => void loadPortfolio(id)}
+          onPortfolioSaved={savedPortfolio}
           onOpenHelp={() => {
             setStudio(false);
             setDialog('help');

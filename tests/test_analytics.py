@@ -33,6 +33,16 @@ def test_identical_asset_and_benchmark_beta_one():
     assert result["signals"]["history"]
 
 
+def test_unallocated_weight_stays_as_cash_in_analysis():
+    days = pd.bdate_range("2023-01-01", periods=350)
+    price = np.linspace(100, 200, len(days))
+    frame = pd.DataFrame({"AAPL": price, "SPY": price}, index=days)
+    result = build_analysis(frame, {"AAPL": 0.4}, "SPY", days[70].date())
+    assert result["series"][0]["portfolio"] == pytest.approx(100)
+    assert result["series"][-1]["portfolio"] == pytest.approx(100 * (0.6 + 0.4 * price[-1] / price[70]))
+    assert result["metrics"]["total_return"] == pytest.approx(0.4 * (price[-1] / price[70] - 1))
+
+
 def snapshot():
     return {
         "symbols": ["AAPL", "MSFT"],
@@ -53,6 +63,12 @@ def test_buy_hold_matches_hand_calculation_and_costs_reduce_equity():
     assert paid["metrics"]["final_value"] < base["metrics"]["final_value"]
 
 
+def test_buy_hold_retains_unallocated_cash():
+    partly_invested = {**snapshot(), "weights": [0.2, 0.3]}
+    result = backtest(partly_invested, "BUY_AND_HOLD", 1000, 0, 0, "NONE", 0)
+    assert result["metrics"]["final_value"] == pytest.approx(1040)
+
+
 def test_crossover_cannot_capture_return_before_execution():
     result = backtest(snapshot(), "MA_CROSSOVER", 1000, 0, 0, "NONE", 0)
     assert [row["strategy"] for row in result["series"]] == pytest.approx([1000, 1000, 1000])
@@ -66,6 +82,12 @@ def test_optimizer_constraints_and_exact_serializable_weights():
     weights = [Decimal(item["weight"]) for item in result["weights"]]
     assert sum(weights) == Decimal("1")
     assert all(0 <= weight <= Decimal(".8") for weight in weights)
+
+
+def test_optimizer_preserves_cash_share():
+    partly_invested = {**snapshot(), "weights": [0.2, 0.3]}
+    result = optimize(partly_invested, 0.02, max_weight=0.8)
+    assert sum(Decimal(item["weight"]) for item in result["weights"]) == Decimal("0.5")
 
 
 def create_analysis(client, auth, instrument_ids, **kwargs):
