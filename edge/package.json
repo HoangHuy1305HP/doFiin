@@ -1,0 +1,19 @@
+{
+  "name": "dofiin-edge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "VITE_EDGE_DEMO=1 npm --prefix ../web run build",
+    "dev": "wrangler dev",
+    "deploy": "npm run build:web && wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "jose": "^6.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261029.1",
+    "typescript": "~5.8.3",
+    "wrangler": "^4.20.0"
+  }
+}

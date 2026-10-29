@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "app",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-10-29",
+  "workers_dev": true,
+  "vars": {
+    "GOOGLE_CLIENT_ID": "974053581620-dnr68kp8t86q895fkig974hni857fso1.apps.googleusercontent.com"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "dofiin-prod",
+    "database_id": "af26a73b-2e99-407e-8f4f-b47d5f0740ee",
+    "migrations_dir": "./migrations"
+  }],
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  }
+}

@@ -43,7 +43,14 @@ export default function GoogleSignInButton({ onCredential, onError }: {
   callback.current = onCredential;
   errorCallback.current = onError;
   const [unavailable, setUnavailable] = useState(false);
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const [clientId, setClientId] = useState(import.meta.env.VITE_GOOGLE_CLIENT_ID || '');
+
+  useEffect(() => {
+    if (!import.meta.env.VITE_EDGE_DEMO) return;
+    void fetch('/api/v1/public-config').then((response) => response.json()).then((config) => {
+      if (typeof config.google_client_id === 'string') setClientId(config.google_client_id);
+    }).catch(() => setUnavailable(true));
+  }, []);
 
   useEffect(() => {
     if (!clientId) return;
@@ -76,7 +83,7 @@ export default function GoogleSignInButton({ onCredential, onError }: {
     };
   }, [clientId]);
 
-  if (!clientId) return <p className="small-note">Google sign-in is not configured yet.</p>;
+  if (!clientId) return <p className="small-note">{import.meta.env.VITE_EDGE_DEMO ? 'Loading Google sign-in…' : 'Google sign-in is not configured yet.'}</p>;
   if (unavailable) return <p className="small-note">Google sign-in is unavailable right now.</p>;
   return <div ref={container} className="google-sign-in" />;
 }

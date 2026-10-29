@@ -53,6 +53,7 @@ export default function Auth({
   initialMode?: 'login' | 'register';
   onModeChange?: (mode: 'login' | 'register') => void;
 }) {
+  const edgeDemo = import.meta.env.VITE_EDGE_DEMO === '1';
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -167,10 +168,10 @@ export default function Auth({
               : 'Create an account to track your portfolio.'}
           </p>
           <GoogleSignInButton onCredential={(credential) => void signInWithGoogle(credential)} onError={setError} />
-          <div className="separator">
+          {!edgeDemo && <div className="separator">
             <span>or</span>
-          </div>
-          <form
+          </div>}
+          {!edgeDemo && <form
             onSubmit={(event) => {
               event.preventDefault();
               void submit();
@@ -263,8 +264,10 @@ export default function Auth({
               {busy === 'auth' && <LoaderCircle className="spin" size={17} />}{' '}
               {mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
-          </form>
-          <p className="auth-switch">
+          </form>}
+          {edgeDemo && <p className="small-note">Free demo: sign in with Google to save your portfolios. Live analysis is not available in this deployment.</p>}
+          {error && edgeDemo && <div className="inline-error" role="alert">{error}</div>}
+          {!edgeDemo && <p className="auth-switch">
             {mode === 'login' ? 'New to doFiin?' : 'Already have an account?'}{' '}
             <button
               onClick={() => {
@@ -276,7 +279,7 @@ export default function Auth({
             >
               {mode === 'login' ? 'Sign up free →' : 'Sign in →'}
             </button>
-          </p>
+          </p>}
           <p className="auth-privacy">
             <LockKeyhole size={14} />
             Your data stays private.

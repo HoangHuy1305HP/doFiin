@@ -269,10 +269,12 @@ export function HistoryDialog({
   portfolio,
   onView,
   onClose,
+  actionLabel = 'View analysis →',
 }: {
   portfolio: Portfolio;
   onView: (version: Version) => void;
   onClose: () => void;
+  actionLabel?: string;
 }) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [error, setError] = useState('');
@@ -315,7 +317,7 @@ export function HistoryDialog({
                 })}
               </small>
             </span>
-            <span className="text-button">View analysis →</span>
+            <span className="text-button">{actionLabel}</span>
           </button>
         ))}
       </div>

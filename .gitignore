@@ -10,6 +10,7 @@ build/
 dist/
 .local-runtime/
 node_modules/
+.wrangler/
 *.tsbuildinfo
 .env.*
 !.env.example

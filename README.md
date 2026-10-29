@@ -63,6 +63,14 @@ Backend: START_BACKEND.cmd. Terminal khác, trong thư mục web: `npm ci` rồi
 
 Frontend dùng React Router với URL trực tiếp như `/portfolio`, `/risk` và `/sign-in`. Backend phục vụ `index.html` cho các đường dẫn frontend này nên có thể tải lại hoặc chia sẻ link. Link cũ dạng `/#portfolio` tự chuyển sang URL mới. Chạy `npm --prefix web run verify:routing` để kiểm tra điều hướng trên Vite.
 
+## Cloudflare Workers Free demo
+
+Bản Free tại `https://app.dofiin.workers.dev` dùng Worker trong `edge/`, Cloudflare D1 và đăng nhập Google. Nó giữ tạo/đổi tên/chỉnh holdings, tỷ trọng, vốn khởi điểm, ngày mua và lịch sử phiên bản portfolio. Người dùng mới có hai profile Default và Benchmark. Phần phân tích Alpaca, biểu đồ live, Risk, Signals, Backtest, Factors và Studio cần backend FastAPI đầy đủ nên không có trong bản Free này. Dữ liệu D1 online tách biệt với PostgreSQL local; không tự đồng bộ hoặc chuyển dữ liệu giữa hai bản.
+
+Để triển khai lại: `npm ci --prefix web`, `npm ci --prefix edge`, `npm run build:web --prefix edge`, `cd edge`, `npx wrangler d1 migrations apply dofiin-prod --remote`, rồi `npx wrangler deploy`. Wrangler cần đăng nhập đúng Cloudflare account; database ID và Google OAuth client ID công khai nằm trong `edge/wrangler.jsonc`. Google Auth Platform phải cho phép `https://app.dofiin.workers.dev` ở Authorized JavaScript origins. Không đưa mật khẩu PostgreSQL hoặc Alpaca key vào Worker Free. Tạo D1 mới khi deploy sang account khác rồi thay database ID trong cấu hình.
+
+Muốn giữ **toàn bộ chức năng** như local, triển khai Docker/FastAPI trên một dịch vụ chạy Python liên tục và dùng PostgreSQL được quản lý (ví dụ Supabase). Chạy Alembic migrations, cấu hình `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `ALPACA_API_KEY`, `ALPACA_API_SECRET` và `ALLOWED_ORIGINS` ở backend; build frontend với `VITE_GOOGLE_CLIENT_ID` và trỏ `/api/v1` đến backend. Supabase chỉ cung cấp PostgreSQL, không thay thế nơi chạy FastAPI. Với Supabase Free, dùng chuỗi kết nối từ mục Connect của project, thường là session pooler nếu host backend chỉ có IPv4. Khi chuyển từ D1 Free lên PostgreSQL full, cần migration dữ liệu riêng nếu muốn giữ portfolio online.
+
 ## Kiểm thử
 
 - **TEST_BACKEND.cmd**: kiểm thử đầy đủ bằng PostgreSQL test riêng.
