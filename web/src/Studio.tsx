@@ -26,11 +26,16 @@ import StudioModeSwitch from './StudioModeSwitch';
 import StudioBackgroundPicker from './StudioBackgroundPicker';
 import StudioSelect from './StudioSelect';
 import LanguageSelect from './LanguageSelect';
+import { getLocale, useLanguage } from './i18n';
+
+const capitalLabel = (value: number) => new Intl.NumberFormat(getLocale(), {
+  style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
+}).format(value);
 import type { IntradayRange } from './IntradayGrowth';
 import { Dashboard, TITLES } from './pages';
 import type { BacktestForm } from './pages';
 import type { Analysis, AnalysisRules, Backtest, Instrument, Layout, LiveGrowth, Page, Point, Portfolio } from './types';
-import { post, put } from './api';
+import { dateLabel, post, put } from './api';
 import { DEFAULT_MENU, DEFAULT_PAGE_APPEARANCE, DEFAULT_SECTION_APPEARANCE, PAGE_LABELS, pageAppearanceStyle } from './preferences';
 import type { PageAppearance, PageContent, Preferences, SectionAppearance } from './preferences';
 import { useDialogFocus } from './useDialogFocus';
@@ -115,6 +120,7 @@ export default function Studio({
   onClose,
   onSaved,
 }: Props) {
+  useLanguage();
   const [config, setConfig] = useState(() => structuredClone(layout.config));
   const [settings, setSettings] = useState(() => structuredClone(preferences));
   const [draftPeriod, setDraftPeriod] = useState(period);
@@ -348,7 +354,7 @@ export default function Studio({
     setPreviewBacktest(null);
   }, [analysis.id]);
   const changed = layoutChanged || preferencesChanged || analysisChanged || backtestChanged;
-  const currentContent = settings.content[page]?.[settings.locale];
+  const currentContent = settings.content[page]?.[getLocale()];
   const content = currentContent || defaultContent;
   const visibleSectionOrder = config.order.filter((key) => !config.hidden.includes(key));
   const isWidget = visibleSectionOrder.includes(selected);
@@ -376,7 +382,7 @@ export default function Studio({
       ...previous,
       content: {
         ...previous.content,
-        [page]: { ...previous.content[page], [previous.locale]: { ...content, ...patch } },
+        [page]: { ...previous.content[page], [getLocale()]: { ...content, ...patch } },
       },
     }));
     setSaved(false);
@@ -887,7 +893,7 @@ export default function Studio({
               </div>
               <div className="studio-preview-heading">
                 <span className="eyebrow">
-                  {PAGE_LABELS[page].toUpperCase()} · {settings.locale}
+                  {PAGE_LABELS[page].toUpperCase()} · {getLocale()}
                 </span>
                 <h2>{content.title}</h2>
                 <p>{content.description}</p>
@@ -958,7 +964,7 @@ export default function Studio({
                     className="studio-inline-action"
                     onClick={() => {
                       const byPage = { ...settings.content[page] };
-                      delete byPage[settings.locale];
+                      delete byPage[getLocale()];
                       setSettings({
                         ...settings,
                         content: { ...settings.content, [page]: byPage },
@@ -1273,16 +1279,16 @@ export default function Studio({
                       <dt>Active portfolio</dt>
                       <dd>{portfolio?.name || 'No portfolio selected'}</dd>
                       <dt>Purchase date</dt>
-                      <dd>{portfolio?.latest_version.purchase_date || 'Not set'}</dd>
+                      <dd>{portfolio?.latest_version.purchase_date ? dateLabel(portfolio.latest_version.purchase_date) : 'Not set'}</dd>
                       <dt>Starting capital</dt>
-                      <dd>${Number(portfolio?.latest_version.initial_capital || 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd>
+                      <dd>{capitalLabel(Number(portfolio?.latest_version.initial_capital || 10000))}</dd>
                       <dt>Benchmark</dt>
                       <dd>{selectedBenchmarkProfile?.name || '—'}</dd>
                       <dt>Analysis period</dt>
                       <dd>{draftPeriod}</dd>
                       {page === 'risk' || page === 'factors' ? <>
                         <dt>Risk-free rate</dt>
-                        <dd>{(draftAnalysisRules.riskFreeRate * 100).toFixed(2)}% / year</dd>
+                        <dd>{new Intl.NumberFormat(getLocale(), { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(draftAnalysisRules.riskFreeRate)} / year</dd>
                       </> : null}
                       {page === 'signals' || page === 'backtest' ? <>
                         <dt>Signal windows</dt>
@@ -1439,11 +1445,11 @@ export default function Studio({
                       <dt>Active portfolio</dt>
                       <dd>{(previewAnalysis || analysis.result).metadata.portfolio_name}</dd>
                       <dt>Purchase date</dt>
-                      <dd>{portfolio?.latest_version.purchase_date || 'Not set'}</dd>
+                      <dd>{portfolio?.latest_version.purchase_date ? dateLabel(portfolio.latest_version.purchase_date) : 'Not set'}</dd>
                       <dt>Starting capital</dt>
-                      <dd>${Number(portfolio?.latest_version.initial_capital || 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd>
+                      <dd>{capitalLabel(Number(portfolio?.latest_version.initial_capital || 10000))}</dd>
                       <dt>Current date range</dt>
-                      <dd>{(previewAnalysis || analysis.result).metadata.first_date} — {(previewAnalysis || analysis.result).metadata.last_date}</dd>
+                      <dd>{dateLabel((previewAnalysis || analysis.result).metadata.first_date)} — {dateLabel((previewAnalysis || analysis.result).metadata.last_date)}</dd>
                       <dt>Benchmark</dt>
                       <dd>{(previewAnalysis || analysis.result).metadata.benchmark}</dd>
                       {page === 'signals' && (

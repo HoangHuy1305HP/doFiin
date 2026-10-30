@@ -233,11 +233,11 @@ export const OPTIMIZATION = {
 };
 
 const ORDERS = {
-  portfolio: ['growth', 'allocation', 'assets', 'insight'],
-  risk: ['drawdown', 'correlation', 'volatility', 'risk_note'],
-  signals: ['moving_average', 'signal_history', 'signal_note'],
-  backtest: ['backtest_growth', 'backtest_trades', 'backtest_note'],
-  factors: ['beta', 'momentum', 'factor_table', 'factor_note'],
+  portfolio: ['growth', 'allocation', 'assets'],
+  risk: ['drawdown', 'correlation', 'volatility'],
+  signals: ['moving_average', 'signal_history'],
+  backtest: ['backtest_growth', 'backtest_trades'],
+  factors: ['beta', 'momentum', 'factor_table'],
 };
 export const layoutFor = (page) => ({
   revision: 0,

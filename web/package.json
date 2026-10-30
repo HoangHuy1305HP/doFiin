@@ -11,7 +11,8 @@
     "verify:audit": "bun scripts/audit.mjs",
     "verify:diff": "bun scripts/diff.mjs",
     "verify:figma": "node scripts/verify-figma.mjs",
-    "verify:routing": "node scripts/verify-routing.mjs"
+    "verify:routing": "node scripts/verify-routing.mjs",
+    "verify:i18n": "node scripts/verify-i18n.mjs"
   },
   "dependencies": {
     "@fontsource/geist": "^5.3.0",

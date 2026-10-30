@@ -8,23 +8,21 @@ from app.schemas import InputModel
 
 PageKey = Literal["portfolio", "risk", "signals", "backtest", "factors"]
 WIDGETS = {
-    "portfolio": ["growth", "allocation_comparison", "allocation", "assets", "insight"],
+    "portfolio": ["growth", "allocation_comparison", "allocation", "assets"],
     "risk": [
         "drawdown",
         "correlation",
         "volatility",
         "rolling_beta",
         "return_distribution",
-        "risk_note",
     ],
     "signals": [
         "moving_average",
         "signal_history",
         "asset_signals",
         "aggregate_signal",
-        "signal_note",
     ],
-    "backtest": ["backtest_growth", "backtest_trades", "regime_map", "backtest_note"],
+    "backtest": ["backtest_growth", "backtest_trades", "regime_map"],
     "factors": [
         "beta",
         "momentum",
@@ -33,7 +31,6 @@ WIDGETS = {
         "factor_rolling",
         "beta_heatmap",
         "active_return",
-        "factor_note",
     ],
 }
 

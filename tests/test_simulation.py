@@ -2,6 +2,8 @@ import numpy as np
 import pytest
 
 from app.analytics.models import DashboardLayout
+from app.analytics.routes import REMOVED_WIDGETS, upgrade_portfolio_layout
+from app.analytics.schemas import WIDGETS
 from app.analytics.simulation import bounded_weights, simulate_allocations
 from app.models import AuthSession
 from tests.conftest import register_login
@@ -96,7 +98,8 @@ def test_old_saved_layout_exposes_new_charts_without_losing_preferences(client, 
     result = client.get("/api/v1/layouts/portfolio", headers=auth).json()
     assert result["revision"] == 3
     assert result["config"]["order"][:2] == ["growth", "allocation_comparison"]
-    assert result["config"]["hidden"] == ["insight"]
+    assert result["config"]["order"] == ["growth", "allocation_comparison", "assets", "allocation"]
+    assert result["config"]["hidden"] == []
     assert result["config"]["titles"] == {"growth": "My saved title"}
     saved = client.put(
         "/api/v1/layouts/portfolio",
@@ -104,3 +107,22 @@ def test_old_saved_layout_exposes_new_charts_without_losing_preferences(client, 
         json={"expected_revision": 3, "config": result["config"]},
     )
     assert saved.status_code == 200
+    assert saved.json()["config"]["order"] == result["config"]["order"]
+
+
+@pytest.mark.parametrize("page_key", ["portfolio", "risk", "signals", "backtest", "factors"])
+def test_removed_final_sections_do_not_return_from_saved_layouts(page_key):
+    removed = next(key for key in REMOVED_WIDGETS[page_key] if key != "simulation")
+    config = {
+        "order": [*WIDGETS[page_key], removed],
+        "hidden": [removed],
+        "titles": {removed: "Old note", WIDGETS[page_key][0]: "Keep title"},
+        "density": "compact",
+        "chart_style": "line",
+    }
+    upgraded = upgrade_portfolio_layout(page_key, config)
+    assert upgraded["order"] == WIDGETS[page_key]
+    assert upgraded["hidden"] == []
+    assert upgraded["titles"] == {WIDGETS[page_key][0]: "Keep title"}
+    assert upgraded["density"] == "compact"
+    assert upgraded["chart_style"] == "line"

@@ -28,7 +28,7 @@ import {
   X,
 } from 'lucide-react';
 import Auth, { BrandHome } from './Auth';
-import { useLanguage } from './i18n';
+import { getLocale, useLanguage } from './i18n';
 import LanguageSelect from './LanguageSelect';
 import StudioModeSwitch from './StudioModeSwitch';
 import { INTRADAY_RANGES } from './IntradayGrowth';
@@ -636,7 +636,7 @@ export default function App() {
   const activePage = page === 'subscription' || page === 'account' ? 'portfolio' : page;
   const layout = layouts[activePage] || { revision: 0, config: defaultLayout(activePage) };
   const intro = INTRO[activePage];
-  const pageContent = preferences.content[activePage]?.[preferences.locale];
+  const pageContent = preferences.content[activePage]?.[getLocale()];
   const visibleNav = preferences.menu.map((id) => NAV.find((item) => item.id === id)!);
   const analysisControls = (
     <div className="filter-bar">
@@ -734,7 +734,9 @@ export default function App() {
             key={value}
             className={((!liveSecondView && !intradayRange) || activePage !== 'portfolio') && period === value ? 'active' : ''}
             aria-label={
-              value.endsWith('M') ? value.slice(0, -1) + ' months' : value.slice(0, -1) + ' years'
+              value.endsWith('M')
+                ? value.slice(0, -1) + (value === '1M' ? ' month' : ' months')
+                : value.slice(0, -1) + (value === '1Y' ? ' year' : ' years')
             }
             onClick={() => { setLiveSecondView(false); setIntradayRange(null); setPeriod(value); }}
           >

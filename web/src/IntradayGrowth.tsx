@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { getLocale } from './i18n';
 import { TimeChart } from './charts';
 import type { Point } from './types';
 
@@ -60,7 +61,7 @@ export default function IntradayGrowth({ runId, range, benchmark, area }: {
           { key: 'portfolio', name: 'Portfolio', color: 'var(--chart-accent, #0f172a)' },
           { key: 'benchmark', name: benchmark, color: '#64748b' },
         ]} />
-        <p className="intraday-note">Data through {new Date(result.as_of).toLocaleString()} · Device time zone · IEX regular sessions. Missing quotes carried forward for at most 5 minutes.</p>
+        <p className="intraday-note">Data through {new Date(result.as_of).toLocaleString(getLocale())} · Device time zone · IEX regular sessions. Missing quotes carried forward for at most 5 minutes.</p>
         <details className="intraday-note">
           <summary>Chart assumptions and data status</summary>
           <ul>{result.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>

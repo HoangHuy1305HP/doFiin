@@ -7,7 +7,7 @@ def test_studio_save_reload_revision_and_user_separation(client, auth):
     assert first["revision"] == 0
     config = first["config"]
     config["order"].reverse()
-    config["hidden"] = ["insight"]
+    config["hidden"] = ["assets"]
     config["titles"] = {"growth": "Biểu đồ của tôi"}
     result = client.put(path, headers=auth, json={"expected_revision": 0, "config": config})
     assert result.status_code == 200, result.text

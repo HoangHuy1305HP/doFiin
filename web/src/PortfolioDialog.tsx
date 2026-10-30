@@ -4,11 +4,15 @@ import { Check, Clock3, LoaderCircle, Plus, Trash2, X } from 'lucide-react';
 import { api, dateLabel, post } from './api';
 import AssetPicker from './AssetPicker';
 import type { Instrument, Portfolio, Version } from './types';
+import { getLocale } from './i18n';
 
 const parseWeight = (value: string) => Number(value.replace(',', '.'));
-const formatWeight = (value: number) => value.toLocaleString('vi-VN', {
+const formatWeight = (value: number) => value.toLocaleString(getLocale(), {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+});
+const formatInputCapital = (value: number) => value.toLocaleString(getLocale(), {
+  minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false,
 });
 const localDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -17,7 +21,7 @@ const defaultPurchaseDate = () => {
   date.setFullYear(date.getFullYear() - 1);
   return localDate(date);
 };
-const usd = (value: number) => new Intl.NumberFormat('en-US', {
+const usd = (value: number) => new Intl.NumberFormat(getLocale(), {
   style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
 }).format(value);
 
@@ -70,7 +74,7 @@ export function PortfolioDialog({
 }) {
   const [name, setName] = useState(portfolio?.name || '');
   const [purchaseDate, setPurchaseDate] = useState(portfolio ? portfolio.latest_version.purchase_date || '' : defaultPurchaseDate());
-  const [initialCapital, setInitialCapital] = useState(portfolio?.latest_version.initial_capital || '10000.00');
+  const [initialCapital, setInitialCapital] = useState(() => formatInputCapital(Number(portfolio?.latest_version.initial_capital || 10000)));
   const [rows, setRows] = useState(
     portfolio
       ? portfolio.latest_version.allocations.map((a) => ({
@@ -80,7 +84,7 @@ export function PortfolioDialog({
         }))
       : instruments
           .filter((i) => ['AAPL', 'MSFT'].includes(i.symbol))
-          .map((i) => ({ id: i.id, symbol: i.symbol, weight: '50,00' })),
+          .map((i) => ({ id: i.id, symbol: i.symbol, weight: formatWeight(50) })),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -170,7 +174,7 @@ export function PortfolioDialog({
           Starting capital (USD)
           <input type="text" inputMode="decimal" value={initialCapital}
             onChange={(event) => setInitialCapital(event.target.value)}
-            onBlur={() => { if (Number.isFinite(capital) && capital > 0) setInitialCapital(capital.toFixed(2)); }} />
+            onBlur={() => { if (Number.isFinite(capital) && capital > 0) setInitialCapital(formatInputCapital(capital)); }} />
         </label>
         <p className="small-note">Chỉ chọn tài sản đang giao dịch trên Alpaca và có giá IEX trong 30 ngày gần đây.
           Tìm theo mã hoặc tên công ty. Lịch sử giá tại ngày mua vẫn cần được kiểm tra khi phân tích.</p>
@@ -230,7 +234,7 @@ export function PortfolioDialog({
                 {
                   id: '',
                   symbol: '',
-                  weight: '0,00',
+                  weight: formatWeight(0),
                 },
               ])
             }
@@ -313,7 +317,7 @@ export function HistoryDialog({
               </strong>
               <small>
                 {dateLabel(version.created_at.slice(0, 10))} ·{' '}
-                {new Date(version.created_at).toLocaleTimeString('vi-VN', {
+                {new Date(version.created_at).toLocaleTimeString(getLocale(), {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}

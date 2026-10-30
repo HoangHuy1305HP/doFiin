@@ -9,9 +9,10 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { api, put } from './api';
+import { getLocale } from './i18n';
 import type { Subscription as SubscriptionData } from './types';
 
-const currency = (value: number) => '₫' + new Intl.NumberFormat('en-US').format(value);
+const currency = (value: number) => new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
 export default function Subscription({ notify }: { notify: (message: string) => void }) {
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [cycle, setCycle] = useState<'monthly' | 'annual'>('monthly');

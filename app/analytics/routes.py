@@ -460,11 +460,19 @@ NEW_WIDGETS = {
     "factors": {"proxy_factors", "factor_rolling", "beta_heatmap", "active_return"},
 }
 
+REMOVED_WIDGETS = {
+    "portfolio": {"simulation", "insight"},
+    "risk": {"risk_note"},
+    "signals": {"signal_note"},
+    "backtest": {"backtest_note"},
+    "factors": {"factor_note"},
+}
+
 
 def upgrade_portfolio_layout(page_key, config):
     """Upgrade saved layouts in memory, retaining order, hidden items and revision."""
     result = dict(config)
-    removed = {"simulation"} if page_key == "portfolio" else set()
+    removed = REMOVED_WIDGETS[page_key]
     order = [key for key in result["order"] if key not in removed]
     for key in WIDGETS[page_key]:
         if key not in order:
@@ -511,7 +519,7 @@ def get_layout(page_key: PageKey, identity: CurrentIdentity, db: DB):
 def save_layout(page_key: PageKey, data: LayoutInput, identity: CurrentIdentity, db: DB):
     allowed = set(WIDGETS[page_key])
     config = data.config
-    legacy_extra = {"simulation"} if page_key == "portfolio" else set()
+    legacy_extra = REMOVED_WIDGETS[page_key]
     if (
         not (allowed - NEW_WIDGETS[page_key]) <= set(config.order)
         or not set(config.order) <= allowed | legacy_extra

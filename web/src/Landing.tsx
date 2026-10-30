@@ -2,6 +2,7 @@ import { ArrowRight, ChartNoAxesCombined, ShieldCheck, TrendingUp, Layers3 } fro
 import { BrandHome } from './Auth';
 import AccountMenu from './AccountMenu';
 import LanguageSelect from './LanguageSelect';
+import { getLocale } from './i18n';
 import { TimeChart } from './charts';
 import type { User } from './types';
 const illustration = Array.from({ length: 36 }, (_, i) => ({
@@ -298,7 +299,7 @@ export default function Landing({
                   <span className="landing-popular landing-coming-soon">COMING SOON</span>
                 )}
                 <p>{plan.description}</p>
-                <strong>{plan.price}</strong>
+                <strong>{plan.comingSoon ? plan.price : new Intl.NumberFormat(getLocale()).format(Number(plan.price.replaceAll(',', '')))}</strong>
                 <small>{plan.billing}</small>
                 <ul>
                   {plan.features.map((f) => (

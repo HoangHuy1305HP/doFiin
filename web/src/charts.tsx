@@ -61,7 +61,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
     kind === 'percent'
       ? number(value * 100, 1) + '%'
       : kind === 'money'
-        ? '$' + number(value, 0)
+        ? new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
         : number(value, 1);
   return (
     <div className="time-chart" style={{ height }}>
@@ -95,7 +95,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
             tickFormatter={formatter}
             tickLine={false}
             axisLine={false}
-            width={kind === 'money' ? 68 : 48}
+            width={kind === 'money' ? 82 : 48}
             tick={{ fontSize: 11, fill: '#64748b' }}
             tickCount={5}
           />

@@ -4,9 +4,7 @@ import {
   ArrowUpRight,
   CircleHelp,
   FlaskConical,
-  Lightbulb,
   Play,
-  TrendingUp,
 } from 'lucide-react';
 import { AllocationChart, COLORS, FactorChart, TimeChart } from './charts';
 import StudioSelect from './StudioSelect';
@@ -15,6 +13,7 @@ import { AllocationComparison, usePortfolioSimulation } from './PortfolioSimulat
 import IntradayGrowth from './IntradayGrowth';
 import type { IntradayRange } from './IntradayGrowth';
 import { dateLabel, money, number, percent } from './api';
+import { getLocale } from './i18n';
 import type { Presentation, SectionAppearance } from './preferences';
 import type { Analysis, Backtest, LayoutConfig, LiveGrowth, Page, Point, Version } from './types';
 
@@ -32,28 +31,23 @@ export const TITLES: Record<string, string> = {
   beta_heatmap: 'Bản đồ nhiệt Beta và xếp hạng',
   active_return: 'Tăng trưởng tương đối so với SPY',
   assets: 'Contribution by asset',
-  insight: 'A smarter allocation to explore',
   drawdown: 'Drawdown over time',
   correlation: 'Relationships between assets',
   volatility: 'Volatility over time',
-  risk_note: 'Risk in context',
   moving_average: 'Moving average crossover',
   signal_history: 'Recent states',
-  signal_note: 'Rule explained',
   backtest_growth: 'Growth comparison',
   backtest_trades: 'Simulated trades',
-  backtest_note: 'Simulation assumptions',
   beta: 'Market sensitivity',
   momentum: '12–1 momentum',
   factor_table: 'Factors by asset',
-  factor_note: 'Model explained',
 };
 export const ORDERS: Record<Page, string[]> = {
-  portfolio: ['growth', 'allocation_comparison', 'allocation', 'assets', 'insight'],
-  risk: ['correlation', 'drawdown', 'volatility', 'rolling_beta', 'return_distribution', 'risk_note'],
-  signals: ['moving_average', 'signal_history', 'asset_signals', 'aggregate_signal', 'signal_note'],
-  backtest: ['backtest_growth', 'backtest_trades', 'regime_map', 'backtest_note'],
-  factors: ['beta', 'momentum', 'factor_table', 'proxy_factors', 'factor_rolling', 'beta_heatmap', 'active_return', 'factor_note'],
+  portfolio: ['growth', 'allocation_comparison', 'allocation', 'assets'],
+  risk: ['correlation', 'drawdown', 'volatility', 'rolling_beta', 'return_distribution'],
+  signals: ['moving_average', 'signal_history', 'asset_signals', 'aggregate_signal'],
+  backtest: ['backtest_growth', 'backtest_trades', 'regime_map'],
+  factors: ['beta', 'momentum', 'factor_table', 'proxy_factors', 'factor_rolling', 'beta_heatmap', 'active_return'],
 };
 function isDarkBackground(background?: string): boolean {
   if (!background || !/^#[0-9a-f]{6}$/i.test(background)) return false;
@@ -183,7 +177,7 @@ export function Dashboard({
   const showLiveSeconds = page === 'portfolio' && liveSecondView;
   const startingCapital = Number(portfolioVersion?.initial_capital || 10000);
   const cashWeight = Math.max(0, 1 - factors.reduce((total, asset) => total + asset.weight, 0));
-  const usdAmount = (value: number) => new Intl.NumberFormat('en-US', {
+  const usdAmount = (value: number) => new Intl.NumberFormat(getLocale(), {
     style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(value);
   const areaFor = (key: string) => (sectionAppearance?.[key]?.chartStyle ?? layout.chart_style) === 'area';
@@ -288,36 +282,6 @@ export function Dashboard({
       </div>
     </>
   );
-  widgets.insight = (
-    <div className="insight-content">
-      <div className="insight-icon">
-        <Lightbulb size={23} />
-      </div>
-      <div>
-        <span className="eyebrow light">WEIGHT SEARCH SIMULATION</span>
-        <h3>A smarter allocation to explore</h3>
-        <p>
-          Portfolio{' '}
-          {m.excess_return != null && m.excess_return >= 0 ? 'outperformed' : 'underperformed'}{' '}
-          benchmark {percent(Math.abs(m.excess_return ?? 0))} this period. Compare current weights
-          with an alternative allocation from the historical model.
-        </p>
-        <button className="button lime" disabled={preview} onClick={onOptimize}>
-          View simulation →
-        </button>
-      </div>
-      <svg className="insight-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
-        {[0, 12, 24, 36, 48].map((n) => (
-          <path
-            key={n}
-            d={'M' + (10 + n / 2) + ' ' + (100 - n / 2) + ' L100 ' + (10 + n / 2) + ' L100 100 Z'}
-            stroke="#fef3c7"
-            strokeWidth=".7"
-          />
-        ))}
-      </svg>
-    </div>
-  );
   widgets.drawdown = (
     <>
       <div className="chart-topline">
@@ -329,7 +293,7 @@ export function Dashboard({
       </div>
       <TimeChart
         data={series}
-        lines={[{ key: 'drawdown', name: 'Danh mục', color: 'var(--chart-accent, #475569)' }, {key: 'benchmark_drawdown', name: metadata.benchmark, color: '#94a3b8'}]}
+        lines={[{ key: 'drawdown', name: 'Portfolio', color: 'var(--chart-accent, #475569)' }, {key: 'benchmark_drawdown', name: metadata.benchmark, color: '#94a3b8'}]}
         kind="percent"
         area={areaFor('drawdown')}
       />
@@ -407,25 +371,6 @@ export function Dashboard({
   widgets.asset_signals = <div className="table-wrap"><table><thead><tr><th>Cổ phiếu</th><th>MA ngắn</th><th>MA dài</th><th>Tín hiệu</th></tr></thead><tbody>{signals.asset_signals?.map((row) => <tr key={row.symbol}><td>{row.symbol}</td><td>{number(row.short_ma)}</td><td>{number(row.long_ma)}</td><td>{row.signal == null ? 'Chưa đủ dữ liệu' : row.signal ? 'Tích cực (1)' : 'Không tích cực (0)'}</td></tr>)}</tbody></table></div>;
   widgets.aggregate_signal = <><p className="card-description">Trung bình tín hiệu 0/1 của các mã, mỗi mã một phiếu. Trên 50% là đa số tích cực; đây không phải xác suất giá tăng hoặc lệnh giao dịch thật.</p><TimeChart data={signals.series || []} curve="stepAfter" area={false} kind="percent" lines={[{key: 'share', name: 'Tỷ lệ mã tích cực', color: '#365c52'}]} /></>;
   for (const key of ['proxy_factors', 'factor_rolling', 'beta_heatmap', 'active_return', 'regime_map']) widgets[key] = <ResearchWidget kind={key} state={research} backtest={backtest} />;
-  widgets.risk_note = (
-    <div className="explanation">
-      <span className="note-icon">
-        <CircleHelp size={20} />
-      </span>
-      <div>
-        <h4>Risk, from every angle.</h4>
-        <p>
-          Volatility measures variation; drawdown measures declines from a peak. Beta{' '}
-          {number(m.beta)} describes sensitivity to {metadata.benchmark} during the selected period. These metrics do
-          not predict maximum future losses.
-        </p>
-        <small>
-          Risk-free rate: {percent(metadata.risk_free_rate)} / year · Based on 252 sessions per
-          year.
-        </small>
-      </div>
-    </div>
-  );
   widgets.moving_average = (
     <>
       <div className="chart-topline">
@@ -478,19 +423,6 @@ export function Dashboard({
       ))}
     </div>
   );
-  widgets.signal_note = (
-    <div className="explanation">
-      <TrendingUp size={22} />
-      <div>
-        <h4>Clear rules. Consistent interpretation.</h4>
-        <p>
-          Bullish when MA{signals.short_window} exceeds MA{signals.long_window} by more than 0.5%;
-          bearish when below by more than 0.5%; otherwise neutral. The crossover backtest executes
-          direct crossovers in the next session.
-        </p>
-      </div>
-    </div>
-  );
   widgets.beta = (
     <>
       <p className="card-description">
@@ -541,22 +473,6 @@ export function Dashboard({
           ))}
         </tbody>
       </table>
-    </div>
-  );
-  widgets.factor_note = (
-    <div className="explanation">
-      <Lightbulb size={22} />
-      <div>
-        <h4>Understand what drives returns.</h4>
-        <p>
-          Market beta and momentum are descriptive metrics, rather than a full factor regression.
-          CAPM alpha is shown separately from excess benchmark return.
-        </p>
-        <small>
-          Annualized CAPM alpha: {percent(m.capm_alpha)} · Excess return vs {metadata.benchmark}:{' '}
-          {percent(m.excess_return)}
-        </small>
-      </div>
     </div>
   );
   const b = backtest?.result;
@@ -631,20 +547,6 @@ export function Dashboard({
     </div>
   ) : (
     <p className="card-description">Trade history appears after running the backtest.</p>
-  );
-  widgets.backtest_note = (
-    <div className="explanation">
-      <CircleHelp size={22} />
-      <div>
-        <h4>A backtest is a conditional simulation.</h4>
-        <p>
-          Signals use information from the previous close and execute at the next close. Fees and
-          slippage apply to turnover; no shorting or borrowing. Past results do not guarantee future
-          performance.
-        </p>
-        {b && <ul className="small-note">{Object.entries(b.assumptions).map(([key, text]) => <li key={key}>{text}</li>)}</ul>}
-      </div>
-    </div>
   );
   let metrics: ReactNode;
   if (page === 'risk')
@@ -748,7 +650,7 @@ export function Dashboard({
         <Metric
           label="Total costs"
           value={money(b?.metrics.total_cost)}
-          detail={String(b?.metrics.trade_count ?? 0) + ' simulated trades'}
+          detail={String(b?.metrics.trade_count ?? 0) + ((b?.metrics.trade_count ?? 0) === 1 ? ' simulated trade' : ' simulated trades')}
         />
       </>
     );
@@ -866,10 +768,10 @@ export function Dashboard({
       {controls}
       <div className="widgets-grid">
         {layout.order
-          .filter((key) => !layout.hidden.includes(key))
+          .filter((key) => ORDERS[page].includes(key) && !layout.hidden.includes(key))
           .map((key) => (
             <section
-              className={'widget widget-' + key + (key === 'insight' ? ' dark-widget' : '') + (preview && selectedSection === key ? ' studio-section-selected' : '')}
+              className={'widget widget-' + key + (preview && selectedSection === key ? ' studio-section-selected' : '')}
               key={key}
               aria-label={layout.titles[key] || TITLES[key]}
               data-studio-section={preview ? key : undefined}
@@ -885,8 +787,7 @@ export function Dashboard({
                 backgroundColor: sectionAppearance?.[key]?.background?.startsWith('#') ? sectionAppearance?.[key]?.background : undefined,
               } as CSSProperties}
             >
-              {key !== 'insight' && (
-                <div className="widget-heading">
+              <div className="widget-heading">
                   <div>
                     <span className="widget-eyebrow">
                       {key === 'allocation'
@@ -906,8 +807,7 @@ export function Dashboard({
                     <h3>{layout.titles[key] || TITLES[key]}</h3>
                   </div>
                   <span className="widget-dot">···</span>
-                </div>
-              )}
+              </div>
               {widgets[key]}
             </section>
           ))}
