@@ -54,10 +54,5 @@ export function LanguageProvider({children}: {children: ReactNode}) {
     try { localStorage.setItem('dofiin:language', value); } catch { /* Session still works. */ }
   };
   useEffect(() => { document.documentElement.lang = language; document.title = language === 'vi' ? 'doFiin — Phân tích danh mục' : 'doFiin — Portfolio Analytics'; }, [language]);
-  return <LanguageContext.Provider value={{language, setLanguage}}>{children}
-    <button type="button" className="language-switch" aria-label="Đổi ngôn ngữ giao diện"
-      onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}>
-      {language === 'vi' ? 'Tiếng Việt · EN' : 'Dịch sang Tiếng Việt'}
-    </button>
-  </LanguageContext.Provider>;
+  return <LanguageContext.Provider value={{language, setLanguage}}>{children}</LanguageContext.Provider>;
 }

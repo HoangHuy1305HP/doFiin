@@ -3,11 +3,14 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { Archive, ArrowRight, ChartNoAxesCombined, LoaderCircle, Pencil, Plus, Settings2 } from 'lucide-react';
 import Auth, { BrandHome } from './Auth';
 import AccountMenu from './AccountMenu';
+import LanguageSelect from './LanguageSelect';
+import { useLanguage } from './i18n';
 import { api, restoreSession, setToken } from './api';
 import { HistoryDialog, Modal, PortfolioDialog, RenameDialog } from './PortfolioDialog';
 import type { Instrument, Portfolio, User, Version } from './types';
 
 export default function EdgeApp() {
+  useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [booting, setBooting] = useState(true);
@@ -66,7 +69,7 @@ export default function EdgeApp() {
   if (booting) return <div className="boot-screen"><BrandHome /><LoaderCircle className="spin" /><p>Opening your workspace…</p></div>;
   if (location.pathname === '/') return (
     <div className="edge-landing">
-      <header><BrandHome /><div>{user && <AccountMenu user={user} onAccount={() => navigate('/account')} onSignOut={() => void signOut()} />}<button className="button primary" onClick={() => navigate(user ? '/portfolio' : '/sign-in')}>{user ? 'Open workspace' : 'Sign in with Google'} <ArrowRight size={17} /></button></div></header>
+      <header><BrandHome /><div><LanguageSelect />{user && <AccountMenu user={user} onAccount={() => navigate('/account')} onSignOut={() => void signOut()} />}<button className="button primary" onClick={() => navigate(user ? '/portfolio' : '/sign-in')}>{user ? 'Open workspace' : 'Sign in with Google'} <ArrowRight size={17} /></button></div></header>
       <main><span className="eyebrow">DOFIIN FREE DEMO</span><h1>Your portfolios,<br />in one clear place.</h1><p>Build a portfolio, set its purchase date and starting capital, and keep every version. Sign in with Google to save it to your account.</p><button className="button primary" onClick={() => navigate(user ? '/portfolio' : '/sign-in')}>Get started <ArrowRight size={17} /></button><div className="edge-limits">Google sign-in and portfolio management are available. Live charts, backtests and Studio analysis require the full backend.</div></main>
     </div>
   );
@@ -79,7 +82,7 @@ export default function EdgeApp() {
   return (
     <div className="edge-app">
       <aside className="edge-sidebar"><BrandHome light /><span className="sidebar-eyebrow">WORKSPACE</span><nav><Link className={location.pathname === '/portfolio' ? 'nav-item active' : 'nav-item'} to="/portfolio"><ChartNoAxesCombined size={19} /> Portfolio</Link></nav><div className="edge-sidebar-foot"><span>Free demo · Google + D1</span></div></aside>
-      <div className="edge-main"><header className="edge-topbar"><span>doFiin / {location.pathname === '/account' ? 'Account' : 'Portfolio'}</span><AccountMenu user={user} onAccount={() => navigate('/account')} onSignOut={() => void signOut()} /></header>
+      <div className="edge-main"><header className="edge-topbar"><span>doFiin / {location.pathname === '/account' ? 'Account' : 'Portfolio'}</span><div className="edge-topbar-actions"><LanguageSelect /><AccountMenu user={user} onAccount={() => navigate('/account')} onSignOut={() => void signOut()} /></div></header>
         {location.pathname === '/account' ? <main className="edge-content"><span className="eyebrow">ACCOUNT</span><h1>Your account</h1><div className="edge-panel"><strong>{user.display_name}</strong><p>{user.email}</p><p>Google sign-in · Free demo</p><button className="button outline" onClick={() => void signOut()}>Sign out</button></div></main> :
         <main className="edge-content"><div className="edge-heading"><div><span className="eyebrow">PORTFOLIO</span><h1>Your portfolios</h1><p>Choose a profile, manage assets and preserve changes as versions.</p></div><button className="button primary" onClick={() => setDialog('create')}><Plus size={17} /> Add portfolio</button></div>
           <div className="edge-workspace"><section className="edge-list" aria-label="Portfolios">{portfolios.map((p) => <button key={p.id} className={p.id === selected?.id ? 'edge-profile selected' : 'edge-profile'} onClick={() => { setSelectedId(p.id); setViewVersion(null); }}><span><strong>{p.name}</strong><small>{p.profile_role ? p.profile_role === 'benchmark' ? 'Benchmark profile' : 'Default profile' : 'Custom portfolio'}</small></span><span>v{p.current_version}</span></button>)}</section>

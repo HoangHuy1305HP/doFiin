@@ -1,6 +1,7 @@
 import { ArrowRight, ChartNoAxesCombined, ShieldCheck, TrendingUp, Layers3 } from 'lucide-react';
 import { BrandHome } from './Auth';
 import AccountMenu from './AccountMenu';
+import LanguageSelect from './LanguageSelect';
 import { TimeChart } from './charts';
 import type { User } from './types';
 const illustration = Array.from({ length: 36 }, (_, i) => ({
@@ -65,6 +66,7 @@ export default function Landing({
           </a>
         </nav>
         <div>
+          <LanguageSelect />
           {user ? (
             <>
               <button className="button primary" onClick={onStart}>Open workspace →</button>

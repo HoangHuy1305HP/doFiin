@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import Auth, { BrandHome } from './Auth';
 import { useLanguage } from './i18n';
+import LanguageSelect from './LanguageSelect';
 import StudioModeSwitch from './StudioModeSwitch';
 import { INTRADAY_RANGES } from './IntradayGrowth';
 import type { IntradayRange } from './IntradayGrowth';
@@ -869,6 +870,7 @@ export default function App() {
             </strong>
           </div>
           <div className="topbar-right">
+            <LanguageSelect />
             {!studio && page !== 'subscription' && page !== 'account' && (
               <StudioModeSwitch checked={false} onToggle={openStudio} />
             )}

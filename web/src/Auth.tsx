@@ -4,6 +4,7 @@ import type { MouseEventHandler } from 'react';
 import { ArrowUpRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Sparkles } from 'lucide-react';
 import { post, setToken } from './api';
 import GoogleSignInButton from './GoogleSignInButton';
+import LanguageSelect from './LanguageSelect';
 
 export function Brand({ light = false }: { light?: boolean }) {
   return (
@@ -145,6 +146,7 @@ export default function Auth({
       <div className="auth-form-wrap">
         <div className="auth-mobile-brand">
           <BrandHome />
+          <LanguageSelect />
           <button
             type="button"
             className="text-button"

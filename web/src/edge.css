@@ -1,6 +1,10 @@
 .edge-landing { min-height: 100vh; background: #f8f6f2; color: #161d2d; }
 .edge-landing header { height: 90px; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(24px,5vw,80px); border-bottom: 1px solid #e4e0d8; }
 .edge-landing header > div { display:flex; gap:16px; align-items:center; }
+@media (max-width: 480px) {
+  .edge-landing header { height: auto; min-height: 76px; flex-wrap: wrap; row-gap: 8px; padding-top: 12px; padding-bottom: 12px; }
+  .edge-landing header > div { width: 100%; justify-content: flex-end; }
+}
 .edge-landing main { max-width: 1000px; margin: 0 auto; padding: clamp(70px,10vw,150px) 24px; }
 .edge-landing h1 { font-size: clamp(52px,8vw,106px); line-height: 1.03; letter-spacing: -.06em; margin: 24px 0; }
 .edge-landing main > p { font-size: clamp(18px,2vw,23px); line-height: 1.5; max-width: 650px; color: #596272; margin: 0 0 32px; }

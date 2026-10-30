@@ -25,6 +25,7 @@ import { PortfolioDialog, RenameDialog } from './PortfolioDialog';
 import StudioModeSwitch from './StudioModeSwitch';
 import StudioBackgroundPicker from './StudioBackgroundPicker';
 import StudioSelect from './StudioSelect';
+import LanguageSelect from './LanguageSelect';
 import type { IntradayRange } from './IntradayGrowth';
 import { Dashboard, TITLES } from './pages';
 import type { BacktestForm } from './pages';
@@ -591,6 +592,7 @@ export default function Studio({
         <span className={'studio-header-status ' + (changed ? 'unsaved' : '')} role="status">
           {busy ? 'Saving…' : changed ? 'Unsaved changes' : saved ? 'Saved' : 'Up to date'}
         </span>
+        <LanguageSelect />
         <StudioModeSwitch checked onToggle={close} />
         <button
           className="button primary studio-save-button"
