@@ -34,7 +34,9 @@ def performance(growth, daily_returns, annual_risk_free=0.02):
     }
 
 
-def profile_growth_series(prices, weights, benchmark_weights, requested_start, portfolio_start, benchmark_start):
+def profile_growth_series(
+    prices, weights, benchmark_weights, requested_start, portfolio_start, benchmark_start
+):
     """Plot each profile from its own purchase date on one calendar axis."""
     prices = prices.sort_index().dropna()
     portfolio_start = max(requested_start, portfolio_start or requested_start)
@@ -45,7 +47,9 @@ def profile_growth_series(prices, weights, benchmark_weights, requested_start, p
         symbols = list(allocations)
         allocated = sum(allocations.values())
         weights_array = np.asarray([allocations[symbol] for symbol in symbols], dtype=float)
-        return (shown[symbols] / shown[symbols].iloc[0]).dot(weights_array) + max(0.0, 1.0 - allocated)
+        return (shown[symbols] / shown[symbols].iloc[0]).dot(weights_array) + max(
+            0.0, 1.0 - allocated
+        )
 
     portfolio = normalized_profile(weights, portfolio_start)
     benchmark = normalized_profile(benchmark_weights, benchmark_start)
@@ -53,8 +57,12 @@ def profile_growth_series(prices, weights, benchmark_weights, requested_start, p
     return [
         {
             "date": timestamp.date().isoformat(),
-            "portfolio": finite(portfolio.loc[timestamp] * 100) if timestamp in portfolio.index else None,
-            "benchmark": finite(benchmark.loc[timestamp] * 100) if timestamp in benchmark.index else None,
+            "portfolio": finite(portfolio.loc[timestamp] * 100)
+            if timestamp in portfolio.index
+            else None,
+            "benchmark": finite(benchmark.loc[timestamp] * 100)
+            if timestamp in benchmark.index
+            else None,
         }
         for timestamp in dates
     ]
@@ -120,6 +128,13 @@ def build_analysis(
     peaks = growth.cummax()
     rolling_vol = daily.rolling(20).std() * np.sqrt(TRADING_DAYS)
     rolling_beta = daily.rolling(20).cov(benchmark_returns) / benchmark_returns.rolling(20).var()
+    benchmark_vol = benchmark_returns.rolling(20).std() * np.sqrt(TRADING_DAYS)
+    benchmark_peaks = benchmark_growth.cummax()
+    asset_short = prices[symbols].rolling(short_window).mean()
+    asset_long = prices[symbols].rolling(long_window).mean()
+    ready_assets = asset_short.notna() & asset_long.notna()
+    asset_votes = (asset_short > asset_long).astype(float).where(ready_assets)
+    signal_share = asset_votes.mean(axis=1).where(ready_assets.all(axis=1))
     # Scale warm-up MA values to the same chart index used for the visible portfolio.
     ma_scale = 100 / full_growth.loc[shown.index[0]]
     rows = []
@@ -132,6 +147,10 @@ def build_analysis(
                 "drawdown": finite(growth.loc[timestamp] / peaks.loc[timestamp] - 1),
                 "volatility": finite(rolling_vol.get(timestamp)),
                 "rolling_beta": finite(rolling_beta.get(timestamp)),
+                "benchmark_drawdown": finite(
+                    benchmark_growth.loc[timestamp] / benchmark_peaks.loc[timestamp] - 1
+                ),
+                "benchmark_volatility": finite(benchmark_vol.get(timestamp)),
                 "ma_short": finite(short.loc[timestamp] * ma_scale),
                 "ma_long": finite(long.loc[timestamp] * ma_scale),
             }
@@ -167,7 +186,17 @@ def build_analysis(
         if len(full_growth) >= 253
         else None
     )
+    counts, edges = np.histogram(daily.to_numpy(), bins=min(25, max(5, int(np.sqrt(len(daily))))))
     return {
+        "return_distribution": [
+            {
+                "return": finite((edges[i] + edges[i + 1]) / 2),
+                "count": int(count),
+                "lower": finite(edges[i]),
+                "upper": finite(edges[i + 1]),
+            }
+            for i, count in enumerate(counts)
+        ],
         "metrics": metrics,
         "series": rows,
         "correlation": {
@@ -181,6 +210,21 @@ def build_analysis(
         "signals": {
             "current": str(states.iloc[-1]),
             "history": list(reversed(history[-12:])),
+            "asset_signals": [
+                {
+                    "symbol": symbol,
+                    "short_ma": finite(asset_short[symbol].iloc[-1]),
+                    "long_ma": finite(asset_long[symbol].iloc[-1]),
+                    "signal": int(asset_votes[symbol].iloc[-1])
+                    if ready_assets[symbol].iloc[-1]
+                    else None,
+                }
+                for symbol in symbols
+            ],
+            "series": [
+                {"date": timestamp.date().isoformat(), "share": finite(signal_share.loc[timestamp])}
+                for timestamp in shown.index
+            ],
             "short_window": short_window,
             "long_window": long_window,
         },
@@ -204,7 +248,14 @@ def build_analysis(
 
 
 def backtest(
-    snapshot, strategy, initial_capital, fee_bps, slippage_bps, rebalance_frequency, risk_free
+    snapshot,
+    strategy,
+    initial_capital,
+    fee_bps,
+    slippage_bps,
+    rebalance_frequency,
+    risk_free,
+    allocation_schedule=None,
 ):
     prices = np.asarray(snapshot["prices"], dtype=float)
     weights = np.asarray(snapshot["weights"], dtype=float)
@@ -213,6 +264,16 @@ def backtest(
     units = np.zeros(len(weights))
     cash = float(initial_capital)
     exposure = 0
+    previous_target = np.zeros(len(weights))
+    if allocation_schedule is not None:
+        planned = np.asarray(allocation_schedule, dtype=float)
+        if (
+            planned.shape != prices.shape
+            or not np.isfinite(planned).all()
+            or (planned < -1e-9).any()
+            or (planned.sum(axis=1) > 1 + 1e-8).any()
+        ):
+            raise ValueError("Lịch phân bổ chiến lược không hợp lệ.")
     rate = (fee_bps + slippage_bps) / 10000
     curve, trades = [], []
     total_cost = 0.0
@@ -220,19 +281,24 @@ def backtest(
         holdings = units * quote
         value = float(holdings.sum() + cash)
         desired = 1 if strategy == "BUY_AND_HOLD" else int(signals[i])
+        target_weights = weights * desired if allocation_schedule is None else planned[i]
+        desired = int(target_weights.sum() > 1e-12)
+        changed = allocation_schedule is not None and not np.allclose(
+            target_weights, previous_target, atol=1e-8
+        )
         monthly = rebalance_frequency == "MONTHLY" and i > 0 and day[:7] != dates[i - 1][:7]
-        if i == 0 or desired != exposure or (monthly and desired):
+        if i == 0 or desired != exposure or (monthly and desired) or changed:
             # Solve after-cost equity, including turnover costs, rather than spending more than cash.
             low, high = 0.0, value
             for _ in range(45):
                 middle = (low + high) / 2
-                cost = float(np.abs(weights * desired * middle - holdings).sum()) * rate
+                cost = float(np.abs(target_weights * middle - holdings).sum()) * rate
                 if middle + cost > value:
                     high = middle
                 else:
                     low = middle
             after_cost = (low + high) / 2
-            target = weights * desired * after_cost
+            target = target_weights * after_cost
             turnover = float(np.abs(target - holdings).sum())
             cost = value - after_cost
             units = target / quote
@@ -253,6 +319,7 @@ def backtest(
             total_cost += cost
             exposure = desired
             value = after_cost
+        previous_target = target_weights.copy()
         curve.append(float(value))
     normalized = np.asarray(curve) / initial_capital
     daily = np.diff(curve) / np.asarray(curve[:-1])

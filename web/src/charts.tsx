@@ -16,6 +16,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { number } from './api';
+import { getLocale, translateText } from './i18n';
 import type { Point, Factor } from './types';
 
 export const COLORS = ['#0f172a', '#64748b', '#c49a3b', '#94a3b8', '#cbd5e1', '#475569'];
@@ -25,16 +26,18 @@ type ChartProps = {
   height?: number;
   area?: boolean;
   kind?: 'index' | 'percent' | 'money' | 'number';
-  timeScale?: 'day' | 'second';
+  timeScale?: 'day' | 'second' | 'minute';
+  curve?: 'monotone' | 'stepAfter';
+  showDots?: boolean;
 };
-export function TimeChart({ data, lines, height = 290, area = true, kind = 'index', timeScale = 'day' }: ChartProps) {
+export function TimeChart({ data, lines, height = 290, area = true, kind = 'index', timeScale = 'day', curve = 'monotone', showDots = false }: ChartProps) {
   const id = useId().replace(/:/g, '');
   const firstDate = data[0]?.date;
   const lastDate = data.at(-1)?.date;
   const daySpan = firstDate && lastDate && timeScale === 'day'
     ? (Date.parse(lastDate) - Date.parse(firstDate)) / 86_400_000
     : 0;
-  const axisTicks = timeScale === 'second'
+  const axisTicks = timeScale !== 'day'
     ? data.filter((_, index) => index % Math.max(1, Math.ceil(data.length / 6)) === 0).map((point) => point.date)
     : data.filter((point, index, points) => {
       if (index === 0) return true;
@@ -74,9 +77,9 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
           <XAxis
             dataKey="date"
             ticks={axisTicks}
-            tickFormatter={(value) => timeScale === 'second'
-              ? new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-              : new Date(value + 'T12:00:00').toLocaleDateString('en-US', {
+            tickFormatter={(value) => timeScale !== 'day'
+              ? new Date(value).toLocaleTimeString(getLocale(), { ...(timeScale === 'minute' ? { month: 'short', day: 'numeric' } as const : {}), hour: '2-digit', minute: '2-digit', ...(timeScale === 'second' ? { second: '2-digit' } as const : {}) })
+              : new Date(value + 'T12:00:00').toLocaleDateString(getLocale(), {
                 month: 'short',
                 ...(daySpan <= 45 ? { day: 'numeric' } : { year: '2-digit' }),
               })
@@ -107,9 +110,9 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
             }}
             labelStyle={{ color: '#e2e8f0' }}
             itemStyle={{ color: '#fff' }}
-            labelFormatter={(value) => timeScale === 'second'
-              ? new Date(String(value)).toLocaleTimeString('en-US')
-              : new Date(String(value) + 'T12:00:00').toLocaleDateString('en-US')}
+            labelFormatter={(value) => timeScale !== 'day'
+              ? new Date(String(value)).toLocaleString(getLocale())
+              : new Date(String(value) + 'T12:00:00').toLocaleDateString(getLocale())}
             formatter={(value) => formatter(Number(value))}
           />
           {lines.map((line, index) =>
@@ -117,12 +120,12 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
               <Area
                 key={line.key}
                 dataKey={line.key}
-                name={line.name}
-                type="monotone"
+                name={translateText(line.name)}
+                type={curve}
                 stroke={line.color}
                 fill={'url(#' + id + ')'}
                 strokeWidth={2.3}
-                dot={timeScale === 'second' && data.length === 1}
+                dot={showDots || (timeScale !== 'day' && data.length === 1)}
                 isAnimationActive={false}
                 connectNulls={false}
               />
@@ -130,11 +133,11 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
               <Line
                 key={line.key}
                 dataKey={line.key}
-                name={line.name}
-                type="monotone"
+                name={translateText(line.name)}
+                type={curve}
                 stroke={line.color}
                 strokeWidth={index === 0 ? 2.3 : 1.8}
-                dot={false}
+                dot={showDots}
                 isAnimationActive={false}
                 connectNulls={false}
               />

@@ -28,7 +28,10 @@ import {
   X,
 } from 'lucide-react';
 import Auth, { BrandHome } from './Auth';
+import { useLanguage } from './i18n';
 import StudioModeSwitch from './StudioModeSwitch';
+import { INTRADAY_RANGES } from './IntradayGrowth';
+import type { IntradayRange } from './IntradayGrowth';
 import {
   api,
   ApiError,
@@ -120,6 +123,7 @@ const localDate = (date: Date) =>
   String(date.getDate()).padStart(2, '0');
 
 export default function App() {
+  useLanguage();
   const location = useLocation();
   const routerNavigate = useNavigate();
   const routeId = matchRoutes(ROUTES, location)?.at(-1)?.route.id;
@@ -139,6 +143,7 @@ export default function App() {
   const [viewVersion, setViewVersion] = useState<Version | null>(null);
   const [period, setPeriod] = useState('1Y');
   const [liveSecondView, setLiveSecondView] = useState(false);
+  const [intradayRange, setIntradayRange] = useState<IntradayRange | null>(null);
   const source = 'alpaca' as const;
   const [analysisRules, setAnalysisRules] = useState<AnalysisRules>({ ...DEFAULT_ANALYSIS_RULES });
   const [refresh, setRefresh] = useState(0);
@@ -321,7 +326,7 @@ export default function App() {
     } catch { /* Ignore invalid local settings. */ }
     try {
       const saved = JSON.parse(localStorage.getItem('dofiin:backtest-settings:' + me.id) || 'null');
-      if (saved && (saved.strategy === 'MA_CROSSOVER' || saved.strategy === 'BUY_AND_HOLD') && (saved.rebalance_frequency === 'MONTHLY' || saved.rebalance_frequency === 'NONE') && Number.isFinite(saved.initial_capital) && saved.initial_capital > 0 && saved.initial_capital <= 1e9 && Number.isFinite(saved.fee_bps) && saved.fee_bps >= 0 && saved.fee_bps <= 100 && Number.isFinite(saved.slippage_bps) && saved.slippage_bps >= 0 && saved.slippage_bps <= 100)
+      if (saved && (saved.strategy === 'MA_CROSSOVER' || saved.strategy === 'BUY_AND_HOLD' || saved.strategy === 'REGIME_SWITCHING') && (saved.rebalance_frequency === 'MONTHLY' || saved.rebalance_frequency === 'NONE') && Number.isFinite(saved.initial_capital) && saved.initial_capital > 0 && saved.initial_capital <= 1e9 && Number.isFinite(saved.fee_bps) && saved.fee_bps >= 0 && saved.fee_bps <= 100 && Number.isFinite(saved.slippage_bps) && saved.slippage_bps >= 0 && saved.slippage_bps <= 100)
         setBtForm(saved);
     } catch { /* Ignore invalid local settings. */ }
     setUser(me);
@@ -524,7 +529,8 @@ export default function App() {
       const allocations = optimization.weights
         .filter((item) => Number(item.weight) > 0)
         .map((item) => ({
-          instrument_id: instruments.find((asset) => asset.symbol === item.symbol)!.id,
+          instrument_id: (viewVersion || portfolio.latest_version).allocations.find((asset) => asset.symbol === item.symbol)?.instrument_id
+            || instruments.find((asset) => asset.symbol === item.symbol)!.id,
           weight: item.weight,
         }));
       const result = await put<Portfolio>('/portfolios/' + portfolio.id + '/configuration', {
@@ -697,17 +703,25 @@ export default function App() {
           )}
         </div>
       </div>
-      <div className="period-selector">
+      <div className="period-selector" role="group" aria-label="Chart time window">
         {activePage === 'portfolio' && (
           <button
             className={liveSecondView ? 'active' : ''}
             aria-label="Live chart, one-second updates"
             aria-pressed={liveSecondView}
-            onClick={() => setLiveSecondView(true)}
+            onClick={() => { setIntradayRange(null); setLiveSecondView(true); }}
           >
             1s
           </button>
         )}
+        {activePage === 'portfolio' && INTRADAY_RANGES.map(({ value, label }) => (
+          <button key={value} className={intradayRange === value ? 'active' : ''}
+            aria-label={`Chart window: ${label}`} aria-pressed={intradayRange === value}
+            title={`${label} ending at latest available minute bar`}
+            onClick={() => { setLiveSecondView(false); setIntradayRange(value); }}>
+            {value}
+          </button>
+        ))}
         {[
           ['1M', '1M'],
           ['3M', '3M'],
@@ -717,11 +731,11 @@ export default function App() {
         ].map(([value, label]) => (
           <button
             key={value}
-            className={(!liveSecondView || activePage !== 'portfolio') && period === value ? 'active' : ''}
+            className={((!liveSecondView && !intradayRange) || activePage !== 'portfolio') && period === value ? 'active' : ''}
             aria-label={
               value.endsWith('M') ? value.slice(0, -1) + ' months' : value.slice(0, -1) + ' years'
             }
-            onClick={() => { setLiveSecondView(false); setPeriod(value); }}
+            onClick={() => { setLiveSecondView(false); setIntradayRange(null); setPeriod(value); }}
           >
             {label}
           </button>
@@ -952,6 +966,8 @@ export default function App() {
                   </div>
                 </div>
               ) : analysis ? (
+                <>
+                {activePage === 'portfolio' && intradayRange && <p className="intraday-scope" role="status">Chart window: {intradayRange}. Return, volatility and Sharpe above remain based on the {period} daily analysis. 1p / 15p / 30p mean minutes; 1d / 3d mean calendar days ending at the latest available bar.</p>}
                 <Dashboard
                   presentation={preferences.presentation}
                   sectionAppearance={preferences.sectionAppearance[activePage]}
@@ -960,6 +976,7 @@ export default function App() {
                   analysis={analysis}
                   liveGrowth={liveGrowth}
                   liveSecondView={liveSecondView}
+                  intradayRange={intradayRange}
                   liveSamples={liveSamples}
                   portfolioVersion={viewVersion || portfolio?.latest_version}
                   layout={layout.config}
@@ -971,6 +988,7 @@ export default function App() {
                   onOptimize={() => void optimize()}
                   btStale={!!backtest && btKey !== JSON.stringify(btForm)}
                 />
+                </>
               ) : null}
               {analysis && !loading && (
                 <div className="analysis-provenance">
@@ -1173,6 +1191,7 @@ export default function App() {
           analysis={analysis}
           liveGrowth={liveGrowth}
           liveSecondView={liveSecondView}
+                  intradayRange={intradayRange}
           liveSamples={liveSamples}
           backtest={backtest}
           layout={layout}

@@ -11,7 +11,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
 
 from app import auth, portfolios
+from app.alpaca_assets import AlpacaAssets
 from app.analytics.alpaca_live import AlpacaLive
+from app.analytics.intraday import IntradayPrices
 from app.analytics.routes import router as analytics_router
 from app.config import Settings, get_settings
 from app.db import make_engine, make_session_factory
@@ -34,7 +36,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.alpaca_assets = AlpacaAssets(settings)
     app.state.alpaca_live = AlpacaLive(settings)
+    app.state.intraday_prices = IntradayPrices(settings)
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)
     app.add_middleware(

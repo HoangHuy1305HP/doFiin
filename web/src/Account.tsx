@@ -3,6 +3,7 @@ import { LockKeyhole, LogOut, ShieldCheck } from 'lucide-react';
 import StudioSelect from './StudioSelect';
 import GoogleSignInButton from './GoogleSignInButton';
 import { api, post } from './api';
+import { useLanguage } from './i18n';
 import type { User } from './types';
 export default function Account({
   user,
@@ -15,6 +16,7 @@ export default function Account({
   onPlans: () => void;
   onSignOut: () => void;
 }) {
+  const { language, setLanguage } = useLanguage();
   const [updates, setUpdates] = useState(() => {
     try {
       return localStorage.getItem('dofiin:updates:' + user.id) === 'true';
@@ -110,7 +112,7 @@ export default function Account({
             <div className="account-fields">
               <div className="account-readonly-field">
                 <span>Language</span>
-                <StudioSelect label="Language" value="en" options={[{ value: 'en', label: 'English' }]} onChange={() => {}} disabled />
+                <StudioSelect label="Language" value={language} options={[{value: 'vi', label: 'Tiếng Việt'}, {value: 'en', label: 'English'}]} onChange={(value) => setLanguage(value === 'vi' ? 'vi' : 'en')} />
               </div>
               <div className="account-readonly-field">
                 <span>Analysis currency</span>

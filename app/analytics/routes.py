@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request
@@ -7,14 +7,17 @@ from sqlalchemy.exc import IntegrityError
 
 from app.analytics.alpaca_live import live_growth
 from app.analytics.engine import backtest, build_analysis, optimize, profile_growth_series
+from app.analytics.intraday import ChartRange, IntradayOutput, intraday_growth
 from app.analytics.market import alpaca_prices, load_prices
 from app.analytics.models import AnalysisRun, BacktestRun, DashboardLayout, DemoSubscription
+from app.analytics.research import ResearchOutput, regime_backtest, research_for_analysis
 from app.analytics.schemas import (
     WIDGETS,
     AnalysisInput,
     AnalysisOutput,
     BacktestInput,
     BacktestOutput,
+    LayoutConfig,
     LayoutInput,
     LayoutOutput,
     OptimizeInput,
@@ -23,6 +26,7 @@ from app.analytics.schemas import (
     StudioPreviewOutput,
     SubscriptionInput,
 )
+from app.analytics.simulation import SimulationInput, SimulationOutput, simulate_allocations
 from app.dependencies import DB, CurrentIdentity
 from app.errors import fail
 from app.models import Instrument, Portfolio, PortfolioAllocation, PortfolioVersion, utcnow
@@ -145,7 +149,10 @@ def build_analysis_preview(data: AnalysisInput, identity: CurrentIdentity, db: D
         result["growth_series"] = profile_growth_series(
             prices,
             {instrument.symbol: float(allocation.weight) for allocation, instrument in allocations},
-            {instrument.symbol: float(allocation.weight) for allocation, instrument in benchmark_allocations},
+            {
+                instrument.symbol: float(allocation.weight)
+                for allocation, instrument in benchmark_allocations
+            },
             data.start_date,
             version.purchase_date,
             benchmark_version.purchase_date,
@@ -192,15 +199,35 @@ def preview_studio(data: StudioPreviewInput, identity: CurrentIdentity, db: DB, 
     simulation = None
     if data.backtest is not None:
         rules = data.backtest
-        simulation = backtest(
-            result["snapshot"],
-            rules.strategy,
-            rules.initial_capital,
-            rules.fee_bps,
-            rules.slippage_bps,
-            rules.rebalance_frequency,
-            data.analysis.risk_free_rate,
-        )
+        if rules.strategy == "REGIME_SWITCHING":
+            try:
+                package = research_for_analysis(
+                    result,
+                    data.analysis.source,
+                    data.analysis.risk_free_rate,
+                    request.app.state.settings,
+                )
+                simulation = regime_backtest(
+                    result["snapshot"],
+                    package,
+                    rules.initial_capital,
+                    rules.fee_bps,
+                    rules.slippage_bps,
+                    rules.rebalance_frequency,
+                    data.analysis.risk_free_rate,
+                )
+            except ValueError as error:
+                fail(422, "BACKTEST_UNAVAILABLE", str(error))
+        else:
+            simulation = backtest(
+                result["snapshot"],
+                rules.strategy,
+                rules.initial_capital,
+                rules.fee_bps,
+                rules.slippage_bps,
+                rules.rebalance_frequency,
+                data.analysis.risk_free_rate,
+            )
         simulation["metadata"] = result["metadata"]
     result = {key: value for key, value in result.items() if key != "snapshot"}
     return {"analysis": result, "backtest": simulation}
@@ -269,6 +296,71 @@ def get_live_growth(run_id: UUID, identity: CurrentIdentity, db: DB, request: Re
     }
 
 
+@router.get("/analysis-runs/{run_id}/intraday-growth", response_model=IntradayOutput)
+def get_intraday_growth(
+    run_id: UUID, identity: CurrentIdentity, db: DB, request: Request, range: ChartRange = "1d"
+):
+    run = owned_analysis(db, run_id, identity.user.id)
+    if run.parameters.get("source") != "alpaca":
+        fail(422, "INTRADAY_SOURCE_UNAVAILABLE", "Minute charts require an Alpaca analysis.")
+    snapshot = run.result.get("snapshot", {})
+    if not snapshot.get("base_prices") or not snapshot.get("benchmark_weights"):
+        fail(
+            422, "INTRADAY_SNAPSHOT_UNAVAILABLE", "Run a new analysis before viewing minute prices."
+        )
+    now = datetime.now(UTC)
+    symbols = sorted(set(snapshot["symbols"]) | set(snapshot["benchmark_weights"]))
+    try:
+        frame = request.app.state.intraday_prices.get(symbols, now)
+        return intraday_growth(frame, snapshot, range, now)
+    except ValueError as error:
+        fail(422, "INTRADAY_DATA_UNAVAILABLE", str(error))
+
+
+def ensure_research(run, db, settings):
+    existing = run.result.get("paper")
+    if existing and existing.get("version") == "paper-v1":
+        return existing
+    try:
+        package = research_for_analysis(
+            run.result, run.parameters["source"], run.parameters["risk_free_rate"], settings
+        )
+    except ValueError as error:
+        fail(422, "RESEARCH_DATA_UNAVAILABLE", str(error))
+    except Exception:
+        fail(502, "RESEARCH_PROVIDER_ERROR", "Chưa tải được dữ liệu yếu tố. Hãy thử lại sau.")
+    run.result = {**run.result, "paper": package}
+    db.commit()
+    return package
+
+
+@router.post("/analysis-runs/{run_id}/research", response_model=ResearchOutput)
+def get_research(run_id: UUID, identity: CurrentIdentity, db: DB, request: Request):
+    run = owned_analysis(db, run_id, identity.user.id)
+    return ensure_research(run, db, request.app.state.settings)["result"]
+
+
+@router.post("/analysis-runs/{run_id}/simulation", response_model=SimulationOutput)
+def simulate_portfolio(run_id: UUID, data: SimulationInput, identity: CurrentIdentity, db: DB):
+    run = owned_analysis(db, run_id, identity.user.id)
+    try:
+        result = simulate_allocations(
+            run.result["snapshot"],
+            run.parameters["risk_free_rate"],
+            data.samples,
+            data.seed,
+            data.max_weight,
+        )
+    except ValueError as error:
+        fail(422, "SIMULATION_UNAVAILABLE", str(error))
+    metadata = run.result["metadata"]
+    return result | {
+        "source": metadata["source"],
+        "first_date": metadata["first_date"],
+        "last_date": metadata["last_date"],
+    }
+
+
 @router.post("/analysis-runs/{run_id}/optimize")
 def optimize_portfolio(run_id: UUID, data: OptimizeInput, identity: CurrentIdentity, db: DB):
     run = owned_analysis(db, run_id, identity.user.id)
@@ -279,17 +371,32 @@ def optimize_portfolio(run_id: UUID, data: OptimizeInput, identity: CurrentIdent
 
 
 @router.post("/backtest-runs", status_code=201, response_model=BacktestOutput)
-def create_backtest(data: BacktestInput, identity: CurrentIdentity, db: DB):
+def create_backtest(data: BacktestInput, identity: CurrentIdentity, db: DB, request: Request):
     analysis = owned_analysis(db, data.analysis_run_id, identity.user.id)
-    result = backtest(
-        analysis.result["snapshot"],
-        data.strategy,
-        data.initial_capital,
-        data.fee_bps,
-        data.slippage_bps,
-        data.rebalance_frequency,
-        analysis.parameters["risk_free_rate"],
-    )
+    try:
+        if data.strategy == "REGIME_SWITCHING":
+            package = ensure_research(analysis, db, request.app.state.settings)
+            result = regime_backtest(
+                analysis.result["snapshot"],
+                package,
+                data.initial_capital,
+                data.fee_bps,
+                data.slippage_bps,
+                data.rebalance_frequency,
+                analysis.parameters["risk_free_rate"],
+            )
+        else:
+            result = backtest(
+                analysis.result["snapshot"],
+                data.strategy,
+                data.initial_capital,
+                data.fee_bps,
+                data.slippage_bps,
+                data.rebalance_frequency,
+                analysis.parameters["risk_free_rate"],
+            )
+    except ValueError as error:
+        fail(422, "BACKTEST_UNAVAILABLE", str(error))
     result["metadata"] = analysis.result["metadata"]
     run = BacktestRun(
         user_id=identity.user.id,
@@ -345,6 +452,37 @@ def analysis_history(portfolio_id: UUID, identity: CurrentIdentity, db: DB):
     ]
 
 
+NEW_WIDGETS = {
+    "portfolio": {"allocation_comparison"},
+    "risk": {"rolling_beta", "return_distribution"},
+    "signals": {"asset_signals", "aggregate_signal"},
+    "backtest": {"regime_map"},
+    "factors": {"proxy_factors", "factor_rolling", "beta_heatmap", "active_return"},
+}
+
+
+def upgrade_portfolio_layout(page_key, config):
+    """Upgrade saved layouts in memory, retaining order, hidden items and revision."""
+    result = dict(config)
+    removed = {"simulation"} if page_key == "portfolio" else set()
+    order = [key for key in result["order"] if key not in removed]
+    for key in WIDGETS[page_key]:
+        if key not in order:
+            if key == "allocation_comparison" and "growth" in order:
+                order.insert(order.index("growth") + 1, key)
+            else:
+                note = next(
+                    (i for i, value in enumerate(order) if value.endswith("_note")), len(order)
+                )
+                order.insert(note, key)
+    result["order"] = order
+    result["hidden"] = [key for key in result.get("hidden", []) if key not in removed]
+    result["titles"] = {
+        key: value for key, value in result.get("titles", {}).items() if key not in removed
+    }
+    return result
+
+
 @router.get("/layouts/{page_key}", tags=["Studio"], response_model=LayoutOutput)
 def get_layout(page_key: PageKey, identity: CurrentIdentity, db: DB):
     layout = db.scalar(
@@ -363,20 +501,26 @@ def get_layout(page_key: PageKey, identity: CurrentIdentity, db: DB):
                 "chart_style": "area",
             },
         }
-    return {"revision": layout.revision, "config": layout.config}
+    return {
+        "revision": layout.revision,
+        "config": upgrade_portfolio_layout(page_key, layout.config),
+    }
 
 
 @router.put("/layouts/{page_key}", tags=["Studio"], response_model=LayoutOutput)
 def save_layout(page_key: PageKey, data: LayoutInput, identity: CurrentIdentity, db: DB):
     allowed = set(WIDGETS[page_key])
     config = data.config
+    legacy_extra = {"simulation"} if page_key == "portfolio" else set()
     if (
-        set(config.order) != allowed
-        or len(config.order) != len(allowed)
-        or not set(config.hidden) <= allowed
-        or not set(config.titles) <= allowed
+        not (allowed - NEW_WIDGETS[page_key]) <= set(config.order)
+        or not set(config.order) <= allowed | legacy_extra
+        or len(config.order) != len(set(config.order))
+        or not set(config.hidden) <= allowed | legacy_extra
+        or not set(config.titles) <= allowed | legacy_extra
     ):
         fail(422, "INVALID_LAYOUT", "Danh sách widget không hợp lệ cho trang.")
+    config = LayoutConfig.model_validate(upgrade_portfolio_layout(page_key, config.model_dump()))
     layout = db.scalar(
         select(DashboardLayout).where(
             DashboardLayout.user_id == identity.user.id, DashboardLayout.page_key == page_key

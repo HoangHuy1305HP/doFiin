@@ -1,3 +1,4 @@
+import { getLocale } from './i18n';
 let accessToken = '';
 let refreshPromise: Promise<boolean> | null = null;
 export class ApiError extends Error {
@@ -88,23 +89,23 @@ export const put = <T>(path: string, body: unknown) =>
 export const percent = (value: number | null | undefined, digits = 1) =>
   value == null
     ? '—'
-    : new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: digits }).format(
+    : new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: digits }).format(
         value,
       );
 export const number = (value: number | null | undefined, digits = 2) =>
   value == null
     ? '—'
-    : new Intl.NumberFormat('en-US', { maximumFractionDigits: digits }).format(value);
+    : new Intl.NumberFormat(getLocale(), { maximumFractionDigits: digits }).format(value);
 export const money = (value: number | null | undefined) =>
   value == null
     ? '—'
-    : new Intl.NumberFormat('en-US', {
+    : new Intl.NumberFormat(getLocale(), {
         style: 'currency',
         currency: 'USD',
         maximumFractionDigits: 0,
       }).format(value);
 export const dateLabel = (value: string) =>
-  new Date(value + 'T12:00:00').toLocaleDateString('en-US', {
+  new Date(value + 'T12:00:00').toLocaleDateString(getLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

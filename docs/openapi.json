@@ -126,6 +126,115 @@
         }
       }
     },
+    "/api/v1/auth/google": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Google Login",
+        "operationId": "google_login_api_v1_auth_google_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleCredentialInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOutput"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/google/status": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Google Status",
+        "operationId": "google_status_api_v1_auth_google_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/google/link": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Google Link",
+        "operationId": "google_link_api_v1_auth_google_link_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleCredentialInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/auth/refresh": {
       "post": {
         "tags": [
@@ -758,6 +867,52 @@
         }
       }
     },
+    "/api/v1/studio-preview": {
+      "post": {
+        "tags": [
+          "Analytics — Demo 1"
+        ],
+        "summary": "Preview Studio",
+        "operationId": "preview_studio_api_v1_studio_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioPreviewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudioPreviewOutput"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/analysis-runs": {
       "post": {
         "tags": [
@@ -835,6 +990,223 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AnalysisOutput"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analysis-runs/{run_id}/live-growth": {
+      "get": {
+        "tags": [
+          "Analytics — Demo 1"
+        ],
+        "summary": "Get Live Growth",
+        "operationId": "get_live_growth_api_v1_analysis_runs__run_id__live_growth_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analysis-runs/{run_id}/intraday-growth": {
+      "get": {
+        "tags": [
+          "Analytics — Demo 1"
+        ],
+        "summary": "Get Intraday Growth",
+        "operationId": "get_intraday_growth_api_v1_analysis_runs__run_id__intraday_growth_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "1p",
+                "15p",
+                "30p",
+                "1d",
+                "3d"
+              ],
+              "type": "string",
+              "default": "1d",
+              "title": "Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntradayOutput"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analysis-runs/{run_id}/research": {
+      "post": {
+        "tags": [
+          "Analytics — Demo 1"
+        ],
+        "summary": "Get Research",
+        "operationId": "get_research_api_v1_analysis_runs__run_id__research_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchOutput"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analysis-runs/{run_id}/simulation": {
+      "post": {
+        "tags": [
+          "Analytics — Demo 1"
+        ],
+        "summary": "Simulate Portfolio",
+        "operationId": "simulate_portfolio_api_v1_analysis_runs__run_id__simulation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationOutput"
                 }
               }
             }
@@ -1290,20 +1662,27 @@
             "format": "uuid",
             "title": "Portfolio Version Id"
           },
-          "benchmark_symbol": {
-            "type": "string",
-            "const": "SPY",
-            "title": "Benchmark Symbol",
-            "default": "SPY"
+          "benchmark_portfolio_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Portfolio Id"
           },
           "source": {
             "type": "string",
             "enum": [
               "demo",
-              "yahoo"
+              "yahoo",
+              "alpaca"
             ],
             "title": "Source",
-            "default": "demo"
+            "default": "alpaca"
           },
           "start_date": {
             "type": "string",
@@ -1357,7 +1736,8 @@
             "type": "string",
             "enum": [
               "demo",
-              "yahoo"
+              "yahoo",
+              "alpaca"
             ],
             "title": "Source"
           },
@@ -1387,6 +1767,29 @@
           "benchmark": {
             "type": "string",
             "title": "Benchmark"
+          },
+          "benchmark_portfolio_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Portfolio Id"
+          },
+          "benchmark_version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Version Number"
           },
           "portfolio_name": {
             "type": "string",
@@ -1447,7 +1850,9 @@
             "title": "Created At"
           },
           "parameters": {
-            "$ref": "#/components/schemas/AnalysisInput"
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters"
           },
           "engine_version": {
             "type": "string",
@@ -1470,6 +1875,14 @@
       },
       "AnalysisResult": {
         "properties": {
+          "return_distribution": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Return Distribution"
+          },
           "metrics": {
             "additionalProperties": {
               "anyOf": [
@@ -1490,6 +1903,13 @@
             },
             "type": "array",
             "title": "Series"
+          },
+          "growth_series": {
+            "items": {
+              "$ref": "#/components/schemas/GrowthPoint"
+            },
+            "type": "array",
+            "title": "Growth Series"
           },
           "factors": {
             "items": {
@@ -1542,7 +1962,8 @@
             "type": "string",
             "enum": [
               "BUY_AND_HOLD",
-              "MA_CROSSOVER"
+              "MA_CROSSOVER",
+              "REGIME_SWITCHING"
             ],
             "title": "Strategy",
             "default": "MA_CROSSOVER"
@@ -1550,7 +1971,7 @@
           "initial_capital": {
             "type": "number",
             "maximum": 1000000000.0,
-            "minimum": 100.0,
+            "exclusiveMinimum": 0.0,
             "title": "Initial Capital",
             "default": 10000
           },
@@ -1615,6 +2036,17 @@
       },
       "BacktestPoint": {
         "properties": {
+          "static": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Static"
+          },
           "date": {
             "type": "string",
             "format": "date",
@@ -1663,8 +2095,68 @@
         ],
         "title": "BacktestPoint"
       },
+      "BacktestPreviewInput": {
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "BUY_AND_HOLD",
+              "MA_CROSSOVER",
+              "REGIME_SWITCHING"
+            ],
+            "title": "Strategy",
+            "default": "MA_CROSSOVER"
+          },
+          "initial_capital": {
+            "type": "number",
+            "maximum": 1000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Initial Capital",
+            "default": 10000
+          },
+          "fee_bps": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Fee Bps",
+            "default": 10
+          },
+          "slippage_bps": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Slippage Bps",
+            "default": 5
+          },
+          "rebalance_frequency": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "MONTHLY"
+            ],
+            "title": "Rebalance Frequency",
+            "default": "MONTHLY"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BacktestPreviewInput"
+      },
       "BacktestResult": {
         "properties": {
+          "regime_history": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Regime History"
+          },
+          "baseline_metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Baseline Metrics"
+          },
           "metrics": {
             "additionalProperties": {
               "anyOf": [
@@ -1729,6 +2221,34 @@
             "type": "integer",
             "minimum": 1.0,
             "title": "Expected Version"
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          },
+          "initial_capital": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Capital"
           }
         },
         "additionalProperties": false,
@@ -1839,6 +2359,60 @@
         ],
         "title": "FactorOutput"
       },
+      "GoogleCredentialInput": {
+        "properties": {
+          "credential": {
+            "type": "string",
+            "maxLength": 8192,
+            "minLength": 100,
+            "title": "Credential"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "credential"
+        ],
+        "title": "GoogleCredentialInput"
+      },
+      "GrowthPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "portfolio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portfolio"
+          },
+          "benchmark": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "portfolio",
+          "benchmark"
+        ],
+        "title": "GrowthPoint"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1895,6 +2469,71 @@
           "is_active"
         ],
         "title": "InstrumentOutput"
+      },
+      "IntradayOutput": {
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "1p",
+              "15p",
+              "30p",
+              "1d",
+              "3d"
+            ],
+            "title": "Range"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/MinutePoint"
+            },
+            "type": "array",
+            "title": "Series"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window Start"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          },
+          "source": {
+            "type": "string",
+            "const": "alpaca",
+            "title": "Source",
+            "default": "alpaca"
+          },
+          "interval": {
+            "type": "string",
+            "const": "1Min",
+            "title": "Interval",
+            "default": "1Min"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "range",
+          "series",
+          "as_of",
+          "window_start",
+          "stale",
+          "warnings"
+        ],
+        "title": "IntradayOutput"
       },
       "LayoutConfig": {
         "properties": {
@@ -2049,6 +2688,30 @@
         ],
         "title": "MetadataUpdate"
       },
+      "MinutePoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "portfolio": {
+            "type": "number",
+            "title": "Portfolio"
+          },
+          "benchmark": {
+            "type": "number",
+            "title": "Benchmark"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "portfolio",
+          "benchmark"
+        ],
+        "title": "MinutePoint"
+      },
       "OptimizeInput": {
         "properties": {
           "max_weight": {
@@ -2097,6 +2760,32 @@
             "const": "USD",
             "title": "Base Currency",
             "default": "USD"
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          },
+          "initial_capital": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Initial Capital",
+            "default": "10000.00"
           }
         },
         "additionalProperties": false,
@@ -2128,6 +2817,21 @@
               }
             ],
             "title": "Description"
+          },
+          "profile_role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "default",
+                  "benchmark"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Role"
           },
           "base_currency": {
             "type": "string",
@@ -2168,6 +2872,7 @@
           "id",
           "name",
           "description",
+          "profile_role",
           "base_currency",
           "current_version",
           "created_at",
@@ -2198,6 +2903,21 @@
               }
             ],
             "title": "Description"
+          },
+          "profile_role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "default",
+                  "benchmark"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Role"
           },
           "base_currency": {
             "type": "string",
@@ -2235,6 +2955,7 @@
           "id",
           "name",
           "description",
+          "profile_role",
           "base_currency",
           "current_version",
           "created_at",
@@ -2292,6 +3013,104 @@
           "display_name"
         ],
         "title": "RegisterInput"
+      },
+      "ResearchOutput": {
+        "properties": {
+          "factors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Factors"
+          },
+          "rolling": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rolling"
+          },
+          "asset_betas": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Asset Betas"
+          },
+          "beta_heatmap": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Beta Heatmap"
+          },
+          "regimes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Regimes"
+          },
+          "market_status": {
+            "type": "string",
+            "title": "Market Status"
+          },
+          "treynor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Treynor"
+          },
+          "spy_alpha": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spy Alpha"
+          },
+          "sources": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Sources"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "methodology": {
+            "type": "string",
+            "title": "Methodology"
+          }
+        },
+        "type": "object",
+        "required": [
+          "factors",
+          "rolling",
+          "asset_betas",
+          "beta_heatmap",
+          "regimes",
+          "market_status",
+          "treynor",
+          "spy_alpha",
+          "sources",
+          "warnings",
+          "methodology"
+        ],
+        "title": "ResearchOutput"
       },
       "SeriesPoint": {
         "properties": {
@@ -2355,6 +3174,28 @@
             ],
             "title": "Rolling Beta"
           },
+          "benchmark_drawdown": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Drawdown"
+          },
+          "benchmark_volatility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Volatility"
+          },
           "ma_short": {
             "anyOf": [
               {
@@ -2417,6 +3258,22 @@
       },
       "SignalOutput": {
         "properties": {
+          "asset_signals": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Asset Signals"
+          },
+          "series": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Series"
+          },
           "current": {
             "type": "string",
             "enum": [
@@ -2484,6 +3341,204 @@
           "cost"
         ],
         "title": "SimulatedTrade"
+      },
+      "SimulationInput": {
+        "properties": {
+          "samples": {
+            "type": "integer",
+            "maximum": 5000.0,
+            "minimum": 100.0,
+            "title": "Samples",
+            "default": 2000
+          },
+          "seed": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Seed",
+            "default": 42
+          },
+          "max_weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Weight",
+            "default": 0.8
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SimulationInput"
+      },
+      "SimulationOutput": {
+        "properties": {
+          "symbols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Symbols"
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/SimulationPoint"
+            },
+            "type": "array",
+            "title": "Samples"
+          },
+          "current": {
+            "$ref": "#/components/schemas/SimulationPoint"
+          },
+          "optimized": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SimulationPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_weight": {
+            "type": "number",
+            "title": "Max Weight"
+          },
+          "cash_weight": {
+            "type": "number",
+            "title": "Cash Weight"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "observations": {
+            "type": "integer",
+            "title": "Observations"
+          },
+          "risk_free_rate": {
+            "type": "number",
+            "title": "Risk Free Rate"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "first_date": {
+            "type": "string",
+            "title": "First Date"
+          },
+          "last_date": {
+            "type": "string",
+            "title": "Last Date"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbols",
+          "samples",
+          "current",
+          "optimized",
+          "max_weight",
+          "cash_weight",
+          "seed",
+          "observations",
+          "risk_free_rate",
+          "source",
+          "first_date",
+          "last_date",
+          "warnings"
+        ],
+        "title": "SimulationOutput"
+      },
+      "SimulationPoint": {
+        "properties": {
+          "annual_return": {
+            "type": "number",
+            "title": "Annual Return"
+          },
+          "volatility": {
+            "type": "number",
+            "title": "Volatility"
+          },
+          "sharpe": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sharpe"
+          },
+          "weights": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Weights"
+          }
+        },
+        "type": "object",
+        "required": [
+          "annual_return",
+          "volatility",
+          "sharpe",
+          "weights"
+        ],
+        "title": "SimulationPoint"
+      },
+      "StudioPreviewInput": {
+        "properties": {
+          "analysis": {
+            "$ref": "#/components/schemas/AnalysisInput"
+          },
+          "backtest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BacktestPreviewInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "analysis"
+        ],
+        "title": "StudioPreviewInput"
+      },
+      "StudioPreviewOutput": {
+        "properties": {
+          "analysis": {
+            "$ref": "#/components/schemas/AnalysisResult"
+          },
+          "backtest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BacktestResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis"
+        ],
+        "title": "StudioPreviewOutput"
       },
       "SubscriptionInput": {
         "properties": {
@@ -2563,6 +3618,10 @@
             "type": "string",
             "title": "Display Name"
           },
+          "has_password": {
+            "type": "boolean",
+            "title": "Has Password"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2574,6 +3633,7 @@
           "id",
           "email",
           "display_name",
+          "has_password",
           "created_at"
         ],
         "title": "UserOutput"
@@ -2634,6 +3694,22 @@
             "format": "date-time",
             "title": "Created At"
           },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          },
+          "initial_capital": {
+            "type": "string",
+            "title": "Initial Capital"
+          },
           "allocations": {
             "items": {
               "$ref": "#/components/schemas/AllocationOutput"
@@ -2647,6 +3723,8 @@
           "id",
           "version_number",
           "created_at",
+          "purchase_date",
+          "initial_capital",
           "allocations"
         ],
         "title": "VersionOutput"
@@ -2666,13 +3744,31 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          },
+          "initial_capital": {
+            "type": "string",
+            "title": "Initial Capital"
           }
         },
         "type": "object",
         "required": [
           "id",
           "version_number",
-          "created_at"
+          "created_at",
+          "purchase_date",
+          "initial_capital"
         ],
         "title": "VersionSummary"
       }

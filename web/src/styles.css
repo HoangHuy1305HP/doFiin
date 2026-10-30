@@ -3303,3 +3303,62 @@ td strong {
     scroll-behavior: auto !important;
   }
 }
+
+/* Extra chart windows wrap inside the viewport, including mobile. */
+.filter-bar { flex-wrap: wrap; }
+.period-selector { flex-wrap: wrap; max-width: 100%; min-width: 0; }
+.period-selector > button { flex-shrink: 0; }
+.intraday-scope, .intraday-note { font-size: 12px; line-height: 1.65; color: #64748b; }
+.intraday-scope { padding: 10px 14px; background: #f1f5f9; border-radius: 5px; margin: 0 0 16px; }
+.intraday-message { padding: 32px 16px; color: #92400e; background: #fffbeb; border-radius: 5px; }
+.intraday-message button { margin-left: 12px; padding: 5px 10px; }
+.intraday-note summary { cursor: pointer; }
+@media (max-width: 600px) { .period-selector { flex: 1 1 100%; } }
+
+/* Historical Portfolio allocation previews. */
+.widget-allocation_comparison, .widget-simulation { grid-column: 1 / -1; min-width: 0; }
+.simulation-pies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.simulation-pie { min-width: 0; text-align: center; }
+.simulation-pie h4 { font-size: 14px; margin: 14px 0 0; }
+.simulation-cloud { width: 100%; min-width: 0; }
+.simulation-message { padding: 28px 12px; font-size: 14px; color: #64748b; }
+.simulation-message button { margin-left: 8px; padding: 6px 12px; }
+.simulation-footer, .simulation-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
+.simulation-footer { justify-content: space-between; }
+.simulation-legend { font-size: 12px; color: #64748b; }
+.simulation-tooltip { padding: 12px; border-radius: 6px; background: #0f172a; color: white; font-size: 12px; line-height: 1.7; box-shadow: 0 4px 16px #0002; }
+.simulation-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; }
+.widget-simulation summary { cursor: pointer; }
+@media (max-width: 600px) {
+  .simulation-pies { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .simulation-footer { align-items: stretch; flex-direction: column; }
+}
+
+.widget-proxy_factors,.widget-factor_rolling,.widget-beta_heatmap,.widget-active_return,.widget-regime_map,.widget-aggregate_signal { grid-column: 1 / -1; min-width: 0; }
+.research-metrics { display:flex; flex-wrap:wrap; gap:24px; margin:16px 0; }
+.research-metrics span { display:grid; gap:6px; font-size:13px; color:#64748b; }
+.research-metrics strong { font-size:22px; color:#163d32; }
+.research-heatmap { display:grid; overflow-x:auto; gap:2px; max-width:100%; padding:10px 0; }
+.research-heatmap-row { display:contents; }
+.research-heatmap strong { font-size:12px; align-self:center; }
+.research-heatmap span { min-height:34px; }
+.language-switch { position:fixed; top:12px; right:16px; z-index:90; background:#fff; color:#163d32; border:1px solid #cbd5e1; border-radius:18px; padding:7px 12px; font-size:12px; box-shadow:0 2px 8px #0001; }
+
+/* Searchable Alpaca selector, confined to the portfolio allocation editor. */
+.alpaca-picker { min-width: 0; width: 100%; }
+.alpaca-picker-trigger { min-height: 44px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #dce2ea; border-radius: 6px; padding: 9px 12px; background: #fff; color: #152033; text-align: left; }
+.alpaca-picker-trigger span { overflow: hidden; text-overflow: ellipsis; }
+.alpaca-picker-panel { margin-top: 6px; border: 1px solid #dce2ea; border-radius: 6px; padding: 8px; background: #fff; }
+.allocation-editor-row:has(.alpaca-picker-panel) { align-items: start; }
+.alpaca-picker-search { display: flex; gap: 4px; }
+.alpaca-picker-search input { min-width: 0; width: 100%; font-size: 13px; }
+.alpaca-picker-search button { border: 1px solid #dce2ea; border-radius: 5px; background: #f4f7fa; padding: 5px 8px; }
+.alpaca-picker-hint { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #627086; margin: 8px 0; }
+.alpaca-picker-options { max-height: 230px; overflow-y: auto; }
+.alpaca-picker-options > button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 8px 5px; border: 0; border-bottom: 1px solid #edf0f4; background: #fff; text-align: left; color: #152033; }
+.alpaca-picker-options > button:hover, .alpaca-picker-options > button:focus-visible { background: #edf3fa; }
+.alpaca-picker-options > button:disabled { opacity: .45; }
+.alpaca-picker-options small { display: block; font-size: 11px; line-height: 1.4; color: #627086; overflow-wrap: anywhere; }
+.alpaca-picker-options strong { font-size: 13px; }
+.alpaca-picker-error { font-size: 12px; color: #a13232; padding: 8px 0; }
+.alpaca-picker-error button { display: block; margin-top: 8px; padding: 5px 8px; }

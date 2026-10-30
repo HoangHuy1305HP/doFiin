@@ -43,6 +43,13 @@ def application(tmp_path):
             allowed_origins=["http://localhost:3000"],
         )
         app = create_app(settings)
+
+        # Mock the external provider for portfolio tests, never the production code.
+        class SeedCatalog:
+            def supported(self, symbols):
+                return set(symbols) & {"AAPL", "MSFT", "NVDA", "SPY"}
+
+        app.state.alpaca_assets = SeedCatalog()
         with app.state.session_factory() as db:
             seed_instruments(db)
         yield app

@@ -19,7 +19,7 @@ def test_frontend_deep_links_and_api_404(client):
         assert response.status_code == 200, path
         if web_index.exists():
             assert response.headers["content-type"].startswith("text/html"), path
-            assert response.text == web_index.read_text(), path
+            assert response.text == web_index.read_text(encoding="utf-8"), path
             assert response.headers["cache-control"] == "no-cache"
         else:
             assert "Build web" in response.json()["message"]

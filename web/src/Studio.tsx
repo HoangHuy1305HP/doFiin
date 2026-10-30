@@ -25,6 +25,7 @@ import { PortfolioDialog, RenameDialog } from './PortfolioDialog';
 import StudioModeSwitch from './StudioModeSwitch';
 import StudioBackgroundPicker from './StudioBackgroundPicker';
 import StudioSelect from './StudioSelect';
+import type { IntradayRange } from './IntradayGrowth';
 import { Dashboard, TITLES } from './pages';
 import type { BacktestForm } from './pages';
 import type { Analysis, AnalysisRules, Backtest, Instrument, Layout, LiveGrowth, Page, Point, Portfolio } from './types';
@@ -41,6 +42,7 @@ type Props = {
   analysis: Analysis;
   liveGrowth: LiveGrowth | null;
   liveSecondView: boolean;
+  intradayRange: IntradayRange | null;
   liveSamples: Point[];
   backtest: Backtest | null;
   layout: Layout;
@@ -90,6 +92,7 @@ export default function Studio({
   analysis,
   liveGrowth,
   liveSecondView,
+  intradayRange,
   liveSamples,
   backtest,
   layout,
@@ -894,6 +897,7 @@ export default function Studio({
                 analysis={previewAnalysis ? { ...analysis, result: previewAnalysis } : analysis}
                 liveGrowth={!previewAnalysis && !analysisChanged ? liveGrowth : null}
                 liveSecondView={!previewAnalysis && !analysisChanged && liveSecondView}
+                intradayRange={!previewAnalysis && !analysisChanged ? intradayRange : null}
                 liveSamples={!previewAnalysis && !analysisChanged ? liveSamples : []}
                 portfolioVersion={portfolio?.latest_version}
                 layout={config}
@@ -1284,7 +1288,7 @@ export default function Studio({
                       </> : null}
                       {page === 'backtest' && <>
                         <dt>Strategy</dt>
-                        <dd>{draftBacktest.strategy === 'BUY_AND_HOLD' ? 'Buy and hold' : `MA${draftAnalysisRules.shortWindow} / MA${draftAnalysisRules.longWindow} crossover`}</dd>
+                        <dd>{draftBacktest.strategy === 'REGIME_SWITCHING' ? 'Chuyển trạng thái thị trường' : draftBacktest.strategy === 'BUY_AND_HOLD' ? 'Buy and hold' : `MA${draftAnalysisRules.shortWindow} / MA${draftAnalysisRules.longWindow} crossover`}</dd>
                       </>}
                     </dl>
                     {selected === 'growth' && <div className="studio-field">
@@ -1396,6 +1400,7 @@ export default function Studio({
                             options={[
                               { value: 'MA_CROSSOVER', label: `MA ${draftAnalysisRules.shortWindow} / ${draftAnalysisRules.longWindow} crossover` },
                               { value: 'BUY_AND_HOLD', label: 'Buy and hold' },
+                              { value: 'REGIME_SWITCHING', label: 'Chuyển trạng thái Tăng / Trung tính / Giảm' },
                             ]}
                             onChange={(value) => setDraftBacktest({ ...draftBacktest, strategy: value })}
                           />

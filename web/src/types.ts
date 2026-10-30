@@ -54,6 +54,7 @@ export type Analysis = {
   portfolio_version_id: string;
   created_at: string;
   result: {
+    return_distribution?: {return: number; count: number; lower: number; upper: number}[];
     metrics: Record<string, number | null>;
     series: Point[];
     growth_series?: Point[];
@@ -61,6 +62,8 @@ export type Analysis = {
     factors: Factor[];
     momentum_12_1: number | null;
     signals: {
+      asset_signals?: {symbol: string; short_ma: number | null; long_ma: number | null; signal: number | null}[];
+      series?: Point[];
       current: string;
       history: { date: string; state: string }[];
       short_window: number;
@@ -79,6 +82,8 @@ export type Backtest = {
   id: string;
   parameters: { analysis_run_id: string };
   result: {
+    regime_history?: {date: string; state: string; decision_date: string | null}[];
+    baseline_metrics?: Record<string, number | null>;
     metrics: Record<string, number | null>;
     series: Point[];
     trades: { date: string; action: string; turnover: number; cost: number }[];

@@ -8,11 +8,33 @@ from app.schemas import InputModel
 
 PageKey = Literal["portfolio", "risk", "signals", "backtest", "factors"]
 WIDGETS = {
-    "portfolio": ["growth", "allocation", "assets", "insight"],
-    "risk": ["drawdown", "correlation", "volatility", "risk_note"],
-    "signals": ["moving_average", "signal_history", "signal_note"],
-    "backtest": ["backtest_growth", "backtest_trades", "backtest_note"],
-    "factors": ["beta", "momentum", "factor_table", "factor_note"],
+    "portfolio": ["growth", "allocation_comparison", "allocation", "assets", "insight"],
+    "risk": [
+        "drawdown",
+        "correlation",
+        "volatility",
+        "rolling_beta",
+        "return_distribution",
+        "risk_note",
+    ],
+    "signals": [
+        "moving_average",
+        "signal_history",
+        "asset_signals",
+        "aggregate_signal",
+        "signal_note",
+    ],
+    "backtest": ["backtest_growth", "backtest_trades", "regime_map", "backtest_note"],
+    "factors": [
+        "beta",
+        "momentum",
+        "factor_table",
+        "proxy_factors",
+        "factor_rolling",
+        "beta_heatmap",
+        "active_return",
+        "factor_note",
+    ],
 }
 
 
@@ -42,7 +64,7 @@ class AnalysisInput(InputModel):
 
 class BacktestInput(InputModel):
     analysis_run_id: UUID
-    strategy: Literal["BUY_AND_HOLD", "MA_CROSSOVER"] = "MA_CROSSOVER"
+    strategy: Literal["BUY_AND_HOLD", "MA_CROSSOVER", "REGIME_SWITCHING"] = "MA_CROSSOVER"
     initial_capital: float = Field(default=10000, gt=0, le=1e9)
     fee_bps: float = Field(default=10, ge=0, le=100)
     slippage_bps: float = Field(default=5, ge=0, le=100)
@@ -50,7 +72,7 @@ class BacktestInput(InputModel):
 
 
 class BacktestPreviewInput(InputModel):
-    strategy: Literal["BUY_AND_HOLD", "MA_CROSSOVER"] = "MA_CROSSOVER"
+    strategy: Literal["BUY_AND_HOLD", "MA_CROSSOVER", "REGIME_SWITCHING"] = "MA_CROSSOVER"
     initial_capital: float = Field(default=10000, gt=0, le=1e9)
     fee_bps: float = Field(default=10, ge=0, le=100)
     slippage_bps: float = Field(default=5, ge=0, le=100)
@@ -100,6 +122,8 @@ class SeriesPoint(BaseModel):
     drawdown: float | None
     volatility: float | None
     rolling_beta: float | None
+    benchmark_drawdown: float | None = None
+    benchmark_volatility: float | None = None
     ma_short: float | None
     ma_long: float | None
 
@@ -130,6 +154,8 @@ class SignalEvent(BaseModel):
 
 
 class SignalOutput(BaseModel):
+    asset_signals: list[dict] = Field(default_factory=list)
+    series: list[dict] = Field(default_factory=list)
     current: Literal["BULLISH", "BEARISH", "NEUTRAL"]
     history: list[SignalEvent]
     short_window: int
@@ -154,6 +180,7 @@ class AnalysisMetadata(BaseModel):
 
 
 class AnalysisResult(BaseModel):
+    return_distribution: list[dict] = Field(default_factory=list)
     metrics: dict[str, float | None]
     series: list[SeriesPoint]
     growth_series: list[GrowthPoint] = Field(default_factory=list)
@@ -175,6 +202,7 @@ class AnalysisOutput(BaseModel):
 
 
 class BacktestPoint(BaseModel):
+    static: float | None = None
     date: date
     strategy: float | None
     benchmark: float | None
@@ -189,6 +217,8 @@ class SimulatedTrade(BaseModel):
 
 
 class BacktestResult(BaseModel):
+    regime_history: list[dict] = Field(default_factory=list)
+    baseline_metrics: dict = Field(default_factory=dict)
     metrics: dict[str, float | None]
     series: list[BacktestPoint]
     trades: list[SimulatedTrade]

@@ -10,6 +10,10 @@ import {
 } from 'lucide-react';
 import { AllocationChart, COLORS, FactorChart, TimeChart } from './charts';
 import StudioSelect from './StudioSelect';
+import { ResearchWidget, ReturnHistogram, useResearch } from './ResearchWidgets';
+import { AllocationComparison, usePortfolioSimulation } from './PortfolioSimulation';
+import IntradayGrowth from './IntradayGrowth';
+import type { IntradayRange } from './IntradayGrowth';
 import { dateLabel, money, number, percent } from './api';
 import type { Presentation, SectionAppearance } from './preferences';
 import type { Analysis, Backtest, LayoutConfig, LiveGrowth, Page, Point, Version } from './types';
@@ -17,6 +21,16 @@ import type { Analysis, Backtest, LayoutConfig, LiveGrowth, Page, Point, Version
 export const TITLES: Record<string, string> = {
   growth: 'Cumulative growth',
   allocation: 'Current weights',
+  allocation_comparison: 'Current vs Max Sharpe allocation',
+  rolling_beta: 'Beta cuốn chiếu so với chuẩn',
+  return_distribution: 'Phân phối lợi nhuận ngày',
+  asset_signals: 'Tín hiệu của từng cổ phiếu',
+  aggregate_signal: 'Tín hiệu tổng hợp danh mục',
+  regime_map: 'Trạng thái thị trường và quyết định',
+  proxy_factors: 'Mức nhạy với các biến đại diện',
+  factor_rolling: 'Beta, Alpha và mức liên hệ momentum',
+  beta_heatmap: 'Bản đồ nhiệt Beta và xếp hạng',
+  active_return: 'Tăng trưởng tương đối so với SPY',
   assets: 'Contribution by asset',
   insight: 'A smarter allocation to explore',
   drawdown: 'Drawdown over time',
@@ -35,11 +49,11 @@ export const TITLES: Record<string, string> = {
   factor_note: 'Model explained',
 };
 export const ORDERS: Record<Page, string[]> = {
-  portfolio: ['growth', 'allocation', 'assets', 'insight'],
-  risk: ['correlation', 'drawdown', 'volatility', 'risk_note'],
-  signals: ['moving_average', 'signal_history', 'signal_note'],
-  backtest: ['backtest_growth', 'backtest_trades', 'backtest_note'],
-  factors: ['beta', 'momentum', 'factor_table', 'factor_note'],
+  portfolio: ['growth', 'allocation_comparison', 'allocation', 'assets', 'insight'],
+  risk: ['correlation', 'drawdown', 'volatility', 'rolling_beta', 'return_distribution', 'risk_note'],
+  signals: ['moving_average', 'signal_history', 'asset_signals', 'aggregate_signal', 'signal_note'],
+  backtest: ['backtest_growth', 'backtest_trades', 'regime_map', 'backtest_note'],
+  factors: ['beta', 'momentum', 'factor_table', 'proxy_factors', 'factor_rolling', 'beta_heatmap', 'active_return', 'factor_note'],
 };
 function isDarkBackground(background?: string): boolean {
   if (!background || !/^#[0-9a-f]{6}$/i.test(background)) return false;
@@ -127,6 +141,7 @@ type Props = {
   btStale?: boolean;
   liveGrowth?: LiveGrowth | null;
   liveSecondView?: boolean;
+  intradayRange?: IntradayRange | null;
   liveSamples?: Point[];
 };
 export function Dashboard({
@@ -148,9 +163,12 @@ export function Dashboard({
   btStale = false,
   liveGrowth = null,
   liveSecondView = false,
+  intradayRange = null,
   liveSamples = [],
 }: Props) {
   const { metrics: m, series, factors, signals, correlation, metadata } = analysis.result;
+  const research = useResearch(analysis.id, page === 'factors' || page === 'backtest');
+  const simulation = usePortfolioSimulation(analysis.id, page === 'portfolio', factors.length);
   const historicalGrowth = analysis.result.growth_series?.length ? analysis.result.growth_series : series;
   const liveChartPoint = liveGrowth?.point && series.length && historicalGrowth.length
     ? {
@@ -172,6 +190,7 @@ export function Dashboard({
   const widgets: Record<string, ReactNode> = {};
   widgets.growth = (
     <>
+      {page === 'portfolio' && intradayRange ? <IntradayGrowth runId={analysis.id} range={intradayRange} benchmark={metadata.benchmark} area={areaFor('growth')} /> : <>
       <div className="growth-meta">
         <span>
           Cumulative
@@ -196,6 +215,7 @@ export function Dashboard({
         area={areaFor('growth')}
         timeScale={showLiveSeconds ? 'second' : 'day'}
       />}
+      </>}
       <Legend
         items={[
           { name: 'Portfolio', color: 'var(--chart-accent, #0f172a)' },
@@ -204,6 +224,8 @@ export function Dashboard({
       />
     </>
   );
+  widgets.allocation_comparison = <AllocationComparison shared={simulation} onReview={onOptimize} />;
+
   widgets.allocation = (
     <>
       <AllocationChart factors={factors} />
@@ -307,7 +329,7 @@ export function Dashboard({
       </div>
       <TimeChart
         data={series}
-        lines={[{ key: 'drawdown', name: 'Drawdown', color: 'var(--chart-accent, #475569)' }]}
+        lines={[{ key: 'drawdown', name: 'Danh mục', color: 'var(--chart-accent, #475569)' }, {key: 'benchmark_drawdown', name: metadata.benchmark, color: '#94a3b8'}]}
         kind="percent"
         area={areaFor('drawdown')}
       />
@@ -372,6 +394,7 @@ export function Dashboard({
             name: 'Annualized volatility',
             color: 'var(--chart-accent, #0f172a)',
           },
+          {key: 'benchmark_volatility', name: metadata.benchmark, color: '#94a3b8'},
         ]}
         kind="percent"
         height={225}
@@ -379,6 +402,11 @@ export function Dashboard({
       />
     </>
   );
+  widgets.rolling_beta = <><p className="card-description">Hiệp phương sai lợi nhuận danh mục và chuẩn / phương sai lợi nhuận chuẩn, cửa sổ 20 phiên.</p><TimeChart data={series} area={false} lines={[{key: 'rolling_beta', name: 'Beta 20 phiên', color: '#365c52'}]} /></>;
+  widgets.return_distribution = <ReturnHistogram data={analysis.result.return_distribution || []} />;
+  widgets.asset_signals = <div className="table-wrap"><table><thead><tr><th>Cổ phiếu</th><th>MA ngắn</th><th>MA dài</th><th>Tín hiệu</th></tr></thead><tbody>{signals.asset_signals?.map((row) => <tr key={row.symbol}><td>{row.symbol}</td><td>{number(row.short_ma)}</td><td>{number(row.long_ma)}</td><td>{row.signal == null ? 'Chưa đủ dữ liệu' : row.signal ? 'Tích cực (1)' : 'Không tích cực (0)'}</td></tr>)}</tbody></table></div>;
+  widgets.aggregate_signal = <><p className="card-description">Trung bình tín hiệu 0/1 của các mã, mỗi mã một phiếu. Trên 50% là đa số tích cực; đây không phải xác suất giá tăng hoặc lệnh giao dịch thật.</p><TimeChart data={signals.series || []} curve="stepAfter" area={false} kind="percent" lines={[{key: 'share', name: 'Tỷ lệ mã tích cực', color: '#365c52'}]} /></>;
+  for (const key of ['proxy_factors', 'factor_rolling', 'beta_heatmap', 'active_return', 'regime_map']) widgets[key] = <ResearchWidget kind={key} state={research} backtest={backtest} />;
   widgets.risk_note = (
     <div className="explanation">
       <span className="note-icon">
@@ -545,6 +573,7 @@ export function Dashboard({
         lines={[
           { key: 'strategy', name: 'Strategy', color: 'var(--chart-accent, #0f172a)' },
           { key: 'benchmark', name: metadata.benchmark, color: '#94a3b8' },
+          ...(Object.keys(b.baseline_metrics || {}).length ? [{key: 'static', name: 'Danh mục tĩnh sau phí', color: '#b7791f'}] : []),
         ]}
         kind="money"
         area={areaFor('backtest_growth')}
@@ -613,6 +642,7 @@ export function Dashboard({
           slippage apply to turnover; no shorting or borrowing. Past results do not guarantee future
           performance.
         </p>
+        {b && <ul className="small-note">{Object.entries(b.assumptions).map(([key, text]) => <li key={key}>{text}</li>)}</ul>}
       </div>
     </div>
   );
@@ -777,6 +807,7 @@ export function Dashboard({
                 options={[
                   { value: 'MA_CROSSOVER', label: `MA ${signals.short_window} / ${signals.long_window} crossover` },
                   { value: 'BUY_AND_HOLD', label: 'Buy and hold' },
+                  { value: 'REGIME_SWITCHING', label: 'Chuyển trạng thái Tăng / Trung tính / Giảm' },
                 ]}
               />
             </div>

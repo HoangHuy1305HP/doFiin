@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useDialogFocus } from './useDialogFocus';
 import { Check, Clock3, LoaderCircle, Plus, Trash2, X } from 'lucide-react';
 import { api, dateLabel, post } from './api';
-import StudioSelect from './StudioSelect';
+import AssetPicker from './AssetPicker';
 import type { Instrument, Portfolio, Version } from './types';
 
 const parseWeight = (value: string) => Number(value.replace(',', '.'));
@@ -75,11 +75,12 @@ export function PortfolioDialog({
     portfolio
       ? portfolio.latest_version.allocations.map((a) => ({
           id: a.instrument_id,
+          symbol: a.symbol,
           weight: formatWeight(Number(a.weight) * 100),
         }))
       : instruments
           .filter((i) => ['AAPL', 'MSFT'].includes(i.symbol))
-          .map((i) => ({ id: i.id, weight: '50,00' })),
+          .map((i) => ({ id: i.id, symbol: i.symbol, weight: '50,00' })),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -171,6 +172,8 @@ export function PortfolioDialog({
             onChange={(event) => setInitialCapital(event.target.value)}
             onBlur={() => { if (Number.isFinite(capital) && capital > 0) setInitialCapital(capital.toFixed(2)); }} />
         </label>
+        <p className="small-note">Chỉ chọn tài sản đang giao dịch trên Alpaca và có giá IEX trong 30 ngày gần đây.
+          Tìm theo mã hoặc tên công ty. Lịch sử giá tại ngày mua vẫn cần được kiểm tra khi phân tích.</p>
         <div className="allocation-editor-heading">
           <span>Asset</span>
           <span>Weight (%)</span>
@@ -178,15 +181,14 @@ export function PortfolioDialog({
         <div className="allocation-editor">
           {rows.map((row, index) => (
             <div className="allocation-editor-row" key={index}>
-              <StudioSelect
+              <AssetPicker
                 label={'Asset ' + (index + 1)}
                 value={row.id}
-                options={instruments.map((asset) => ({ value: asset.id, label: `${asset.symbol} · ${asset.name}` }))}
-                onChange={(id) =>
-                  setRows(
-                    rows.map((item, i) => (i === index ? { ...item, id } : item)),
-                  )
-                }
+                symbol={row.symbol}
+                disabled={busy}
+                excludedIds={rows.filter((_, i) => i !== index).map((item) => item.id)}
+                onChange={(asset) => setRows((previous) => previous.map((item, i) =>
+                  i === index ? { ...item, id: asset.id, symbol: asset.symbol } : item))}
               />
               <div className="percent-input">
                 <input
@@ -221,13 +223,13 @@ export function PortfolioDialog({
           <button
             type="button"
             className="text-button"
-            disabled={rows.length >= instruments.length}
+            disabled={busy || rows.length >= 100}
             onClick={() =>
               setRows([
                 ...rows,
                 {
-                  id:
-                    instruments.find((asset) => !rows.some((row) => row.id === asset.id))?.id || '',
+                  id: '',
+                  symbol: '',
                   weight: '0,00',
                 },
               ])

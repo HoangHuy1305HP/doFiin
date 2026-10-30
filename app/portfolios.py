@@ -1,8 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from sqlalchemy import func, or_, select, update
+from sqlalchemy.dialects.postgresql import insert
 
+from app.alpaca_assets import AlpacaAssetPage, CatalogUnavailable
 from app.default_profiles import ensure_default_profiles
 from app.dependencies import DB, CurrentIdentity
 from app.errors import fail
@@ -31,19 +33,30 @@ def owned_portfolio(db, portfolio_id, user_id):
     return portfolio
 
 
-def validate_instruments(db, allocations):
-    ids = [item.instrument_id for item in allocations]
-    valid = set(
+def validate_instruments(db, allocations, catalog):
+    ids = {item.instrument_id for item in allocations}
+    instruments = list(
         db.scalars(
-            select(Instrument.id).where(
-                Instrument.id.in_(ids),
-                Instrument.is_active.is_(True),
-                Instrument.currency == "USD",
+            select(Instrument).where(
+                Instrument.id.in_(ids), Instrument.is_active.is_(True), Instrument.currency == "USD"
             )
         )
     )
-    if valid != set(ids):
+    if {item.id for item in instruments} != ids:
         fail(422, "INVALID_INSTRUMENT", "All instruments must be active USD instruments.")
+    symbols = {item.symbol for item in instruments}
+    try:
+        supported = catalog.supported(symbols)
+    except CatalogUnavailable as error:
+        fail(503, "ALPACA_UNAVAILABLE", str(error))
+    missing = sorted(symbols - supported)
+    if missing:
+        fail(
+            422,
+            "UNSUPPORTED_ALPACA_ASSET",
+            "Không lấy được giá IEX gần đây hoặc mã không còn giao dịch trên Alpaca: "
+            + ", ".join(missing),
+        )
 
 
 def save_version(db, portfolio_id, number, allocations, purchase_date=None, initial_capital=None):
@@ -122,9 +135,61 @@ def instruments(
     return list(db.scalars(statement.order_by(Instrument.symbol).limit(limit).offset(offset)))
 
 
+@router.get("/instruments/alpaca", response_model=AlpacaAssetPage, tags=["Instruments"])
+def alpaca_instruments(
+    request: Request,
+    db: DB,
+    identity: CurrentIdentity,
+    query: str = Query(default="", max_length=100),
+    limit: int = Query(default=20, ge=1, le=50),
+    offset: int = Query(default=0, ge=0, le=100000),
+):
+    try:
+        assets, next_offset, checked_at = request.app.state.alpaca_assets.search(
+            query, limit, offset
+        )
+    except CatalogUnavailable as error:
+        fail(503, "ALPACA_UNAVAILABLE", str(error))
+    result = []
+    for asset in assets:
+        # Reuse existing IDs (notably SPY / NYSE_ARCA) so saved versions remain valid.
+        existing = db.scalar(
+            select(Instrument)
+            .where(Instrument.symbol == asset["symbol"], Instrument.currency == "USD")
+            .order_by(Instrument.id)
+        )
+        exchange = (
+            existing.exchange
+            if existing
+            else {"ARCA": "NYSE_ARCA"}.get(asset["exchange"], asset["exchange"])
+        )
+        values = dict(
+            symbol=asset["symbol"],
+            name=(asset.get("name") or asset["symbol"])[:255],
+            exchange=exchange,
+            asset_type=existing.asset_type if existing else "STOCK",
+            currency="USD",
+            provider="alpaca",
+            provider_symbol=asset["symbol"],
+            is_active=True,
+        )
+        statement = insert(Instrument).values(**values)
+        statement = statement.on_conflict_do_update(
+            index_elements=["exchange", "symbol"],
+            set_={key: values[key] for key in ("name", "provider", "provider_symbol", "is_active")},
+        ).returning(Instrument)
+        result.append(db.scalar(statement.execution_options(populate_existing=True)))
+    db.commit()
+    return AlpacaAssetPage(
+        items=[InstrumentOutput.model_validate(item) for item in result],
+        next_offset=next_offset,
+        checked_at=checked_at,
+    )
+
+
 @router.post("/portfolios", response_model=PortfolioDetail, status_code=201)
-def create_portfolio(data: PortfolioCreate, identity: CurrentIdentity, db: DB):
-    validate_instruments(db, data.allocations)
+def create_portfolio(data: PortfolioCreate, identity: CurrentIdentity, db: DB, request: Request):
+    validate_instruments(db, data.allocations, request.app.state.alpaca_assets)
     portfolio = Portfolio(
         user_id=identity.user.id,
         name=data.name,
@@ -169,6 +234,7 @@ def get_portfolio(portfolio_id: UUID, identity: CurrentIdentity, db: DB):
 @router.put("/portfolios/{portfolio_id}/configuration", response_model=PortfolioDetail)
 def update_configuration(
     portfolio_id: UUID,
+    request: Request,
     data: ConfigurationUpdate,
     identity: CurrentIdentity,
     db: DB,
@@ -176,7 +242,7 @@ def update_configuration(
     portfolio = owned_portfolio(db, portfolio_id, identity.user.id)
     if portfolio.archived_at:
         fail(409, "PORTFOLIO_ARCHIVED", "Archived portfolio cannot be modified.")
-    validate_instruments(db, data.allocations)
+    validate_instruments(db, data.allocations, request.app.state.alpaca_assets)
     # Atomic compare-and-swap guards simultaneous edits on web/mobile.
     changed = db.execute(
         update(Portfolio)
