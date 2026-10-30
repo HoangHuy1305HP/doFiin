@@ -156,8 +156,11 @@ def test_web_login_requires_origin(client):
 def test_google_sign_in_creates_account_and_uses_existing_session(client, application, monkeypatch):
     application.state.settings.google_client_id = "test-client.apps.googleusercontent.com"
     claims = {
-        "iss": "https://accounts.google.com", "sub": "google-person-1",
-        "email": "google-user@example.com", "email_verified": True, "name": "Google Tester",
+        "iss": "https://accounts.google.com",
+        "sub": "google-person-1",
+        "email": "google-user@example.com",
+        "email_verified": True,
+        "name": "Google Tester",
     }
     monkeypatch.setattr("app.auth.verify_google_credential", lambda *_: claims)
     origin = {"Origin": "http://localhost:3000"}
@@ -171,7 +174,8 @@ def test_google_sign_in_creates_account_and_uses_existing_session(client, applic
     assert client.get("/api/v1/auth/google/status", headers=headers).json() == {"connected": True}
     assert len(client.get("/api/v1/portfolios", headers=headers).json()) == 2
     password_login = client.post(
-        "/api/v1/auth/login", headers=origin,
+        "/api/v1/auth/login",
+        headers=origin,
         json={"email": me["email"], "password": "anything", "client_type": "web"},
     )
     assert password_login.status_code == 401
@@ -179,22 +183,31 @@ def test_google_sign_in_creates_account_and_uses_existing_session(client, applic
     claims["email"] = "renamed-google-user@example.com"
     again = client.post("/api/v1/auth/google", headers=origin, json={"credential": "x" * 100})
     assert again.status_code == 200
-    assert client.get(
-        "/api/v1/users/me", headers={"Authorization": "Bearer " + again.json()["access_token"]}
-    ).json()["id"] == me["id"]
+    assert (
+        client.get(
+            "/api/v1/users/me", headers={"Authorization": "Bearer " + again.json()["access_token"]}
+        ).json()["id"]
+        == me["id"]
+    )
 
 
 def test_google_requires_explicit_link_for_existing_email(client, application, monkeypatch):
     application.state.settings.google_client_id = "test-client.apps.googleusercontent.com"
     tokens = register_login(client, "existing@example.com", client_type="web")
     claims = {
-        "iss": "https://accounts.google.com", "sub": "google-person-2",
-        "email": "existing@example.com", "email_verified": True, "name": "Existing",
+        "iss": "https://accounts.google.com",
+        "sub": "google-person-2",
+        "email": "existing@example.com",
+        "email_verified": True,
+        "name": "Existing",
     }
     monkeypatch.setattr("app.auth.verify_google_credential", lambda *_: claims)
     origin = {"Origin": "http://localhost:3000"}
     data = {"credential": "x" * 100}
-    assert client.post("/api/v1/auth/google", headers=origin, json=data).json()["error"]["code"] == "GOOGLE_LINK_REQUIRED"
+    assert (
+        client.post("/api/v1/auth/google", headers=origin, json=data).json()["error"]["code"]
+        == "GOOGLE_LINK_REQUIRED"
+    )
     headers = {**origin, "Authorization": "Bearer " + tokens["access_token"]}
     assert client.post("/api/v1/auth/google/link", headers=headers, json=data).status_code == 200
     assert client.get("/api/v1/auth/google/status", headers=headers).json() == {"connected": True}

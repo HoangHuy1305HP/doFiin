@@ -178,7 +178,11 @@ def google_link(data: GoogleCredentialInput, identity: CurrentIdentity, request:
     claims = verify_google_credential(data.credential, request.app.state.settings)
     existing = db.scalar(select(GoogleIdentity).where(GoogleIdentity.google_sub == claims["sub"]))
     if existing and existing.user_id != identity.user.id:
-        fail(409, "GOOGLE_ALREADY_LINKED", "This Google account is connected to another doFiin account.")
+        fail(
+            409,
+            "GOOGLE_ALREADY_LINKED",
+            "This Google account is connected to another doFiin account.",
+        )
     own = db.get(GoogleIdentity, identity.user.id)
     if own and own.google_sub != claims["sub"]:
         fail(409, "GOOGLE_ALREADY_CONNECTED", "This doFiin account already has a Google sign-in.")
@@ -188,7 +192,11 @@ def google_link(data: GoogleCredentialInput, identity: CurrentIdentity, request:
             db.commit()
         except IntegrityError:
             db.rollback()
-            fail(409, "GOOGLE_ALREADY_LINKED", "This Google account is connected to another doFiin account.")
+            fail(
+                409,
+                "GOOGLE_ALREADY_LINKED",
+                "This Google account is connected to another doFiin account.",
+            )
     return {"connected": True}
 
 

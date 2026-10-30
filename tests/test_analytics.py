@@ -367,8 +367,11 @@ def test_growth_profiles_start_on_their_own_purchase_dates(client, auth, instrum
     assert first_recent["portfolio"] == pytest.approx(100)
     assert result["series"][0]["date"] == first_recent["date"]
 
-    reversed_request = {**request, "portfolio_version_id": older["latest_version"]["id"],
-                        "benchmark_portfolio_id": recent["id"]}
+    reversed_request = {
+        **request,
+        "portfolio_version_id": older["latest_version"]["id"],
+        "benchmark_portfolio_id": recent["id"],
+    }
     reversed_response = client.post(
         "/api/v1/studio-preview", headers=auth, json={"analysis": reversed_request}
     )
@@ -468,18 +471,21 @@ def test_source_failure_does_not_silently_use_demo(
 
 def test_cache_supports_extended_period_and_invalid_dates(client, auth, instrument_ids):
     _, response = create_analysis(
-        client, auth, instrument_ids,
+        client,
+        auth,
+        instrument_ids,
         start_date=(date.today() - timedelta(days=180)).isoformat(),
     )
     first = response.json()
-    data = first["parameters"] | {
-        "start_date": (date.today() - timedelta(days=300)).isoformat()
-    }
+    data = first["parameters"] | {"start_date": (date.today() - timedelta(days=300)).isoformat()}
     second = client.post("/api/v1/analysis-runs", headers=auth, json=data)
     assert second.status_code == 201
     assert len(second.json()["result"]["series"]) > len(first["result"]["series"])
     for changes in (
-        {"start_date": date.today().isoformat(), "end_date": (date.today() - timedelta(days=1)).isoformat()},
+        {
+            "start_date": date.today().isoformat(),
+            "end_date": (date.today() - timedelta(days=1)).isoformat(),
+        },
         {"start_date": "2018-01-01", "end_date": "2025-01-01"},
         {"end_date": "2099-01-01"},
         {"short_window": 60, "long_window": 20},

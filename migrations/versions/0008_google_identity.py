@@ -14,7 +14,9 @@ def upgrade():
         batch.alter_column("password_hash", existing_type=sa.Text(), nullable=True)
     op.create_table(
         "google_identities",
-        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "user_id", sa.Uuid(), sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        ),
         sa.Column("google_sub", sa.String(255), nullable=False, unique=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
