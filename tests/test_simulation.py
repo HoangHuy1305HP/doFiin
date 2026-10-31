@@ -60,6 +60,21 @@ def test_single_asset_zero_volatility_and_short_history():
         simulate_allocations({"symbols": ["AAPL"], "weights": [1], "prices": [[100]] * 3}, 0.02)
 
 
+def test_section_constraints_change_proposal_without_changing_current_allocation():
+    snapshot = scenario_snapshot()
+    result = simulate_allocations(
+        snapshot, 0.02, samples=100, max_weight=0.5,
+        minimum_cash=0.6, excluded_symbols=["MSFT"],
+    )
+    assert result["current"]["weights"] == snapshot["weights"]
+    assert result["optimized"] is not None
+    assert result["optimized"]["weights"][1] == 0
+    assert sum(result["optimized"]["weights"]) == pytest.approx(0.4)
+    assert all(point["weights"][1] == 0 for point in result["samples"])
+    with pytest.raises(ValueError, match="phân bổ hợp lệ"):
+        simulate_allocations(snapshot, 0.02, samples=100, max_weight=0.3, excluded_symbols=["MSFT"])
+
+
 def test_simulation_endpoint_is_private_validated_and_does_not_save_weights(
     client, auth, instrument_ids
 ):
@@ -80,6 +95,20 @@ def test_simulation_endpoint_is_private_validated_and_does_not_save_weights(
     assert (
         client.post(url, headers={"Authorization": "Bearer " + token}, json={}).status_code == 404
     )
+
+
+def test_trade_scenario_recalculates_without_creating_a_backtest_run(client, auth, instrument_ids):
+    _, analysis = create_analysis(client, auth, instrument_ids)
+    run_id = analysis.json()["id"]
+    url = f"/api/v1/analysis-runs/{run_id}/trade-scenario"
+    base = {"strategy": "BUY_AND_HOLD", "initial_capital": 10000,
+            "fee_bps": 0, "slippage_bps": 0, "rebalance_frequency": "NONE"}
+    free = client.post(url, headers=auth, json=base)
+    costly = client.post(url, headers=auth, json={**base, "fee_bps": 100})
+    assert free.status_code == costly.status_code == 200
+    assert costly.json()["metrics"]["total_cost"] > free.json()["metrics"]["total_cost"]
+    assert costly.json()["metrics"]["final_value"] < free.json()["metrics"]["final_value"]
+    assert client.post(url, headers=auth, json={**base, "fee_bps": 101}).status_code == 422
 
 
 def test_old_saved_layout_exposes_new_charts_without_losing_preferences(client, auth, application):

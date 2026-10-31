@@ -11,6 +11,8 @@ class SimulationInput(InputModel):
     samples: int = Field(default=2000, ge=100, le=5000)
     seed: int = Field(default=42, ge=0, le=2**32 - 1)
     max_weight: float = Field(default=0.8, gt=0, le=1)
+    minimum_cash: float = Field(default=0, ge=0, lt=1)
+    excluded_symbols: list[str] = Field(default_factory=list, max_length=100)
 
 
 class SimulationPoint(BaseModel):
@@ -26,6 +28,8 @@ class SimulationOutput(BaseModel):
     current: SimulationPoint
     optimized: SimulationPoint | None
     max_weight: float
+    minimum_cash: float
+    excluded_symbols: list[str]
     cash_weight: float
     seed: int
     observations: int
@@ -54,7 +58,7 @@ def bounded_weights(n, invested, cap, count, seed):
     return np.clip(raw - ((low + high) / 2)[:, None], 0, cap)
 
 
-def simulate_allocations(snapshot, risk_free, samples=2000, seed=42, max_weight=0.8):
+def simulate_allocations(snapshot, risk_free, samples=2000, seed=42, max_weight=0.8, minimum_cash=0, excluded_symbols=None):
     prices = np.asarray(snapshot["prices"], dtype=float)
     symbols = snapshot["symbols"]
     weights = np.asarray(snapshot["weights"], dtype=float)
@@ -73,6 +77,13 @@ def simulate_allocations(snapshot, risk_free, samples=2000, seed=42, max_weight=
     invested = float(weights.sum())
     if invested <= 0:
         raise ValueError("Cần ít nhất một tài sản có tỷ trọng dương để mô phỏng.")
+    excluded = set(excluded_symbols or [])
+    if excluded - set(symbols):
+        raise ValueError("Tài sản loại trừ không có trong danh mục hiện tại.")
+    eligible = [index for index, symbol in enumerate(symbols) if symbol not in excluded]
+    target_invested = min(invested, 1 - minimum_cash)
+    if not eligible or max_weight * len(eligible) < target_invested - 1e-10:
+        raise ValueError("Giới hạn tỷ trọng, USD cash và tài sản loại trừ không tạo được phân bổ hợp lệ.")
     returns = prices[1:] / prices[:-1] - 1
     mean = returns.mean(axis=0) * TRADING_DAYS
     covariance = np.atleast_2d(np.cov(returns, rowvar=False)) * TRADING_DAYS
@@ -89,23 +100,31 @@ def simulate_allocations(snapshot, risk_free, samples=2000, seed=42, max_weight=
             "weights": [float(value) for value in w],
         }
 
-    candidates = bounded_weights(len(symbols), invested, max_weight, samples, seed)
+    reduced = bounded_weights(len(eligible), target_invested, max_weight, samples, seed)
+    candidates = np.zeros((samples, len(symbols)))
+    candidates[:, eligible] = reduced
     warnings = [
         "Historical estimates, not forecasts. The cloud contains constrained random allocations, not a computed efficient frontier.",
         "Annual return is arithmetic mean daily return × 252, not CAGR. Risk uses sample covariance × 252.",
         "Weights are constant model exposures; this is not a backtest. No fees or slippage are included.",
-        "The same cash share is preserved without interest. Current weights may exceed the candidate weight cap.",
+        "Candidate cash may exceed current cash; current weights may exceed the candidate cap.",
         "Candidates are projected random simplex draws; they are not uniformly distributed over the constrained region.",
     ]
     optimized = None
     try:
-        solution = optimize(snapshot, risk_free, max_weight)
-        optimal = np.asarray([float(item["weight"]) for item in solution["weights"]])
+        restricted_snapshot = {**snapshot,
+            "symbols": [symbols[index] for index in eligible],
+            "weights": [target_invested / len(eligible)] * len(eligible),
+            "prices": prices[:, eligible].tolist(),
+        }
+        solution = optimize(restricted_snapshot, risk_free, max_weight)
+        optimal = np.zeros(len(symbols))
+        optimal[eligible] = [float(item["weight"]) for item in solution["weights"]]
         if (
             not np.isfinite(optimal).all()
             or (optimal < -1e-9).any()
             or (optimal > max_weight + 1e-8).any()
-            or abs(optimal.sum() - invested) > 1e-8
+            or abs(optimal.sum() - target_invested) > 1e-8
         ):
             raise ValueError("Optimizer returned infeasible weights.")
         optimized = point(optimal)
@@ -115,7 +134,7 @@ def simulate_allocations(snapshot, risk_free, samples=2000, seed=42, max_weight=
         )
     if np.max(np.abs(covariance)) < 1e-15:
         warnings.append("Observed volatility is effectively zero; Sharpe may be undefined.")
-    if len(symbols) == 1 or max_weight * len(symbols) - invested < 1e-10:
+    if len(eligible) == 1 or max_weight * len(eligible) - target_invested < 1e-10:
         warnings.append("The constraints permit only one allocation; simulated points overlap.")
     return {
         "symbols": list(symbols),
@@ -123,6 +142,8 @@ def simulate_allocations(snapshot, risk_free, samples=2000, seed=42, max_weight=
         "current": point(weights),
         "optimized": optimized,
         "max_weight": max_weight,
+        "minimum_cash": minimum_cash,
+        "excluded_symbols": sorted(excluded),
         "cash_weight": max(0.0, 1 - invested),
         "seed": seed,
         "observations": len(returns),

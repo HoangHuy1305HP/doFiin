@@ -17,6 +17,8 @@ from app.analytics.schemas import (
     AnalysisOutput,
     BacktestInput,
     BacktestOutput,
+    BacktestPreviewInput,
+    BacktestResult,
     LayoutConfig,
     LayoutInput,
     LayoutOutput,
@@ -350,6 +352,8 @@ def simulate_portfolio(run_id: UUID, data: SimulationInput, identity: CurrentIde
             data.samples,
             data.seed,
             data.max_weight,
+            data.minimum_cash,
+            data.excluded_symbols,
         )
     except ValueError as error:
         fail(422, "SIMULATION_UNAVAILABLE", str(error))
@@ -359,6 +363,20 @@ def simulate_portfolio(run_id: UUID, data: SimulationInput, identity: CurrentIde
         "first_date": metadata["first_date"],
         "last_date": metadata["last_date"],
     }
+
+
+@router.post("/analysis-runs/{run_id}/trade-scenario", response_model=BacktestResult)
+def preview_trade_scenario(run_id: UUID, data: BacktestPreviewInput, identity: CurrentIdentity, db: DB):
+    run = owned_analysis(db, run_id, identity.user.id)
+    if data.strategy == "REGIME_SWITCHING":
+        fail(422, "UNSUPPORTED_STRATEGY", "Trade section currently supports buy and hold or MA crossover.")
+    result = backtest(
+        run.result["snapshot"], data.strategy, data.initial_capital,
+        data.fee_bps, data.slippage_bps, data.rebalance_frequency,
+        run.parameters["risk_free_rate"],
+    )
+    result["metadata"] = run.result["metadata"]
+    return result
 
 
 @router.post("/analysis-runs/{run_id}/optimize")

@@ -63,7 +63,7 @@ export type Analysis = {
     momentum_12_1: number | null;
     signals: {
       asset_signals?: {symbol: string; short_ma: number | null; long_ma: number | null; signal: number | null}[];
-      series?: Point[];
+      series?: (Point & { votes?: Record<string, number | null> })[];
       current: string;
       history: { date: string; state: string }[];
       short_window: number;

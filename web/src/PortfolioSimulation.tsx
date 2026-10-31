@@ -11,12 +11,12 @@ type Scenario = {
 };
 type Simulation = {
   symbols: string[]; samples: Scenario[]; current: Scenario; optimized: Scenario | null;
-  max_weight: number; cash_weight: number; seed: number; observations: number;
+  max_weight: number; minimum_cash: number; excluded_symbols: string[]; cash_weight: number; seed: number; observations: number;
   risk_free_rate: number; source: string; first_date: string; last_date: string; warnings: string[];
 };
 type State = { runId: string; data: Simulation | null; error: string; busy: boolean };
 
-export function usePortfolioSimulation(runId: string, enabled: boolean, assetCount: number) {
+export function usePortfolioSimulation(runId: string, enabled: boolean, assetCount: number, rules?: { maxWeight: number; minimumCash: number; excludedSymbols: string[] }) {
   const [state, setState] = useState<State>({ runId: '', data: null, error: '', busy: false });
   const [retry, setRetry] = useState(0);
   useEffect(() => {
@@ -24,7 +24,8 @@ export function usePortfolioSimulation(runId: string, enabled: boolean, assetCou
     let active = true;
     setState({ runId, data: null, error: '', busy: true });
     post<Simulation>(`/analysis-runs/${runId}/simulation`, {
-      samples: 2000, seed: 42, max_weight: assetCount === 1 ? 1 : 0.8,
+      samples: 2000, seed: 42, max_weight: rules?.maxWeight ?? (assetCount === 1 ? 1 : 0.8),
+      minimum_cash: rules?.minimumCash ?? 0, excluded_symbols: rules?.excludedSymbols ?? [],
     }).then((data) => {
       if (active) setState({ runId, data, error: '', busy: false });
     }).catch((error) => {
@@ -32,7 +33,7 @@ export function usePortfolioSimulation(runId: string, enabled: boolean, assetCou
         error: error instanceof Error ? error.message : 'Unable to simulate allocations.', busy: false });
     });
     return () => { active = false; };
-  }, [runId, enabled, assetCount, retry]);
+  }, [runId, enabled, assetCount, rules?.maxWeight, rules?.minimumCash, JSON.stringify(rules?.excludedSymbols || []), retry]);
   return { state: state.runId === runId ? state : { runId, data: null, error: '', busy: true },
     retry: () => setRetry((value) => value + 1) };
 }
@@ -47,7 +48,8 @@ function Pending({ shared }: { shared: Shared }) {
 
 function AllocationPie({ data, weights, title }: { data: Simulation; weights: number[]; title: string }) {
   const slices = data.symbols.map((symbol, i) => ({ symbol, weight: weights[i], color: COLORS[i % COLORS.length] }));
-  if (data.cash_weight > 1e-9) slices.push({ symbol: 'USD cash', weight: data.cash_weight, color: '#cbd5e1' });
+  const cash = Math.max(0, 1 - weights.reduce((sum, weight) => sum + weight, 0));
+  if (cash > 1e-9) slices.push({ symbol: 'USD cash', weight: cash, color: '#cbd5e1' });
   return <div className="simulation-pie">
     <h4>{title}</h4>
     <div role="img" aria-label={`${title}: ${slices.map((slice) => `${slice.symbol} ${percent(slice.weight)}`).join(', ')}`}>
@@ -61,7 +63,7 @@ function AllocationPie({ data, weights, title }: { data: Simulation; weights: nu
   </div>;
 }
 
-export function AllocationComparison({ shared, onReview }: { shared: Shared; onReview: () => void }) {
+export function AllocationComparison({ shared, onReview, reviewDisabled = false }: { shared: Shared; onReview: (proposal: Simulation) => void; reviewDisabled?: boolean }) {
   const data = shared.state.data;
   if (!data) return <Pending shared={shared} />;
   return <>
@@ -79,11 +81,11 @@ export function AllocationComparison({ shared, onReview }: { shared: Shared; onR
         <td>{data.optimized ? percent(data.optimized.weights[i]) : '—'}</td>
         <td>{data.optimized ? `${number((data.optimized.weights[i] - data.current.weights[i]) * 100, 1)} pp` : '—'}</td>
       </tr>)}
-      {data.cash_weight > 1e-9 && <tr><td>USD cash</td><td>{percent(data.cash_weight)}</td><td>{percent(data.cash_weight)}</td><td>0 pp</td></tr>}
+      {(data.cash_weight > 1e-9 || data.minimum_cash > 1e-9) && <tr><td>USD cash</td><td>{percent(data.cash_weight)}</td><td>{data.optimized ? percent(Math.max(0, 1 - data.optimized.weights.reduce((sum, weight) => sum + weight, 0))) : '—'}</td><td>—</td></tr>}
       </tbody></table></div>
     <div className="simulation-footer">
-      <span className="small-note">Candidate cap: {percent(data.max_weight, 0)} per asset · Cash preserved: {percent(data.cash_weight)}.</span>
-      <button type="button" className="button secondary" onClick={onReview} disabled={!data.optimized}>Review proposal before saving</button>
+      <span className="small-note">Candidate cap: {percent(data.max_weight, 0)} per asset · Minimum cash: {percent(data.minimum_cash, 0)} · Excluded: {data.excluded_symbols.join(', ') || 'none'}.</span>
+      <button type="button" className="button secondary" onClick={() => onReview(data)} disabled={!data.optimized || reviewDisabled}>Review proposal before saving</button>
     </div>
   </>;
 }

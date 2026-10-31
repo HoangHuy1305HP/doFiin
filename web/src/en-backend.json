@@ -70,5 +70,17 @@
   "Cần dữ liệu SPY để chạy chiến lược chuyển trạng thái.": "SPY data is required for the regime-switching strategy.",
   "Giới hạn tỷ trọng không đủ để phân bổ phần vốn đầu tư.": "The weight cap is too low to allocate invested capital.",
   "Dữ liệu danh mục không hợp lệ hoặc chưa đủ 5 phiên lợi nhuận.": "Portfolio data is invalid or has fewer than five return sessions.",
-  "Cần ít nhất một tài sản có tỷ trọng dương để mô phỏng.": "At least one asset must have a positive weight for simulation."
+  "Cần ít nhất một tài sản có tỷ trọng dương để mô phỏng.": "At least one asset must have a positive weight for simulation.",
+  "Beta so với": "Beta versus",
+  ", cửa sổ": ", window",
+  "phiên.": "sessions.",
+  "· ngưỡng tích cực": "· positive threshold",
+  ". Đây không phải xác suất giá tăng hoặc lệnh giao dịch thật.": ". This is not a price-rise probability or an actual trading order.",
+  "Hiện tại:": "Current:",
+  "Tín hiệu được tính theo tỷ trọng tài sản": "Signals are weighted by portfolio allocation",
+  "Mỗi tài sản một phiếu": "One vote per asset",
+  "Tích cực": "Positive",
+  "Chưa đạt ngưỡng": "Below threshold",
+  "Tỷ lệ tín hiệu tích cực": "Positive signal share",
+  "Ngưỡng tích cực": "Positive threshold"
 }

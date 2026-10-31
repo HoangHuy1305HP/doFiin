@@ -49,10 +49,17 @@ export const DEFAULT_SECTION_APPEARANCE: SectionAppearance = {
 };
 export type ContentLocale = 'en-US' | 'vi-VN';
 export type PageContent = { title: string; description: string };
+export type SectionFunctions = {
+  allocation_comparison?: { maxWeight: number; minimumCash: number; excludedSymbols: string[] };
+  rolling_beta?: { window: number; benchmarkPortfolioId?: string };
+  aggregate_signal?: { symbols: string[]; weighting: 'equal' | 'portfolio'; threshold: number };
+  backtest_trades?: { strategy: 'BUY_AND_HOLD' | 'MA_CROSSOVER'; feeBps: number; slippageBps: number; rebalanceFrequency: 'MONTHLY' | 'NONE' };
+};
 export type Preferences = {
   menu: Page[];
   presentation: Presentation;
   sectionAppearance: Partial<Record<Page, Record<string, SectionAppearance>>>;
+  sectionFunctions: SectionFunctions;
   pageAppearance: Partial<Record<Page, PageAppearance>>;
   locale: ContentLocale;
   content: Partial<Record<Page, Partial<Record<ContentLocale, PageContent>>>>;
@@ -61,6 +68,7 @@ export const defaultPreferences = (): Preferences => ({
   menu: [...DEFAULT_MENU],
   presentation: { color: '#0f172a', legend: true, corners: 0 },
   sectionAppearance: {},
+  sectionFunctions: {},
   pageAppearance: {},
   locale: 'en-US',
   content: {},
@@ -107,6 +115,30 @@ export function readPreferences(userId: string): Preferences {
           ),
         ]),
       ),
+      sectionFunctions: {
+        allocation_comparison: value.sectionFunctions?.allocation_comparison && {
+          maxWeight: Number(value.sectionFunctions.allocation_comparison.maxWeight) || 0.8,
+          minimumCash: Number(value.sectionFunctions.allocation_comparison.minimumCash) || 0,
+          excludedSymbols: Array.isArray(value.sectionFunctions.allocation_comparison.excludedSymbols)
+            ? value.sectionFunctions.allocation_comparison.excludedSymbols.filter((symbol: unknown) => typeof symbol === 'string') : [],
+        },
+        rolling_beta: value.sectionFunctions?.rolling_beta && {
+          window: Number(value.sectionFunctions.rolling_beta.window) || 20,
+          benchmarkPortfolioId: typeof value.sectionFunctions.rolling_beta.benchmarkPortfolioId === 'string' ? value.sectionFunctions.rolling_beta.benchmarkPortfolioId : undefined,
+        },
+        aggregate_signal: value.sectionFunctions?.aggregate_signal && {
+          symbols: Array.isArray(value.sectionFunctions.aggregate_signal.symbols)
+            ? value.sectionFunctions.aggregate_signal.symbols.filter((symbol: unknown) => typeof symbol === 'string') : [],
+          weighting: value.sectionFunctions.aggregate_signal.weighting === 'portfolio' ? 'portfolio' : 'equal',
+          threshold: Number(value.sectionFunctions.aggregate_signal.threshold) || 0.5,
+        },
+        backtest_trades: value.sectionFunctions?.backtest_trades && {
+          strategy: value.sectionFunctions.backtest_trades.strategy === 'BUY_AND_HOLD' ? 'BUY_AND_HOLD' : 'MA_CROSSOVER',
+          feeBps: Number(value.sectionFunctions.backtest_trades.feeBps) || 0,
+          slippageBps: Number(value.sectionFunctions.backtest_trades.slippageBps) || 0,
+          rebalanceFrequency: value.sectionFunctions.backtest_trades.rebalanceFrequency === 'NONE' ? 'NONE' : 'MONTHLY',
+        },
+      },
       pageAppearance: Object.fromEntries(
         DEFAULT_MENU.map((page) => {
           const appearance = value.pageAppearance?.[page];

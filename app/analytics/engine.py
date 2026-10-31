@@ -222,7 +222,8 @@ def build_analysis(
                 for symbol in symbols
             ],
             "series": [
-                {"date": timestamp.date().isoformat(), "share": finite(signal_share.loc[timestamp])}
+                {"date": timestamp.date().isoformat(), "share": finite(signal_share.loc[timestamp]),
+                 "votes": {symbol: finite(asset_votes.loc[timestamp, symbol]) for symbol in symbols}}
                 for timestamp in shown.index
             ],
             "short_window": short_window,

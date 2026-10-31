@@ -37,7 +37,7 @@ import type { BacktestForm } from './pages';
 import type { Analysis, AnalysisRules, Backtest, Instrument, Layout, LiveGrowth, Page, Point, Portfolio } from './types';
 import { dateLabel, post, put } from './api';
 import { DEFAULT_MENU, DEFAULT_PAGE_APPEARANCE, DEFAULT_SECTION_APPEARANCE, PAGE_LABELS, pageAppearanceStyle } from './preferences';
-import type { PageAppearance, PageContent, Preferences, SectionAppearance } from './preferences';
+import type { PageAppearance, PageContent, Preferences, SectionAppearance, SectionFunctions } from './preferences';
 import { useDialogFocus } from './useDialogFocus';
 
 type Props = {
@@ -276,6 +276,20 @@ export default function Studio({
         ? 'Fees and slippage must each be between 0 and 100 bps.'
         : '';
   const backtestChanged = JSON.stringify(draftBacktest) !== JSON.stringify(btForm);
+  const allocationRules = settings.sectionFunctions.allocation_comparison;
+  const betaRules = settings.sectionFunctions.rolling_beta;
+  const aggregateRules = settings.sectionFunctions.aggregate_signal;
+  const tradeRules = settings.sectionFunctions.backtest_trades;
+  const eligibleAllocationCount = analysis.result.factors.filter((factor) => !allocationRules?.excludedSymbols.includes(factor.symbol)).length;
+  const investedWeight = analysis.result.factors.reduce((sum, factor) => sum + factor.weight, 0);
+  const sectionRulesError = allocationRules && (!Number.isFinite(allocationRules.maxWeight) || allocationRules.maxWeight <= 0 || allocationRules.maxWeight > 1 || !Number.isFinite(allocationRules.minimumCash) || allocationRules.minimumCash < 0 || allocationRules.minimumCash >= 1 || eligibleAllocationCount * allocationRules.maxWeight < Math.min(investedWeight, 1 - allocationRules.minimumCash) - 1e-8)
+    ? 'Allocation constraints are not feasible for the selected assets and cash minimum.'
+    : betaRules && (!Number.isInteger(betaRules.window) || betaRules.window < 5 || betaRules.window > 120)
+      ? 'Rolling beta window must be 5–120 sessions.'
+      : aggregateRules && (!Number.isFinite(aggregateRules.threshold) || aggregateRules.threshold <= 0 || aggregateRules.threshold > 1 || (aggregateRules.symbols.length > 0 && !aggregateRules.symbols.some((symbol) => analysis.result.factors.some((factor) => factor.symbol === symbol))))
+        ? 'Select at least one current asset and a threshold above 0% and at most 100%.'
+        : tradeRules && (![tradeRules.feeBps, tradeRules.slippageBps].every((value) => Number.isFinite(value) && value >= 0 && value <= 100))
+          ? 'Trade fees and slippage must each be between 0 and 100 bps.' : '';
   const previewRulesKey = JSON.stringify(draftBacktest);
   const previewNeedsRun = analysisChanged || (page === 'backtest' && backtestChanged);
   const portfolioAnalysisReady = !portfolioLoading && !!portfolio && analysis.portfolio_version_id === portfolio.latest_version.id;
@@ -536,8 +550,8 @@ export default function Studio({
   }
   async function save() {
     if (!changed) return;
-    if (analysisRulesError || backtestRulesError) {
-      setError(analysisRulesError || backtestRulesError);
+    if (analysisRulesError || backtestRulesError || sectionRulesError) {
+      setError(analysisRulesError || backtestRulesError || sectionRulesError);
       return;
     }
     setBusy(true);
@@ -901,6 +915,7 @@ export default function Studio({
               {portfolioAnalysisReady && <Dashboard
                 presentation={settings.presentation}
                 sectionAppearance={settings.sectionAppearance[page]}
+                sectionFunctions={settings.sectionFunctions}
                 page={page}
                 analysis={previewAnalysis ? { ...analysis, result: previewAnalysis } : analysis}
                 liveGrowth={!previewAnalysis && !analysisChanged ? liveGrowth : null}
@@ -1272,7 +1287,7 @@ export default function Studio({
                   <p>Theme appearance is configured in the Design tab.</p>
                 ) : isWidget ? (
                   <>
-                    <p>This section reads its data and relevant rules from {PAGE_LABELS[page]} sections. Edit the parent to change its inputs.</p>
+                    <p>This section inherits the active portfolio and analysis period. Section rules below override only its own calculation.</p>
                     <dl>
                       <dt>Parent</dt>
                       <dd>{PAGE_LABELS[page]} sections</dd>
@@ -1309,6 +1324,19 @@ export default function Studio({
                       />
                       <p>This profile is shared with the other analysis sections. Edit its holdings by selecting it as the active portfolio.</p>
                     </div>}
+                    {selected === 'allocation_comparison' && <div className="studio-function-rules">
+                      <h4>Max Sharpe proposal</h4>
+                      <label>Maximum weight per asset (%)<input type="number" min={1} max={100} step={1} value={Math.round((allocationRules?.maxWeight ?? (analysis.result.factors.length === 1 ? 1 : 0.8)) * 100)} onChange={(event) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, allocation_comparison: { maxWeight: Number(event.target.value) / 100, minimumCash: allocationRules?.minimumCash ?? 0, excludedSymbols: allocationRules?.excludedSymbols ?? [] } } })} /></label>
+                      <label>Minimum USD cash (%)<input type="number" min={0} max={99} step={1} value={Math.round((allocationRules?.minimumCash ?? 0) * 100)} onChange={(event) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, allocation_comparison: { maxWeight: allocationRules?.maxWeight ?? (analysis.result.factors.length === 1 ? 1 : 0.8), minimumCash: Number(event.target.value) / 100, excludedSymbols: allocationRules?.excludedSymbols ?? [] } } })} /></label>
+                      <span>Exclude from proposal</span>
+                      {analysis.result.factors.map((factor) => <label className="studio-function-check" key={factor.symbol}><input type="checkbox" checked={allocationRules?.excludedSymbols.includes(factor.symbol) ?? false} onChange={(event) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, allocation_comparison: { maxWeight: allocationRules?.maxWeight ?? (analysis.result.factors.length === 1 ? 1 : 0.8), minimumCash: allocationRules?.minimumCash ?? 0, excludedSymbols: event.target.checked ? [...(allocationRules?.excludedSymbols ?? []), factor.symbol] : (allocationRules?.excludedSymbols ?? []).filter((symbol) => symbol !== factor.symbol) } } })} /> {factor.symbol}</label>)}
+                      <p>The proposal is recalculated; your portfolio holdings are unchanged.</p>
+                    </div>}
+                    {selected === 'rolling_beta' && <div className="studio-function-rules"><h4>Rolling beta</h4><div className="studio-field"><span>Benchmark profile</span><StudioSelect label="Rolling beta benchmark profile" value={betaRules?.benchmarkPortfolioId || selectedBenchmarkProfile?.id || ''} options={benchmarkProfiles.map((item) => ({ value: item.id, label: item.name }))} onChange={(benchmarkPortfolioId) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, rolling_beta: { window: betaRules?.window ?? 20, benchmarkPortfolioId } } })} /></div><label>Window (sessions)<input type="number" min={5} max={120} step={1} value={betaRules?.window ?? 20} onChange={(event) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, rolling_beta: { window: Number(event.target.value), benchmarkPortfolioId: betaRules?.benchmarkPortfolioId } } })} /></label><p>This benchmark applies only to Rolling beta. The parent benchmark stays unchanged.</p></div>}
+                    {selected === 'aggregate_signal' && <div className="studio-function-rules"><h4>Aggregate signal</h4><div className="studio-field"><span>Asset weighting</span><StudioSelect label="Signal asset weighting" value={aggregateRules?.weighting ?? 'equal'} options={[{ value: 'equal', label: 'Equal votes' }, { value: 'portfolio', label: 'Portfolio weights' }]} onChange={(weighting) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, aggregate_signal: { symbols: aggregateRules?.symbols ?? [], weighting: weighting as 'equal' | 'portfolio', threshold: aggregateRules?.threshold ?? 0.5 } } })} /></div><label>Positive threshold (%)<input type="number" min={1} max={100} step={1} value={Math.round((aggregateRules?.threshold ?? 0.5) * 100)} onChange={(event) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, aggregate_signal: { symbols: aggregateRules?.symbols ?? [], weighting: aggregateRules?.weighting ?? 'equal', threshold: Number(event.target.value) / 100 } } })} /></label><span>Include assets</span>{analysis.result.factors.map((factor) => <label className="studio-function-check" key={factor.symbol}><input type="checkbox" checked={!aggregateRules || aggregateRules.symbols.length === 0 || aggregateRules.symbols.includes(factor.symbol)} onChange={(event) => { const current = aggregateRules?.symbols.length ? aggregateRules.symbols : analysis.result.factors.map((item) => item.symbol); if (!event.target.checked && current.length <= 1) return; setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, aggregate_signal: { symbols: event.target.checked ? [...current, factor.symbol] : current.filter((symbol) => symbol !== factor.symbol), weighting: aggregateRules?.weighting ?? 'equal', threshold: aggregateRules?.threshold ?? 0.5 } } }); }} /> {factor.symbol}</label>)}</div>}
+                    {selected === 'backtest_trades' && <div className="studio-function-rules"><h4>Trade scenario</h4><div className="studio-field"><span>Strategy</span><StudioSelect label="Trade scenario strategy" value={tradeRules?.strategy ?? 'MA_CROSSOVER'} options={[{ value: 'MA_CROSSOVER', label: 'MA crossover' }, { value: 'BUY_AND_HOLD', label: 'Buy and hold' }]} onChange={(strategy) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, backtest_trades: { strategy: strategy as 'MA_CROSSOVER' | 'BUY_AND_HOLD', feeBps: tradeRules?.feeBps ?? draftBacktest.fee_bps, slippageBps: tradeRules?.slippageBps ?? draftBacktest.slippage_bps, rebalanceFrequency: tradeRules?.rebalanceFrequency ?? draftBacktest.rebalance_frequency as 'MONTHLY' | 'NONE' } } })} /></div><label>Fees (bps)<input type="number" min={0} max={100} value={tradeRules?.feeBps ?? draftBacktest.fee_bps} onChange={(event) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, backtest_trades: { strategy: tradeRules?.strategy ?? 'MA_CROSSOVER', feeBps: Number(event.target.value), slippageBps: tradeRules?.slippageBps ?? draftBacktest.slippage_bps, rebalanceFrequency: tradeRules?.rebalanceFrequency ?? draftBacktest.rebalance_frequency as 'MONTHLY' | 'NONE' } } })} /></label><label>Slippage (bps)<input type="number" min={0} max={100} value={tradeRules?.slippageBps ?? draftBacktest.slippage_bps} onChange={(event) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, backtest_trades: { strategy: tradeRules?.strategy ?? 'MA_CROSSOVER', feeBps: tradeRules?.feeBps ?? draftBacktest.fee_bps, slippageBps: Number(event.target.value), rebalanceFrequency: tradeRules?.rebalanceFrequency ?? draftBacktest.rebalance_frequency as 'MONTHLY' | 'NONE' } } })} /></label><div className="studio-field"><span>Rebalance</span><StudioSelect label="Trade scenario rebalance" value={tradeRules?.rebalanceFrequency ?? draftBacktest.rebalance_frequency} options={[{ value: 'MONTHLY', label: 'Monthly' }, { value: 'NONE', label: 'None' }]} onChange={(rebalanceFrequency) => setSettings({ ...settings, sectionFunctions: { ...settings.sectionFunctions, backtest_trades: { strategy: tradeRules?.strategy ?? 'MA_CROSSOVER', feeBps: tradeRules?.feeBps ?? draftBacktest.fee_bps, slippageBps: tradeRules?.slippageBps ?? draftBacktest.slippage_bps, rebalanceFrequency: rebalanceFrequency as 'MONTHLY' | 'NONE' } } })} /></div><p>This recalculates only the trades section.</p></div>}
+                    {sectionRulesError && <p className="inline-error" role="alert">{sectionRulesError}</p>}
+                    {(['allocation_comparison', 'rolling_beta', 'aggregate_signal', 'backtest_trades'] as const).includes(selected as keyof SectionFunctions) && settings.sectionFunctions[selected as keyof SectionFunctions] && <button className="button outline full studio-function-action" onClick={() => { const next = { ...settings.sectionFunctions }; delete next[selected as keyof SectionFunctions]; setSettings({ ...settings, sectionFunctions: next }); }}>Reset section rules</button>}
                     <button className="button outline full studio-function-action" onClick={() => select('page', 'function')}>
                       Edit parent settings
                     </button>

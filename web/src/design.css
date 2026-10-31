@@ -3109,6 +3109,8 @@ h4,
 .studio-editor .studio-function-rules { border-top: 1px solid var(--studio-line); margin-top: 24px; padding-top: 20px; }
 .studio-editor .studio-function-rules h4 { margin-bottom: 14px; }
 .studio-editor .studio-function-rules p { margin-top: 14px; }
+.studio-editor .studio-function-rules .studio-function-check { flex-direction: row; align-items: center; gap: 10px; margin: 10px 0; font-weight: 500; cursor: pointer; }
+.studio-editor .studio-function-rules .studio-function-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--color-text); }
 .studio-editor .studio-save-state { padding: 4px 18px 22px; margin: 0; font-size: var(--text-caption); }
 .studio-editor .inline-error { margin: 12px 18px; }
 @media (max-width: 1199px) {

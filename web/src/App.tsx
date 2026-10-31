@@ -238,6 +238,9 @@ export default function App() {
     weights: { symbol: string; weight: string }[];
     estimated_sharpe: number | null;
     warning: string;
+    max_weight?: number;
+    minimum_cash?: number;
+    excluded_symbols?: string[];
   } | null>(null);
   const [optBusy, setOptBusy] = useState(false);
   const [optError, setOptError] = useState('');
@@ -504,11 +507,16 @@ export default function App() {
     setUserMenu(false);
     setViewVersion(null);
   }
-  async function optimize() {
+  async function optimize(proposal?: NonNullable<typeof optimization>) {
     if (!analysis) return;
     setDialog('optimize');
-    setOptBusy(true);
     setOptError('');
+    if (proposal) {
+      setOptimization(proposal);
+      setOptBusy(false);
+      return;
+    }
+    setOptBusy(true);
     setOptimization(null);
     try {
       setOptimization(
@@ -956,6 +964,7 @@ export default function App() {
                 <Dashboard
                   presentation={preferences.presentation}
                   sectionAppearance={preferences.sectionAppearance[activePage]}
+                  sectionFunctions={preferences.sectionFunctions}
                   controls={analysisControls}
                   page={activePage}
                   analysis={analysis}
@@ -970,7 +979,7 @@ export default function App() {
                   btForm={btForm}
                   setBtForm={setBtForm}
                   onBacktest={() => void runBacktest()}
-                  onOptimize={() => void optimize()}
+                  onOptimize={(proposal) => void optimize(proposal)}
                   btStale={!!backtest && btKey !== JSON.stringify(btForm)}
                 />
                 </>
@@ -1146,7 +1155,7 @@ export default function App() {
               </div>
               <p className="small-note">
                 {optimization.warning} Maximum per asset:{' '}
-                {optimization.weights.length === 1 ? '100%' : '80%'}. Saving creates a new version
+                {percent(optimization.max_weight ?? (optimization.weights.length === 1 ? 1 : 0.8), 0)}. {optimization.minimum_cash ? `Minimum cash: ${percent(optimization.minimum_cash, 0)}. ` : ''}{optimization.excluded_symbols?.length ? `Excluded: ${optimization.excluded_symbols.join(', ')}. ` : ''}Saving creates a new version
                 and preserves your history.
               </p>
               <div className="modal-actions">

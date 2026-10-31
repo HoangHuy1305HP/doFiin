@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
   ArrowDownRight,
@@ -12,9 +13,9 @@ import { ResearchWidget, ReturnHistogram, useResearch } from './ResearchWidgets'
 import { AllocationComparison, usePortfolioSimulation } from './PortfolioSimulation';
 import IntradayGrowth from './IntradayGrowth';
 import type { IntradayRange } from './IntradayGrowth';
-import { dateLabel, money, number, percent } from './api';
+import { dateLabel, money, number, percent, post } from './api';
 import { getLocale } from './i18n';
-import type { Presentation, SectionAppearance } from './preferences';
+import type { Presentation, SectionAppearance, SectionFunctions } from './preferences';
 import type { Analysis, Backtest, LayoutConfig, LiveGrowth, Page, Point, Version } from './types';
 
 export const TITLES: Record<string, string> = {
@@ -126,12 +127,13 @@ type Props = {
   btForm: BacktestForm;
   setBtForm: (form: BacktestForm) => void;
   onBacktest: () => void;
-  onOptimize: () => void;
+  onOptimize: (proposal?: { weights: { symbol: string; weight: string }[]; estimated_sharpe: number | null; warning: string; max_weight: number; minimum_cash: number; excluded_symbols: string[] }) => void;
   preview?: boolean;
   selectedSection?: string;
   controls?: ReactNode;
   presentation?: Presentation;
   sectionAppearance?: Record<string, SectionAppearance>;
+  sectionFunctions?: SectionFunctions;
   btStale?: boolean;
   liveGrowth?: LiveGrowth | null;
   liveSecondView?: boolean;
@@ -154,6 +156,7 @@ export function Dashboard({
   controls,
   presentation,
   sectionAppearance,
+  sectionFunctions,
   btStale = false,
   liveGrowth = null,
   liveSecondView = false,
@@ -161,8 +164,49 @@ export function Dashboard({
   liveSamples = [],
 }: Props) {
   const { metrics: m, series, factors, signals, correlation, metadata } = analysis.result;
+  const betaBenchmarkId = sectionFunctions?.rolling_beta?.benchmarkPortfolioId;
+  const betaOverrideKey = betaBenchmarkId && betaBenchmarkId !== metadata.benchmark_portfolio_id ? `${analysis.id}:${betaBenchmarkId}` : '';
+  const [betaOverride, setBetaOverride] = useState<{ key: string; result: Analysis['result'] } | null>(null);
+  const [betaOverrideError, setBetaOverrideError] = useState('');
+  useEffect(() => {
+    if (page !== 'risk' || !betaOverrideKey || !betaBenchmarkId) return;
+    let active = true;
+    setBetaOverrideError('');
+    post<{ analysis: Analysis['result'] }>('/studio-preview', {
+      analysis: {
+        portfolio_version_id: analysis.portfolio_version_id,
+        benchmark_portfolio_id: betaBenchmarkId,
+        source: metadata.source,
+        start_date: metadata.first_date,
+        end_date: metadata.last_date,
+        risk_free_rate: metadata.risk_free_rate,
+        short_window: signals.short_window,
+        long_window: signals.long_window,
+      },
+    }).then((result) => { if (active) setBetaOverride({ key: betaOverrideKey, result: result.analysis }); })
+      .catch((error) => { if (active) setBetaOverrideError(error instanceof Error ? error.message : 'Benchmark analysis unavailable.'); });
+    return () => { active = false; };
+  }, [page, betaOverrideKey, betaBenchmarkId, analysis.portfolio_version_id, metadata.source, metadata.first_date, metadata.last_date, metadata.risk_free_rate, signals.short_window, signals.long_window]);
   const research = useResearch(analysis.id, page === 'factors' || page === 'backtest');
-  const simulation = usePortfolioSimulation(analysis.id, page === 'portfolio', factors.length);
+  const simulation = usePortfolioSimulation(analysis.id, page === 'portfolio', factors.length, sectionFunctions?.allocation_comparison);
+  const tradeRules = sectionFunctions?.backtest_trades;
+  const [tradeScenario, setTradeScenario] = useState<{ key: string; result: Backtest['result'] } | null>(null);
+  const [tradeScenarioError, setTradeScenarioError] = useState('');
+  const tradeScenarioKey = JSON.stringify([analysis.id, tradeRules, btForm.initial_capital]);
+  useEffect(() => {
+    if (page !== 'backtest' || !tradeRules) return;
+    let active = true;
+    setTradeScenarioError('');
+    post<Backtest['result']>(`/analysis-runs/${analysis.id}/trade-scenario`, {
+      strategy: tradeRules.strategy,
+      initial_capital: btForm.initial_capital,
+      fee_bps: tradeRules.feeBps,
+      slippage_bps: tradeRules.slippageBps,
+      rebalance_frequency: tradeRules.rebalanceFrequency,
+    }).then((result) => { if (active) setTradeScenario({ key: tradeScenarioKey, result }); })
+      .catch((error) => { if (active) setTradeScenarioError(error instanceof Error ? error.message : 'Trade scenario unavailable.'); });
+    return () => { active = false; };
+  }, [page, analysis.id, tradeScenarioKey]);
   const historicalGrowth = analysis.result.growth_series?.length ? analysis.result.growth_series : series;
   const liveChartPoint = liveGrowth?.point && series.length && historicalGrowth.length
     ? {
@@ -219,7 +263,17 @@ export function Dashboard({
       />
     </>
   );
-  widgets.allocation_comparison = <AllocationComparison shared={simulation} onReview={onOptimize} />;
+  widgets.allocation_comparison = <AllocationComparison shared={simulation} reviewDisabled={preview} onReview={(data) => {
+    if (!data.optimized) return;
+    onOptimize({
+      weights: data.symbols.map((symbol, index) => ({ symbol, weight: data.optimized!.weights[index].toFixed(10) })),
+      estimated_sharpe: data.optimized.sharpe,
+      warning: 'Proposal follows the section constraints and historical model. Review before saving.',
+      max_weight: data.max_weight,
+      minimum_cash: data.minimum_cash,
+      excluded_symbols: data.excluded_symbols,
+    });
+  }} />;
 
   widgets.allocation = (
     <>
@@ -367,10 +421,37 @@ export function Dashboard({
       />
     </>
   );
-  widgets.rolling_beta = <><p className="card-description">Hiệp phương sai lợi nhuận danh mục và chuẩn / phương sai lợi nhuận chuẩn, cửa sổ 20 phiên.</p><TimeChart data={series} area={false} lines={[{key: 'rolling_beta', name: 'Beta 20 phiên', color: '#365c52'}]} /></>;
+  const betaWindow = sectionFunctions?.rolling_beta?.window ?? 20;
+  const betaSource = betaOverrideKey ? (betaOverride?.key === betaOverrideKey ? betaOverride.result : null) : analysis.result;
+  const betaInputSeries = betaSource?.series ?? [];
+  const betaSeries = betaWindow === 20 ? betaInputSeries : betaInputSeries.map((point, index) => {
+    if (index < betaWindow) return { ...point, rolling_beta: null };
+    const returns = betaInputSeries.slice(index - betaWindow, index + 1).map((item, position, items) => position === 0 ? null : [
+      Number(item.portfolio) / Number(items[position - 1].portfolio) - 1,
+      Number(item.benchmark) / Number(items[position - 1].benchmark) - 1,
+    ]).slice(1) as number[][];
+    const portfolioMean = returns.reduce((sum, item) => sum + item[0], 0) / returns.length;
+    const benchmarkMean = returns.reduce((sum, item) => sum + item[1], 0) / returns.length;
+    const variance = returns.reduce((sum, item) => sum + (item[1] - benchmarkMean) ** 2, 0);
+    const covariance = returns.reduce((sum, item) => sum + (item[0] - portfolioMean) * (item[1] - benchmarkMean), 0);
+    return { ...point, rolling_beta: variance > 1e-15 ? covariance / variance : null };
+  });
+  widgets.rolling_beta = betaOverrideError ? <p className="inline-error" role="alert">{betaOverrideError}</p> : betaSource ? <><p className="card-description">Beta so với {betaSource.metadata.benchmark}, cửa sổ {betaWindow} phiên.</p>{betaInputSeries.length <= betaWindow ? <p className="small-note">Not enough sessions in this period for the selected beta window.</p> : <TimeChart data={betaSeries} area={false} lines={[{key: 'rolling_beta', name: `Beta ${betaWindow} phiên`, color: '#365c52'}]} />}</> : <p className="card-description" role="status">Calculating beta against the selected benchmark…</p>;
   widgets.return_distribution = <ReturnHistogram data={analysis.result.return_distribution || []} />;
   widgets.asset_signals = <div className="table-wrap"><table><thead><tr><th>Cổ phiếu</th><th>MA ngắn</th><th>MA dài</th><th>Tín hiệu</th></tr></thead><tbody>{signals.asset_signals?.map((row) => <tr key={row.symbol}><td>{row.symbol}</td><td>{number(row.short_ma)}</td><td>{number(row.long_ma)}</td><td>{row.signal == null ? 'Chưa đủ dữ liệu' : row.signal ? 'Tích cực (1)' : 'Không tích cực (0)'}</td></tr>)}</tbody></table></div>;
-  widgets.aggregate_signal = <><p className="card-description">Trung bình tín hiệu 0/1 của các mã, mỗi mã một phiếu. Trên 50% là đa số tích cực; đây không phải xác suất giá tăng hoặc lệnh giao dịch thật.</p><TimeChart data={signals.series || []} curve="stepAfter" area={false} kind="percent" lines={[{key: 'share', name: 'Tỷ lệ mã tích cực', color: '#365c52'}]} /></>;
+  const aggregateRules = sectionFunctions?.aggregate_signal;
+  const aggregateSymbols = aggregateRules?.symbols?.length ? aggregateRules.symbols.filter((symbol) => factors.some((factor) => factor.symbol === symbol)) : factors.map((factor) => factor.symbol);
+  const aggregateSeries = aggregateRules && signals.series?.some((point) => point.votes)
+    ? signals.series.map((point) => {
+      const votes = aggregateSymbols.map((symbol) => ({ vote: point.votes?.[symbol], weight: aggregateRules.weighting === 'portfolio' ? factors.find((factor) => factor.symbol === symbol)?.weight ?? 0 : 1 }));
+      const ready = votes.length > 0 && votes.every((item) => item.vote != null);
+      const totalWeight = votes.reduce((sum, item) => sum + item.weight, 0);
+      const share = ready && totalWeight > 0 ? votes.reduce((sum, item) => sum + Number(item.vote) * item.weight, 0) / totalWeight : null;
+      return { ...point, share };
+    }) : signals.series || [];
+  const aggregateThreshold = aggregateRules?.threshold ?? 0.5;
+  const latestAggregate = aggregateSeries.at(-1)?.share;
+  widgets.aggregate_signal = <><p className="card-description">{aggregateRules?.weighting === 'portfolio' ? 'Tín hiệu được tính theo tỷ trọng tài sản' : 'Mỗi tài sản một phiếu'} · {aggregateSymbols.join(', ')} · ngưỡng tích cực {percent(aggregateThreshold, 0)}. Đây không phải xác suất giá tăng hoặc lệnh giao dịch thật.</p>{typeof latestAggregate === 'number' && <p className="small-note">Hiện tại: {percent(latestAggregate)} · {latestAggregate >= aggregateThreshold ? 'Tích cực' : 'Chưa đạt ngưỡng'}</p>}<TimeChart data={aggregateSeries.map((point) => ({ date: point.date, share: point.share, threshold: aggregateThreshold }))} curve="stepAfter" area={false} kind="percent" lines={[{key: 'share', name: 'Tỷ lệ tín hiệu tích cực', color: '#365c52'}, {key: 'threshold', name: 'Ngưỡng tích cực', color: '#b7791f'}]} /></>;
   for (const key of ['proxy_factors', 'factor_rolling', 'beta_heatmap', 'active_return', 'regime_map']) widgets[key] = <ResearchWidget kind={key} state={research} backtest={backtest} />;
   widgets.moving_average = (
     <>
@@ -508,7 +589,8 @@ export function Dashboard({
       </button>
     </div>
   );
-  widgets.backtest_trades = b ? (
+  const tradeResult = tradeRules ? (tradeScenario?.key === tradeScenarioKey ? tradeScenario.result : null) : b;
+  widgets.backtest_trades = tradeScenarioError ? <p className="inline-error" role="alert">{tradeScenarioError}</p> : tradeResult ? (
     <div className="table-wrap">
       <table>
         <thead>
@@ -520,7 +602,7 @@ export function Dashboard({
           </tr>
         </thead>
         <tbody>
-          {b.trades
+          {tradeResult.trades
             .slice(-15)
             .reverse()
             .map((trade, i) => (
@@ -541,13 +623,14 @@ export function Dashboard({
             ))}
         </tbody>
       </table>
-      {!b.trades.length && <p className="small-note">No trades in the selected period.</p>}
+      {!tradeResult.trades.length && <p className="small-note">No trades in the selected period.</p>}
+      {tradeRules && <p className="small-note">Section scenario: {tradeRules.strategy === 'BUY_AND_HOLD' ? 'Buy and hold' : 'MA crossover'} · fees {tradeRules.feeBps} bps · slippage {tradeRules.slippageBps} bps · {tradeResult.trades.length} trades · total costs {money(tradeResult.metrics.total_cost)}.</p>}
       <div className="small-note">
         Showing the latest 15 trades · Export CSV for the full history.
       </div>
     </div>
   ) : (
-    <p className="card-description">Trade history appears after running the backtest.</p>
+    <p className="card-description">{tradeRules ? 'Calculating section trade scenario…' : 'Trade history appears after running the backtest.'}</p>
   );
   let metrics: ReactNode;
   if (page === 'risk')
