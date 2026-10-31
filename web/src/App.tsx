@@ -167,11 +167,13 @@ export default function App() {
           setLiveGrowth(result);
           if (result.point && result.as_of && Date.now() - Date.parse(result.as_of) < 30_000) {
             const sample: Point = {
-              date: new Date().toISOString(),
+              date: result.as_of,
               portfolio: result.point.portfolio,
               benchmark: result.point.benchmark,
             };
-            setLiveSamples((current) => [...current, sample].slice(-120));
+            setLiveSamples((current) => current.at(-1)?.date === sample.date
+              ? [...current.slice(0, -1), sample]
+              : [...current, sample].slice(-120));
           }
         }
       } catch {
@@ -718,7 +720,7 @@ export default function App() {
           value={activePage === 'portfolio' && liveSecondView ? '1s' : activePage === 'portfolio' && intradayRange ? intradayRange : period}
           options={[
             ...(activePage === 'portfolio' ? [
-              { value: '1s', label: '1s' },
+              { value: '1s', label: '1s · Live' },
               ...INTRADAY_RANGES.map(({ value }) => ({ value, label: value })),
             ] : []),
             ...['1M', '3M', '6M', '1Y', '3Y'].map((value) => ({ value, label: value })),
@@ -960,7 +962,7 @@ export default function App() {
                 </div>
               ) : analysis ? (
                 <>
-                {activePage === 'portfolio' && intradayRange && <p className="intraday-scope" role="status">Chart window: {intradayRange}. Return, volatility and Sharpe above remain based on the {period} daily analysis. 1p / 15p / 30p mean minutes; 1d / 3d mean calendar days ending at the latest available bar.</p>}
+                {activePage === 'portfolio' && intradayRange && <p className="intraday-scope" role="status">Chart window: {intradayRange}. Return, volatility and Sharpe above remain based on the {period} daily analysis. 1p / 15p / 30p mean minutes; 1h is one hour; 1d / 3d mean calendar days ending at the latest available bar.</p>}
                 <Dashboard
                   presentation={preferences.presentation}
                   sectionAppearance={preferences.sectionAppearance[activePage]}

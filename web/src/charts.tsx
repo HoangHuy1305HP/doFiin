@@ -33,6 +33,7 @@ type ChartProps = {
   rangeControls?: boolean;
 };
 const DAILY_RANGES = [
+  { value: '1d', days: 1 },
   { value: '1M', days: 30 },
   { value: '3M', days: 90 },
   { value: '6M', days: 180 },
@@ -49,13 +50,13 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
   const availableDays = firstAvailable && lastAvailable && timeScale === 'day'
     ? Math.max(0, (Date.parse(lastAvailable) - Date.parse(firstAvailable)) / 86_400_000)
     : 0;
-  const availableRanges = DAILY_RANGES.filter((range) => range.value === '1M' || availableDays >= range.days - 7);
+  const availableRanges = DAILY_RANGES.filter((range) => range.value === '1d' || range.value === '1M' || availableDays >= range.days - 7);
   const activeRange = availableRanges.find((range) => range.value === selectedRange)?.value
     || availableRanges.at(-1)?.value || '1M';
   const rangeDays = DAILY_RANGES.find((range) => range.value === activeRange)?.days || 30;
   const cutoff = lastAvailable ? Date.parse(lastAvailable) - rangeDays * 86_400_000 : 0;
   const chartData = timeScale === 'day' && rangeControls && data.length > 1
-    ? data.filter((point) => Date.parse(point.date) >= cutoff)
+    ? activeRange === '1d' ? data.slice(-1) : data.filter((point) => Date.parse(point.date) >= cutoff)
     : data;
   const firstDate = chartData[0]?.date;
   const lastDate = chartData.at(-1)?.date;
@@ -163,7 +164,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
                 stroke={line.color}
                 fill={'url(#' + id + ')'}
                 strokeWidth={2.3}
-                dot={showDots || (timeScale !== 'day' && chartData.length === 1)}
+                dot={showDots || chartData.length === 1}
                 isAnimationActive={false}
                 connectNulls={false}
               />
@@ -175,7 +176,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
                 type={curve}
                 stroke={line.color}
                 strokeWidth={index === 0 ? 2.3 : 1.8}
-                dot={showDots || (timeScale !== 'day' && chartData.length === 1)}
+                dot={showDots || chartData.length === 1}
                 isAnimationActive={false}
                 connectNulls={false}
               />

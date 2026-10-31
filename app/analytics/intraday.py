@@ -10,8 +10,8 @@ import pandas as pd
 import requests
 from pydantic import BaseModel
 
-ChartRange = Literal["1p", "15p", "30p", "1d", "3d"]
-WINDOWS = {"1p": 60, "15p": 900, "30p": 1800, "1d": 86400, "3d": 259200}
+ChartRange = Literal["1p", "15p", "30p", "1h", "1d", "3d"]
+WINDOWS = {"1p": 60, "15p": 900, "30p": 1800, "1h": 3600, "1d": 86400, "3d": 259200}
 
 
 class MinutePoint(BaseModel):

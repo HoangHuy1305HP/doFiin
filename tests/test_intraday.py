@@ -39,7 +39,7 @@ def test_window_values_original_holdings_and_cash_before_rebasing():
     assert not result["stale"]
 
 
-@pytest.mark.parametrize("chart_range", ["1p", "15p", "30p", "1d", "3d"])
+@pytest.mark.parametrize("chart_range", ["1p", "15p", "30p", "1h", "1d", "3d"])
 def test_all_windows_anchor_at_last_known_bar_without_future_points(chart_range):
     frame = minute_frame()
     frame.loc[pd.Timestamp("2024-01-10T15:00Z")] = [999, 999]
@@ -48,6 +48,17 @@ def test_all_windows_anchor_at_last_known_bar_without_future_points(chart_range)
     assert result["stale"]
     assert result["as_of"] == datetime(2024, 1, 3, 15, 2, tzinfo=UTC)
     assert all(point["portfolio"] < 200 for point in result["series"])
+
+
+def test_one_hour_window_uses_minute_bars_from_latest_available_bar():
+    frame = pd.DataFrame(
+        {"AAPL": [100 + i for i in range(90)], "MSFT": [100 + i / 2 for i in range(90)]},
+        index=pd.date_range("2024-01-03T15:00:00Z", periods=90, freq="min"),
+    )
+    result = intraday_growth(frame, minute_snapshot(), "1h", frame.index[-1].to_pydatetime())
+    assert len(result["series"]) == 61
+    assert result["series"][0]["date"] == frame.index[-61].isoformat()
+    assert result["series"][-1]["date"] == frame.index[-1].isoformat()
 
 
 def test_provider_paginates_aligns_minutes_without_backfilling(monkeypatch):

@@ -243,7 +243,9 @@ export function Dashboard({
         {liveGrowth?.point && <span>Live · IEX<br />{new Date(liveGrowth.as_of || '').toLocaleTimeString()}</span>}
       </div>
       {showLiveSeconds && liveSamples.length === 0 ? (
-        <div className="growth-live-wait" role="status">Waiting for Alpaca IEX trades…</div>
+        <div className="growth-live-wait" role="status">{liveGrowth?.as_of && Date.now() - Date.parse(liveGrowth.as_of) >= 30_000
+          ? 'No recent IEX trades. Live updates resume when the market is open.'
+          : 'Waiting for Alpaca IEX trades…'}</div>
       ) : <TimeChart
         data={showLiveSeconds ? liveSamples : growthSeries}
         lines={[
@@ -261,6 +263,7 @@ export function Dashboard({
           { name: metadata.benchmark, color: '#64748b' },
         ]}
       />
+      {showLiveSeconds && <p className="small-note">Alpaca IEX trades are sampled every second when new trades arrive. Gaps are normal outside active market trading.</p>}
     </>
   );
   widgets.allocation_comparison = <AllocationComparison shared={simulation} reviewDisabled={preview} onReview={(data) => {

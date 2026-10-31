@@ -4,11 +4,12 @@ import { getLocale } from './i18n';
 import { TimeChart } from './charts';
 import type { Point } from './types';
 
-export type IntradayRange = '1p' | '15p' | '30p' | '1d' | '3d';
+export type IntradayRange = '1p' | '15p' | '30p' | '1h' | '1d' | '3d';
 export const INTRADAY_RANGES: { value: IntradayRange; label: string }[] = [
   { value: '1p', label: '1 minute' },
   { value: '15p', label: '15 minutes' },
   { value: '30p', label: '30 minutes' },
+  { value: '1h', label: '1 hour' },
   { value: '1d', label: '1 calendar day' },
   { value: '3d', label: '3 calendar days' },
 ];

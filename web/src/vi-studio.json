@@ -202,5 +202,8 @@
   "Monthly": "Hàng tháng",
   "None": "Không",
   "none": "không có",
-  "Not enough sessions in this period for the selected beta window.": "Giai đoạn này chưa có đủ phiên cho cửa sổ beta đã chọn."
+  "Not enough sessions in this period for the selected beta window.": "Giai đoạn này chưa có đủ phiên cho cửa sổ beta đã chọn.",
+  "daily analysis. 1p / 15p / 30p mean minutes; 1h is one hour; 1d / 3d mean calendar days ending at the latest available bar.": "phân tích ngày. 1p / 15p / 30p là phút; 1h là một giờ; 1d / 3d là ngày lịch tính đến thanh giá khả dụng mới nhất.",
+  "No recent IEX trades. Live updates resume when the market is open.": "Chưa có giao dịch IEX gần đây. Dữ liệu Live sẽ cập nhật khi thị trường mở cửa.",
+  "Alpaca IEX trades are sampled every second when new trades arrive. Gaps are normal outside active market trading.": "Giao dịch Alpaca IEX được lấy mẫu mỗi giây khi có giao dịch mới. Biểu đồ có thể bị ngắt quãng ngoài giờ giao dịch."
 }
