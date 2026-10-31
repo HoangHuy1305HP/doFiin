@@ -40,13 +40,6 @@ const DAILY_RANGES = [
   { value: '3Y', days: 1095 },
 ] as const;
 type DailyRange = typeof DAILY_RANGES[number]['value'];
-function rangeLabel(range: typeof DAILY_RANGES[number], locale: string) {
-  const amount = range.value.endsWith('M') ? range.days / 30 : range.days / 365;
-  const unit = range.value.endsWith('M')
-    ? locale === 'vi-VN' ? 'tháng' : amount === 1 ? 'month' : 'months'
-    : locale === 'vi-VN' ? 'năm' : amount === 1 ? 'year' : 'years';
-  return `${range.value} · ${amount} ${unit}`;
-}
 
 export function TimeChart({ data, lines, height = 290, area = true, kind = 'index', timeScale = 'day', curve = 'monotone', showDots = false, rangeControls = true }: ChartProps) {
   const id = useId().replace(/:/g, '');
@@ -56,7 +49,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
   const availableDays = firstAvailable && lastAvailable && timeScale === 'day'
     ? Math.max(0, (Date.parse(lastAvailable) - Date.parse(firstAvailable)) / 86_400_000)
     : 0;
-  const availableRanges = DAILY_RANGES.filter((range) => range.value === '1M' || availableDays >= range.days * 0.85);
+  const availableRanges = DAILY_RANGES.filter((range) => range.value === '1M' || availableDays >= range.days - 7);
   const activeRange = availableRanges.find((range) => range.value === selectedRange)?.value
     || availableRanges.at(-1)?.value || '1M';
   const rangeDays = DAILY_RANGES.find((range) => range.value === activeRange)?.days || 30;
@@ -99,24 +92,11 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
     <div className="time-chart-wrap">
       {rangeControls && timeScale === 'day' && data.length > 1 && (
         <div className="chart-range-toolbar">
-          <div className="period-selector chart-period-selector" role="group" aria-label={getLocale() === 'vi-VN' ? 'Khoảng thời gian biểu đồ' : 'Chart time window'}>
-            {DAILY_RANGES.map((range) => {
-              const available = availableRanges.some((item) => item.value === range.value);
-              return <button
-                key={range.value}
-                type="button"
-                className={activeRange === range.value ? 'active' : ''}
-                aria-pressed={activeRange === range.value}
-                disabled={!available}
-                onClick={() => setSelectedRange(range.value)}
-              >{range.value}</button>;
-            })}
-          </div>
           <div className="chart-range-dropdown">
             <StudioSelect
               label={getLocale() === 'vi-VN' ? 'Chọn mốc thời gian hiển thị' : 'Choose displayed time range'}
               value={activeRange}
-              options={availableRanges.map((range) => ({ value: range.value, label: rangeLabel(range, getLocale()) }))}
+              options={availableRanges.map((range) => ({ value: range.value, label: range.value }))}
               onChange={(value) => setSelectedRange(value as DailyRange)}
             />
           </div>
@@ -195,7 +175,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
                 type={curve}
                 stroke={line.color}
                 strokeWidth={index === 0 ? 2.3 : 1.8}
-                dot={showDots}
+                dot={showDots || (timeScale !== 'day' && chartData.length === 1)}
                 isAnimationActive={false}
                 connectNulls={false}
               />

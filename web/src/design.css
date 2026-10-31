@@ -3421,12 +3421,10 @@ h4,
 .account-readonly-field .studio-select-trigger { min-height: 42px; }
 .period-selector { border-radius: 9px; }
 .period-selector > button { border-radius: 6px; transition: background-color 160ms ease, color 160ms ease; }
-.chart-range-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.chart-range-toolbar .chart-period-selector { margin-left: 0; border: 0; background: transparent; padding: 0; }
-.chart-range-toolbar .chart-period-selector > button { min-width: 34px; font-size: var(--text-small); }
-.chart-range-toolbar .chart-period-selector > button:disabled { opacity: .4; cursor: not-allowed; }
+.chart-range-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .chart-range-dropdown { width: 168px; max-width: 100%; }
 .chart-range-dropdown .studio-select-trigger { min-height: 34px; padding: 6px 9px; font-size: var(--text-small); }
 .global-range-dropdown { width: 116px; flex: 0 0 116px; }
+.filter-bar > .global-range-dropdown { margin-left: auto; }
 @media (max-width: 600px) { .chart-range-toolbar { align-items: stretch; } .chart-range-dropdown { width: 100%; } }
 .growth-live-wait { display: grid; place-items: center; height: 290px; color: var(--color-text-muted); font-size: var(--text-small); }

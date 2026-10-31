@@ -184,7 +184,7 @@ export function Dashboard({
   const widgets: Record<string, ReactNode> = {};
   widgets.growth = (
     <>
-      {page === 'portfolio' && intradayRange ? <IntradayGrowth runId={analysis.id} range={intradayRange} benchmark={metadata.benchmark} area={areaFor('growth')} /> : <>
+      {page === 'portfolio' && intradayRange ? <IntradayGrowth key={`${analysis.id}:${intradayRange}`} runId={analysis.id} range={intradayRange} benchmark={metadata.benchmark} area={areaFor('growth')} /> : <>
       <div className="growth-meta">
         <span>
           Cumulative

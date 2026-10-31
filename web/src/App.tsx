@@ -704,61 +704,24 @@ export default function App() {
           )}
         </div>
       </div>
-      <div className="period-selector" role="group" aria-label="Chart time window">
-        {activePage === 'portfolio' && (
-          <button
-            className={liveSecondView ? 'active' : ''}
-            aria-label="Live chart, one-second updates"
-            aria-pressed={liveSecondView}
-            onClick={() => { setIntradayRange(null); setLiveSecondView(true); }}
-          >
-            1s
-          </button>
-        )}
-        {activePage === 'portfolio' && INTRADAY_RANGES.map(({ value, label }) => (
-          <button key={value} className={intradayRange === value ? 'active' : ''}
-            aria-label={`Chart window: ${label}`} aria-pressed={intradayRange === value}
-            title={`${label} ending at latest available minute bar`}
-            onClick={() => { setLiveSecondView(false); setIntradayRange(value); }}>
-            {value}
-          </button>
-        ))}
-        {[
-          ['1M', '1M'],
-          ['3M', '3M'],
-          ['6M', '6M'],
-          ['1Y', '1Y'],
-          ['3Y', '3Y'],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            className={((!liveSecondView && !intradayRange) || activePage !== 'portfolio') && period === value ? 'active' : ''}
-            aria-label={
-              value.endsWith('M')
-                ? value.slice(0, -1) + (value === '1M' ? ' month' : ' months')
-                : value.slice(0, -1) + (value === '1Y' ? ' year' : ' years')
-            }
-            onClick={() => { setLiveSecondView(false); setIntradayRange(null); setPeriod(value); }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
       <div className="chart-range-dropdown global-range-dropdown">
         <StudioSelect
           label={getLocale() === 'vi-VN' ? 'Chọn mốc thời gian hiển thị' : 'Choose displayed time range'}
           value={activePage === 'portfolio' && liveSecondView ? '1s' : activePage === 'portfolio' && intradayRange ? intradayRange : period}
           options={[
             ...(activePage === 'portfolio' ? [
-              { value: '1s', label: getLocale() === 'vi-VN' ? '1s · Trực tiếp' : '1s · Live' },
-              ...INTRADAY_RANGES.map(({ value, label }) => ({ value, label: `${value} · ${label}` })),
+              { value: '1s', label: '1s' },
+              ...INTRADAY_RANGES.map(({ value }) => ({ value, label: value })),
             ] : []),
             ...['1M', '3M', '6M', '1Y', '3Y'].map((value) => ({ value, label: value })),
           ]}
           onChange={(value) => {
             setLiveSecondView(value === '1s');
             setIntradayRange(INTRADAY_RANGES.some((range) => range.value === value) ? value as IntradayRange : null);
-            if (['1M', '3M', '6M', '1Y', '3Y'].includes(value)) setPeriod(value);
+            if (['1M', '3M', '6M', '1Y', '3Y'].includes(value)) {
+              if (period !== value) setLoading(true);
+              setPeriod(value);
+            }
           }}
         />
       </div>
