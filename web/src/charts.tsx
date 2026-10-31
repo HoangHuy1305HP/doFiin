@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import {
   Area,
   ComposedChart,
@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { number } from './api';
 import { getLocale, translateText } from './i18n';
+import StudioSelect from './StudioSelect';
 import type { Point, Factor } from './types';
 
 export const COLORS = ['#0f172a', '#64748b', '#c49a3b', '#94a3b8', '#cbd5e1', '#475569'];
@@ -29,17 +30,48 @@ type ChartProps = {
   timeScale?: 'day' | 'second' | 'minute';
   curve?: 'monotone' | 'stepAfter';
   showDots?: boolean;
+  rangeControls?: boolean;
 };
-export function TimeChart({ data, lines, height = 290, area = true, kind = 'index', timeScale = 'day', curve = 'monotone', showDots = false }: ChartProps) {
+const DAILY_RANGES = [
+  { value: '1M', days: 30 },
+  { value: '3M', days: 90 },
+  { value: '6M', days: 180 },
+  { value: '1Y', days: 365 },
+  { value: '3Y', days: 1095 },
+] as const;
+type DailyRange = typeof DAILY_RANGES[number]['value'];
+function rangeLabel(range: typeof DAILY_RANGES[number], locale: string) {
+  const amount = range.value.endsWith('M') ? range.days / 30 : range.days / 365;
+  const unit = range.value.endsWith('M')
+    ? locale === 'vi-VN' ? 'tháng' : amount === 1 ? 'month' : 'months'
+    : locale === 'vi-VN' ? 'năm' : amount === 1 ? 'year' : 'years';
+  return `${range.value} · ${amount} ${unit}`;
+}
+
+export function TimeChart({ data, lines, height = 290, area = true, kind = 'index', timeScale = 'day', curve = 'monotone', showDots = false, rangeControls = true }: ChartProps) {
   const id = useId().replace(/:/g, '');
-  const firstDate = data[0]?.date;
-  const lastDate = data.at(-1)?.date;
+  const [selectedRange, setSelectedRange] = useState<DailyRange | null>(null);
+  const firstAvailable = data[0]?.date;
+  const lastAvailable = data.at(-1)?.date;
+  const availableDays = firstAvailable && lastAvailable && timeScale === 'day'
+    ? Math.max(0, (Date.parse(lastAvailable) - Date.parse(firstAvailable)) / 86_400_000)
+    : 0;
+  const availableRanges = DAILY_RANGES.filter((range) => range.value === '1M' || availableDays >= range.days * 0.85);
+  const activeRange = availableRanges.find((range) => range.value === selectedRange)?.value
+    || availableRanges.at(-1)?.value || '1M';
+  const rangeDays = DAILY_RANGES.find((range) => range.value === activeRange)?.days || 30;
+  const cutoff = lastAvailable ? Date.parse(lastAvailable) - rangeDays * 86_400_000 : 0;
+  const chartData = timeScale === 'day' && rangeControls && data.length > 1
+    ? data.filter((point) => Date.parse(point.date) >= cutoff)
+    : data;
+  const firstDate = chartData[0]?.date;
+  const lastDate = chartData.at(-1)?.date;
   const daySpan = firstDate && lastDate && timeScale === 'day'
     ? (Date.parse(lastDate) - Date.parse(firstDate)) / 86_400_000
     : 0;
   const axisTicks = timeScale !== 'day'
-    ? data.filter((_, index) => index % Math.max(1, Math.ceil(data.length / 6)) === 0).map((point) => point.date)
-    : data.filter((point, index, points) => {
+    ? chartData.filter((_, index) => index % Math.max(1, Math.ceil(chartData.length / 6)) === 0).map((point) => point.date)
+    : chartData.filter((point, index, points) => {
       if (index === 0) return true;
       const current = new Date(point.date + 'T12:00:00');
       const previous = new Date(points[index - 1].date + 'T12:00:00');
@@ -51,7 +83,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
       return current.getFullYear() * 12 + current.getMonth()
         !== previous.getFullYear() * 12 + previous.getMonth();
     }).map((point) => point.date);
-  const values = data.flatMap((point) => lines.map((line) => point[line.key]))
+  const values = chartData.flatMap((point) => lines.map((line) => point[line.key]))
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   const minimum = values.length ? Math.min(...values) : 0;
   const maximum = values.length ? Math.max(...values) : 1;
@@ -64,9 +96,35 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
         ? new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
         : number(value, 1);
   return (
+    <div className="time-chart-wrap">
+      {rangeControls && timeScale === 'day' && data.length > 1 && (
+        <div className="chart-range-toolbar">
+          <div className="period-selector chart-period-selector" role="group" aria-label={getLocale() === 'vi-VN' ? 'Khoảng thời gian biểu đồ' : 'Chart time window'}>
+            {DAILY_RANGES.map((range) => {
+              const available = availableRanges.some((item) => item.value === range.value);
+              return <button
+                key={range.value}
+                type="button"
+                className={activeRange === range.value ? 'active' : ''}
+                aria-pressed={activeRange === range.value}
+                disabled={!available}
+                onClick={() => setSelectedRange(range.value)}
+              >{range.value}</button>;
+            })}
+          </div>
+          <div className="chart-range-dropdown">
+            <StudioSelect
+              label={getLocale() === 'vi-VN' ? 'Chọn mốc thời gian hiển thị' : 'Choose displayed time range'}
+              value={activeRange}
+              options={availableRanges.map((range) => ({ value: range.value, label: rangeLabel(range, getLocale()) }))}
+              onChange={(value) => setSelectedRange(value as DailyRange)}
+            />
+          </div>
+        </div>
+      )}
     <div className="time-chart" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 24, right: 12, left: 0, bottom: 8 }}>
+        <ComposedChart data={chartData} margin={{ top: 24, right: 12, left: 0, bottom: 8 }}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={lines[0]?.color} stopOpacity={0.15} />
@@ -125,7 +183,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
                 stroke={line.color}
                 fill={'url(#' + id + ')'}
                 strokeWidth={2.3}
-                dot={showDots || (timeScale !== 'day' && data.length === 1)}
+                dot={showDots || (timeScale !== 'day' && chartData.length === 1)}
                 isAnimationActive={false}
                 connectNulls={false}
               />
@@ -145,6 +203,7 @@ export function TimeChart({ data, lines, height = 290, area = true, kind = 'inde
           )}
         </ComposedChart>
       </ResponsiveContainer>
+    </div>
     </div>
   );
 }

@@ -208,6 +208,7 @@ export function Dashboard({
         ]}
         area={areaFor('growth')}
         timeScale={showLiveSeconds ? 'second' : 'day'}
+        rangeControls={preview}
       />}
       </>}
       <Legend

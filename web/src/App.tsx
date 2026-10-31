@@ -744,6 +744,24 @@ export default function App() {
           </button>
         ))}
       </div>
+      <div className="chart-range-dropdown global-range-dropdown">
+        <StudioSelect
+          label={getLocale() === 'vi-VN' ? 'Chọn mốc thời gian hiển thị' : 'Choose displayed time range'}
+          value={activePage === 'portfolio' && liveSecondView ? '1s' : activePage === 'portfolio' && intradayRange ? intradayRange : period}
+          options={[
+            ...(activePage === 'portfolio' ? [
+              { value: '1s', label: getLocale() === 'vi-VN' ? '1s · Trực tiếp' : '1s · Live' },
+              ...INTRADAY_RANGES.map(({ value, label }) => ({ value, label: `${value} · ${label}` })),
+            ] : []),
+            ...['1M', '3M', '6M', '1Y', '3Y'].map((value) => ({ value, label: value })),
+          ]}
+          onChange={(value) => {
+            setLiveSecondView(value === '1s');
+            setIntradayRange(INTRADAY_RANGES.some((range) => range.value === value) ? value as IntradayRange : null);
+            if (['1M', '3M', '6M', '1Y', '3Y'].includes(value)) setPeriod(value);
+          }}
+        />
+      </div>
       <div className="filter-end">
         <span className="source-selector" aria-label="Data source: Alpaca IEX">
           <i className="live-dot" /> Alpaca · IEX
